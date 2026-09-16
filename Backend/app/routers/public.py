@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from hashlib import sha256
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
+from app.core.config import settings
+from app.core.rate_limit import limiter
 from app.database.connection import get_db
 from app.models import (
     Division,
@@ -17,14 +19,22 @@ from app.models import (
     VisitorLog,
 )
 
-router = APIRouter(prefix="/public", tags=["public"])
+
+router = APIRouter(
+    prefix="/public",
+    tags=["public"],
+)
+
+PUBLIC_LIMIT = 50
 
 
 def _image_url(storage_key: str | None) -> str | None:
     if not storage_key:
         return None
+
     if storage_key.startswith("images/"):
         return f"/api/v1/media/{storage_key}"
+
     return f"/api/v1/media/images/{storage_key}"
 
 
@@ -64,13 +74,10 @@ def news_item(news: News, *, include_content: bool = False) -> dict:
 
 @router.get("/news")
 def public_news(
-    offset: int = 0,
-    limit: int = 20,
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=PUBLIC_LIMIT),
     db: Session = Depends(get_db),
 ):
-    offset = max(offset, 0)
-    limit = min(max(limit, 1), 50)
-
     statement = (
         select(News)
         .options(selectinload(News.images))
@@ -111,7 +118,7 @@ def public_news_detail(
 
     if news is None:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Publikasi tidak ditemukan",
         )
 
@@ -120,13 +127,10 @@ def public_news_detail(
 
 @router.get("/programs")
 def public_programs(
-    offset: int = 0,
-    limit: int = 20,
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=PUBLIC_LIMIT),
     db: Session = Depends(get_db),
 ):
-    offset = max(offset, 0)
-    limit = min(max(limit, 1), 50)
-
     rows = db.scalars(
         select(Program)
         .order_by(
@@ -162,7 +166,7 @@ def public_org(
     period = db.scalar(
         select(Period)
         .where(Period.is_active.is_(True))
-        .order_by(Period.start_date.desc())
+        .order_by(Period.start_date.desc(), Period.id.desc())
     )
 
     if not period:
@@ -234,20 +238,39 @@ def public_org(
     }
 
 
-@router.post("/visits", status_code=201)
-def visit(
+@router.post("/visits", status_code=status.HTTP_201_CREATED)
+async def visit(
     request: Request,
-    page: str,
+    page: str = Query(min_length=1, max_length=500),
     db: Session = Depends(get_db),
 ):
-    ip = request.client.host if request.client else "unknown"
+    client_ip = limiter.client_ip(request)
+
+    allowed, retry_after = await limiter.allow(
+        f"public-visit:{client_ip}",
+        settings.general_write_limit,
+        settings.general_write_window_seconds,
+    )
+
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Terlalu banyak permintaan.",
+            headers={
+                "Retry-After": str(retry_after),
+                "X-RateLimit-Limit": str(settings.general_write_limit),
+            },
+        )
+
     user_agent = request.headers.get("user-agent", "")
-    digest = sha256(f"{ip}:{user_agent}".encode("utf-8")).hexdigest()
+    visitor_hash = sha256(
+        f"{client_ip}:{user_agent}".encode("utf-8")
+    ).hexdigest()
 
     db.add(
         VisitorLog(
-            page=page[:500],
-            visitor_hash=digest,
+            page=page.strip(),
+            visitor_hash=visitor_hash,
             user_agent=user_agent[:500],
         )
     )
