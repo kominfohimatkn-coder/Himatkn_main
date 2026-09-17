@@ -4,7 +4,11 @@ Backend FastAPI modular untuk HIMATKN dengan satu arsitektur canonical: `app/cor
 
 ## Database
 
-Target utama adalah MySQL/TiDB database `himatkn_v2`. Model hanya memetakan 21 tabel canonical. Tabel legacy pada dump (`admin`, `berita`, `program_kerja`, `struktur`, `notifikasi`, `site_config`) tidak digunakan. `auth_sessions.admin_id` pada canonical schema mengarah ke `admins.id`.
+Target utama adalah MySQL/TiDB database `himatkn_v2`.
+Model memetakan 22 tabel domain canonical.
+Tabel `alembic_version` adalah metadata Alembic dan bukan tabel domain aplikasi.
+Tabel legacy pada dump (`admin`, `berita`, `program_kerja`, `struktur`, `notifikasi`, `site_config`) tidak digunakan.
+`auth_sessions.admin_id` pada canonical schema mengarah ke `admins.id`.
 
 ## Menjalankan lokal
 
@@ -78,4 +82,9 @@ alembic check
 
 Testing lokal di project ini juga memeriksa model/schema 21 tabel, route registration, authentication, CSRF, permission, login rate limiting hingga HTTP 429, pagination bounds, public endpoints, document upload, image compression, invalid upload, dan path traversal. Integration ke MySQL/TiDB production harus dijalankan di environment yang memiliki credential database tersebut.
 
-Untuk DB existing, verifikasi schema terlebih dahulu kemudian gunakan `alembic stamp 20260915_0001`. Untuk database kosong gunakan `alembic upgrade head`. Jangan memakai `Base.metadata.create_all()` saat startup production.
+Untuk DB existing, verifikasi schema terlebih dahulu kemudian gunakan
+`alembic stamp 3af2a5dfdd21` hanya apabila database tersebut memang sudah
+merepresentasikan schema hingga revision tersebut.
+
+Untuk database kosong gunakan `alembic upgrade head`.
+Jangan memakai `Base.metadata.create_all()` saat startup production.
