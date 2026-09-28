@@ -35,6 +35,7 @@ PERMS = [
     ("admins.manage", "Mengelola administrator"),
     ("roles.manage", "Mengelola role dan permission"),
     ("visitor_logs.view", "Melihat statistik pengunjung"),
+    ("media.manage", "Mengelola upload media"),
 ]
 
 
@@ -99,6 +100,7 @@ def seed() -> None:
                             "activity_logs.view",
                             "admins.view",
                             "visitor_logs.view",
+                            "media.",
                         )
                     )
                 ]

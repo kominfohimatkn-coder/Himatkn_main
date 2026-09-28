@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from secrets import compare_digest
+
 from fastapi import (
     Cookie,
     Depends,
@@ -92,7 +94,7 @@ async def require_csrf(
     if (
         not csrf_cookie
         or not csrf_header
-        or csrf_cookie != csrf_header
+        or not compare_digest(csrf_cookie, csrf_header)
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

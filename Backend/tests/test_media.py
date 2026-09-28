@@ -29,6 +29,27 @@ def _login(client: TestClient) -> str:
     assert csrf
     return csrf
 
+def _login_as(
+    client: TestClient,
+    username: str,
+    password: str,
+) -> str:
+    response = client.get("/api/v1/auth/csrf")
+    assert response.status_code == 200
+
+    response = client.post(
+        "/api/v1/auth/login",
+        json={
+            "username": username,
+            "password": password,
+        },
+        headers={"Origin": "http://localhost:3000"},
+    )
+    assert response.status_code == 200
+
+    csrf = client.cookies.get("himatkn_csrf")
+    assert csrf
+    return csrf
 
 def _image_bytes() -> bytes:
     buffer = io.BytesIO()
@@ -82,6 +103,43 @@ def test_private_document_path_traversal_is_rejected(client):
 
     assert response.status_code in {404, 400}
 
+def test_private_document_requires_documents_view_permission(
+    client,
+    monkeypatch,
+    tmp_path,
+):
+    monkeypatch.setattr(
+        storage.settings,
+        "storage_backend",
+        "local",
+        raising=False,
+    )
+    monkeypatch.setattr(
+        storage.settings,
+        "storage_local_dir",
+        str(tmp_path),
+        raising=False,
+    )
+
+    key = "documents/private-test.pdf"
+    path = tmp_path / key
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(_pdf_bytes())
+
+    _login_as(
+        client,
+        "limited",
+        "limited-password-1234",
+    )
+
+    response = client.get(
+        f"/api/v1/media/documents/{Path(key).name}",
+        headers={
+            "Origin": "http://localhost:3000",
+        },
+    )
+
+    assert response.status_code == 403
 
 def test_image_upload_without_auth_or_csrf_is_rejected(client):
     response = client.post(
@@ -116,6 +174,145 @@ def test_image_upload_requires_csrf(client):
 
     assert response.status_code == 403
 
+def test_image_upload_rejects_missing_csrf_header(client):
+    _login(client)
+
+    response = client.post(
+        "/api/v1/media/images",
+        files={
+            "file": (
+                "photo.png",
+                _image_bytes(),
+                "image/png",
+            )
+        },
+        headers={
+            "Origin": "http://localhost:3000",
+        },
+    )
+
+    assert response.status_code == 403
+
+
+def test_image_upload_rejects_missing_csrf_cookie(client):
+    csrf = _login(client)
+
+    # Pastikan header memiliki token, tetapi cookie CSRF dihapus.
+    client.cookies.delete("himatkn_csrf")
+
+    response = client.post(
+        "/api/v1/media/images",
+        files={
+            "file": (
+                "photo.png",
+                _image_bytes(),
+                "image/png",
+            )
+        },
+        headers={
+            "X-CSRF-Token": csrf,
+            "Origin": "http://localhost:3000",
+        },
+    )
+
+    assert response.status_code == 403
+
+
+def test_image_upload_rejects_different_csrf_tokens(client):
+    _login(client)
+
+    response = client.post(
+        "/api/v1/media/images",
+        files={
+            "file": (
+                "photo.png",
+                _image_bytes(),
+                "image/png",
+            )
+        },
+        headers={
+            "X-CSRF-Token": "this-is-the-wrong-token",
+            "Origin": "http://localhost:3000",
+        },
+    )
+
+    assert response.status_code == 403
+
+
+def test_image_upload_allows_matching_csrf_tokens(client, monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        storage.settings,
+        "storage_backend",
+        "local",
+        raising=False,
+    )
+    monkeypatch.setattr(
+        storage.settings,
+        "storage_local_dir",
+        str(tmp_path),
+        raising=False,
+    )
+
+    csrf = _login(client)
+
+    response = client.post(
+        "/api/v1/media/images",
+        files={
+            "file": (
+                "photo.png",
+                _image_bytes(),
+                "image/png",
+            )
+        },
+        headers={
+            "X-CSRF-Token": csrf,
+            "Origin": "http://localhost:3000",
+        },
+    )
+
+    assert response.status_code == 201
+
+
+def test_image_upload_requires_media_permission(
+    client,
+    monkeypatch,
+    tmp_path,
+):
+    monkeypatch.setattr(
+        storage.settings,
+        "storage_backend",
+        "local",
+        raising=False,
+    )
+    monkeypatch.setattr(
+        storage.settings,
+        "storage_local_dir",
+        str(tmp_path),
+        raising=False,
+    )
+
+    csrf = _login_as(
+        client,
+        "limited",
+        "limited-password-1234",
+    )
+
+    response = client.post(
+        "/api/v1/media/images",
+        files={
+            "file": (
+                "photo.png",
+                _image_bytes(),
+                "image/png",
+            )
+        },
+        headers={
+            "X-CSRF-Token": csrf,
+            "Origin": "http://localhost:3000",
+        },
+    )
+
+    assert response.status_code == 403
 
 def test_image_upload_success(client, monkeypatch, tmp_path):
     monkeypatch.setattr(
@@ -190,3 +387,5 @@ def test_private_document_with_auth(client, monkeypatch, tmp_path):
     assert response.status_code == 200
     assert response.content == _pdf_bytes()
     assert response.headers["cache-control"] == "private, no-store"
+
+    

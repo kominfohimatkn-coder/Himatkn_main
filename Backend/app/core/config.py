@@ -55,6 +55,15 @@ class Settings(BaseSettings):
     general_write_limit: int = 60
     general_write_window_seconds: int = 60
 
+    global_read_limit: int = Field(360, ge=1)
+    global_write_limit: int = Field(120, ge=1)
+
+    general_read_limit: int = Field(120, ge=1)
+    general_read_window_seconds: int = Field(60, ge=1)
+
+    general_write_limit: int = Field(60, ge=1)
+    general_write_window_seconds: int = Field(60, ge=1)
+
     # Request / upload limits
     max_request_body_bytes: int = 4_300_000
     max_upload_bytes: int = 4 * 1024 * 1024
@@ -153,6 +162,11 @@ class Settings(BaseSettings):
             ):
                 raise RuntimeError(
                     "Production wajib memakai Redis untuk rate limiting."
+                )
+
+            if not self.rate_limit_fail_closed:
+                raise RuntimeError(
+                    "RATE_LIMIT_FAIL_CLOSED=true wajib di production."
                 )
 
             if self.storage_backend == "local":
