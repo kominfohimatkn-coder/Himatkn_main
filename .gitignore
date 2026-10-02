@@ -11,3 +11,4 @@ uploads/*
 !uploads/.gitkeep
 alembic/versions/*.pyc
 .sql
+isrgrootx1.pem
