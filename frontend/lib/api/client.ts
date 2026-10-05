@@ -57,12 +57,6 @@ async function ensureCsrfToken(): Promise<string> {
   return csrfToken;
 }
 
-export class ApiError extends Error {
-  constructor(message: string, public status: number) {
-    super(message);
-  }
-}
-
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {},
