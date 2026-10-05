@@ -67,7 +67,7 @@ export default function DashboardPage() {
 
   if (!hasDashboardPermission) {
     return (
-      <main className="min-h-screen bg-white px-4 py-8 text-zinc-950 sm:px-6 lg:px-8">
+      <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8">        
         <div className="mx-auto max-w-7xl">
           <section className="border border-zinc-200 bg-zinc-50 p-6 sm:p-8">
             <p className="text-sm font-medium uppercase tracking-[0.16em] text-zinc-500">
@@ -87,7 +87,7 @@ export default function DashboardPage() {
             </p>
           </section>
         </div>
-      </main>
+      </div>
     );
   }
 

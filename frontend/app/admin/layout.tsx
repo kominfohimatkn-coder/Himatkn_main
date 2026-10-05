@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/context/AuthContext";
+import { AdminShell } from "@/components/admin/AdminShell";
 
 export default function AdminLayout({
   children,
@@ -21,8 +22,8 @@ export default function AdminLayout({
 
   if (isLoading) {
     return (
-      <main>
-        <p>Memuat...</p>
+      <main className="flex min-h-screen items-center justify-center bg-zinc-50">
+        <p className="text-sm text-zinc-500">Memuat...</p>
       </main>
     );
   }
@@ -31,5 +32,5 @@ export default function AdminLayout({
     return null;
   }
 
-  return <>{children}</>;
+  return <AdminShell>{children}</AdminShell>;
 }
