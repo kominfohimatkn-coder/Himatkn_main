@@ -4,27 +4,11 @@ if (!API_URL) {
   throw new Error("NEXT_PUBLIC_API_URL is not configured");
 }
 
-function getCsrfTokenFromCookie(): string | null {
-  if (typeof document === "undefined") {
-    return null;
-  }
-
-  const match = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("himatkn_csrf="));
-
-  if (!match) {
-    return null;
-  }
-
-  return decodeURIComponent(match.substring("himatkn_csrf=".length));
-}
+let csrfToken: string | null = null;
 
 async function ensureCsrfToken(): Promise<string> {
-  const existingToken = getCsrfTokenFromCookie();
-
-  if (existingToken) {
-    return existingToken;
+  if (csrfToken) {
+    return csrfToken;
   }
 
   const response = await fetch(`${API_URL}/auth/csrf`, {
@@ -48,11 +32,18 @@ async function ensureCsrfToken(): Promise<string> {
     throw new Error(message);
   }
 
-  const csrfToken = getCsrfTokenFromCookie();
+  const data: unknown = await response.json();
 
-  if (!csrfToken) {
-    throw new Error("CSRF token tidak ditemukan setelah inisialisasi.");
+  if (
+    typeof data !== "object" ||
+    data === null ||
+    !("csrf_token" in data) ||
+    typeof data.csrf_token !== "string"
+  ) {
+    throw new Error("CSRF token tidak ditemukan dari response backend.");
   }
+
+  csrfToken = data.csrf_token;
 
   return csrfToken;
 }
@@ -70,8 +61,8 @@ export async function apiFetch<T>(
   }
 
   if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
-    const csrfToken = await ensureCsrfToken();
-    headers.set("X-CSRF-Token", csrfToken);
+    const token = await ensureCsrfToken();
+    headers.set("X-CSRF-Token", token);
   }
 
   const response = await fetch(`${API_URL}${path}`, {
