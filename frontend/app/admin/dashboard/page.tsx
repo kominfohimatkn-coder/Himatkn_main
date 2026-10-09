@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import {
   getDashboardStats,
   type DashboardStats,
-} from "@/lib/api/dashboard";
+} from "@/lib/api/admin/dashboard";
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat("id-ID").format(value);
@@ -23,6 +23,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!admin || !hasDashboardPermission) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false);
       return;
     }
