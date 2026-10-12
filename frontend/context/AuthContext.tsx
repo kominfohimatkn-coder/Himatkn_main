@@ -33,66 +33,78 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+/**
+ * Satu sumber logika untuk membaca admin aktif.
+ * Error autentikasi atau request menghasilkan null.
+ */
+async function readCurrentAdmin(): Promise<Admin | null> {
+  try {
+    const response = await getCurrentAdmin();
+    return response.admin;
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [admin, setAdmin] = useState<Admin | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  /**
+   * Refresh sesi jika memang dibutuhkan.
+   */
   const refreshAuth = useCallback(async (): Promise<Admin | null> => {
-    try {
-      const response = await getCurrentAdmin();
-      setAdmin(response.admin);
-      return response.admin;
-    } catch {
-      setAdmin(null);
-      return null;
-    }
+    const currentAdmin = await readCurrentAdmin();
+
+    setAdmin(currentAdmin);
+
+    return currentAdmin;
   }, []);
 
+  /**
+   * Login menggunakan data admin dari respons login.
+   * Tidak perlu meminta /auth/me sekali lagi.
+   */
   const login = useCallback(
     async (data: LoginRequest): Promise<Admin> => {
-      await loginRequest(data);
+      const response = await loginRequest(data);
 
-      const authenticatedAdmin = await refreshAuth();
+      setAdmin(response.admin);
 
-      if (!authenticatedAdmin) {
-        throw new Error("Login berhasil, tetapi data admin tidak dapat dimuat.");
-      }
-
-      return authenticatedAdmin;
+      return response.admin;
     },
-    [refreshAuth],
+    [],
   );
 
+  /**
+   * Logout tetap membersihkan state lokal meskipun request gagal.
+   */
   const logout = useCallback(async (): Promise<void> => {
     try {
-        await logoutRequest();
+      await logoutRequest();
     } finally {
-        setAdmin(null);
+      setAdmin(null);
     }
   }, []);
 
+  /**
+   * Inisialisasi autentikasi saat provider dipasang.
+   */
   useEffect(() => {
     let mounted = true;
 
-    const initializeAuth = async () => {
-      try {
-        const response = await getCurrentAdmin();
+    async function initializeAuth() {
+      const currentAdmin = await readCurrentAdmin();
 
-        if (mounted) {
-          setAdmin(response.admin);
-        }
-      } catch {
-        if (mounted) {
-          setAdmin(null);
-        }
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
+      if (!mounted) {
+        return;
       }
-    };
 
-    initializeAuth();
+      setAdmin(currentAdmin);
+      setIsLoading(false);
+    }
+
+    void initializeAuth();
 
     return () => {
       mounted = false;
@@ -111,7 +123,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [admin, isLoading, login, logout, refreshAuth],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth(): AuthContextValue {
