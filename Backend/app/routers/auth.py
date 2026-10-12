@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-
+import jwt
 from fastapi import (
     APIRouter,
     Cookie,
@@ -212,6 +212,7 @@ def me(
     }
 
 
+
 @router.post(
     "/logout",
     dependencies=[Depends(require_csrf)],
@@ -227,29 +228,46 @@ def logout(
     if token:
         try:
             payload = decode_access_token(token)
-            jti = str(payload["jti"])
+        except jwt.InvalidTokenError:
+            payload = None
 
-            revoke_token(
-                db,
-                token,
-                jti,
-            )
+        if payload is not None:
+            try:
+                jti = str(payload["jti"])
 
-            db.commit()
+                revoke_token(
+                    db,
+                    token,
+                    jti,
+                )
 
-        except Exception:
-            db.rollback()
+                db.commit()
+
+            except Exception as exc:
+                db.rollback()
+
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail=(
+                        "Sesi belum berhasil diakhiri. "
+                        "Silakan coba lagi."
+                    ),
+                ) from exc
 
     response.delete_cookie(
         key=settings.cookie_name,
         path="/",
+        secure=settings.cookie_secure,
+        httponly=True,
+        samesite=settings.cookie_samesite,
     )
 
     response.delete_cookie(
         key=settings.csrf_cookie_name,
         path="/",
+        secure=settings.cookie_secure,
+        httponly=False,
+        samesite=settings.cookie_samesite,
     )
 
-    return {
-        "message": "Logout berhasil"
-    }
+    return {"message": "Logout berhasil"}

@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import { AdminSidebar } from "./AdminSidebar";
 
@@ -12,32 +12,57 @@ export function AdminShell({
 }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+  function closeMobileMenu() {
+  setMobileOpen(false);
+  menuButtonRef.current?.focus();
+}
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        closeMobileMenu();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [mobileOpen]);
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-950">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-zinc-200 lg:block">
         <AdminSidebar pathname={pathname} />
       </aside>
+  
+    {mobileOpen && (
+      <button
+        type="button"
+        className="fixed inset-0 z-40 cursor-default bg-black/40 lg:hidden"
+        aria-label="Tutup menu navigasi"
+        onClick={closeMobileMenu}
+      />
+    )}
 
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
-          onClick={() => setMobileOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-
+    {mobileOpen && (
       <aside
-        className={[
-          "fixed inset-y-0 left-0 z-50 w-70 border-r border-zinc-200 transition-transform duration-200 lg:hidden",
-          mobileOpen ? "translate-x-0" : "-translate-x-full",
-        ].join(" ")}
+        id="mobile-admin-navigation"
+        aria-label="Navigasi admin"
+        className="fixed inset-y-0 left-0 z-50 w-70 border-r border-zinc-200 lg:hidden"
       >
         <AdminSidebar
           pathname={pathname}
-          onNavigate={() => setMobileOpen(false)}
+          onNavigate={closeMobileMenu}
         />
       </aside>
+    )}
+
 
       <div className="min-h-screen lg:pl-64">
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-zinc-200 bg-white px-4 sm:px-6 lg:hidden">
