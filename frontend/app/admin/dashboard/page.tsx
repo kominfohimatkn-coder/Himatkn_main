@@ -11,8 +11,10 @@ function formatNumber(value: number): string {
   return new Intl.NumberFormat("id-ID").format(value);
 }
 
+
 export default function DashboardPage() {
   const { admin } = useAuth();
+  const adminId = admin?.id ?? null;
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -22,13 +24,13 @@ export default function DashboardPage() {
     admin?.permissions.includes("dashboard.view") ?? false;
 
   useEffect(() => {
-    if (!admin || !hasDashboardPermission) {
+    if (adminId === null || !hasDashboardPermission) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false);
       return;
     }
 
-    let mounted = true;
+    let active = true;
 
     async function loadDashboard() {
       try {
@@ -37,11 +39,11 @@ export default function DashboardPage() {
 
         const data = await getDashboardStats();
 
-        if (mounted) {
+        if (active) {
           setStats(data);
         }
       } catch (error) {
-        if (mounted) {
+        if (active) {
           setError(
             error instanceof Error
               ? error.message
@@ -49,18 +51,18 @@ export default function DashboardPage() {
           );
         }
       } finally {
-        if (mounted) {
+        if (active) {
           setIsLoading(false);
         }
       }
     }
 
-    loadDashboard();
+    void loadDashboard();
 
     return () => {
-      mounted = false;
+      active = false;
     };
-  }, [admin, hasDashboardPermission]);
+  }, [adminId, hasDashboardPermission]);
 
   if (!admin) {
     return null;

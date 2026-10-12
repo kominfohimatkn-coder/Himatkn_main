@@ -8,8 +8,9 @@ export interface DashboardStats {
   visitors_total: number;
 }
 
-export function getDashboardStats() {
+export function getDashboardStats(options: { signal?: AbortSignal } = {}) {
   return apiFetch<DashboardStats>("/admin/dashboard", {
     method: "GET",
+    signal: options.signal,
   });
 }

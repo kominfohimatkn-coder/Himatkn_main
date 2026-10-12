@@ -1,26 +1,228 @@
 @import "tailwindcss";
 
+/* =========================================================
+   HIMATKN DESIGN TOKENS
+   Palet warna dan tipografi utama
+   ========================================================= */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+
+  /* Background */
+  --background: #F6F4EC;
+  --foreground: #16261D;
+
+  --bg-dark: #0E2018;
+  --bg-dark-2: #142B20;
+
+  --bg-light: #F6F4EC;
+  --bg-light-2: #ECE8D9;
+
+  /* Text */
+  --ink: #16261D;
+  --ink-soft: #58614F;
+
+  --on-dark: #F1EEE1;
+  --on-dark-soft: #9AAA97;
+
+  /* Brand Accent */
+  --gold: #C79A3E;
+  --gold-bright: #E4BE66;
+
+  /* Borders */
+  --paper-line: #D6D0B8;
+  --dark-line: rgba(241, 238, 225, 0.16);
+
+  /* Typography */
+  --font-sans-stack:
+    "Space Grotesk",
+    var(--font-geist-sans),
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  --font-mono-stack:
+    "JetBrains Mono",
+    var(--font-geist-mono),
+    monospace;
 }
+
+/* =========================================================
+   TAILWIND CSS V4 THEME
+   Menghasilkan utilities seperti bg-bg-dark,
+   text-ink, border-paper-line, dan bg-gold.
+   ========================================================= */
 
 @theme inline {
+  /* Semantic colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  /* Background palette */
+  --color-bg-dark: var(--bg-dark);
+  --color-bg-dark-2: var(--bg-dark-2);
+  --color-bg-light: var(--bg-light);
+  --color-bg-light-2: var(--bg-light-2);
+
+  /* Text palette */
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-on-dark: var(--on-dark);
+  --color-on-dark-soft: var(--on-dark-soft);
+
+  /* Brand accent */
+  --color-gold: var(--gold);
+  --color-gold-bright: var(--gold-bright);
+
+  /* Border palette */
+  --color-paper-line: var(--paper-line);
+  --color-dark-line: var(--dark-line);
+
+  /* Typography */
+  --font-sans: var(--font-sans-stack);
+  --font-mono: var(--font-mono-stack);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* =========================================================
+   GLOBAL RESET
+   ========================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  scroll-behavior: smooth;
+  background: var(--background);
 }
 
 body {
+  min-height: 100vh;
+  margin: 0;
+
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+
+  font-family: var(--font-sans-stack);
+  font-size: 16px;
+  line-height: 1.6;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* =========================================================
+   TYPOGRAPHY
+   ========================================================= */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin-top: 0;
+  color: inherit;
+  font-family: var(--font-sans-stack);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+p {
+  margin-top: 0;
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--font-mono-stack);
+}
+
+::selection {
+  background: var(--gold);
+  color: var(--bg-dark);
+}
+
+/* =========================================================
+   ELEMENT DEFAULTS
+   ========================================================= */
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+img,
+video {
+  height: auto;
+}
+
+a {
+  color: inherit;
+}
+
+input,
+textarea,
+select {
+  color: var(--foreground);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--ink-soft);
+  opacity: 0.8;
+}
+
+/* =========================================================
+   ACCESSIBILITY
+   Fokus keyboard menggunakan aksen emas HIMATKN
+   ========================================================= */
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+/* =========================================================
+   REDUCED MOTION
+   Menghormati preferensi aksesibilitas pengguna
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -17,8 +17,13 @@ interface GetAdminNewsParams {
   status?: NewsStatus;
 }
 
+interface RequestOptions {
+  signal?: AbortSignal;
+}
+
 export async function getAdminNews(
   params: GetAdminNewsParams = {},
+  options: RequestOptions = {},
 ): Promise<NewsListResponse<AdminNews>> {
   const query = new URLSearchParams({
     offset: String(params.offset ?? 0),
@@ -31,6 +36,7 @@ export async function getAdminNews(
 
   return apiFetch<NewsListResponse<AdminNews>>(
     `/admin/news?${query.toString()}`,
+    { signal: options.signal },
   );
 }
 
@@ -102,13 +108,10 @@ export async function uploadAdminNewsImage(
     formData.append("sort_order", String(options.sort_order));
   }
 
-  return apiFetch<NewsImage>(
-    `/admin/news/${newsId}/images`,
-    {
-      method: "POST",
-      body: formData,
-    },
-  );
+  return apiFetch<NewsImage>(`/admin/news/${newsId}/images`, {
+    method: "POST",
+    body: formData,
+  });
 }
 
 export function updateAdminNewsImage(
@@ -129,23 +132,17 @@ export function updateAdminNewsImage(
     formData.append("sort_order", String(changes.sort_order));
   }
 
-  return apiFetch<NewsImage>(
-    `/admin/news/${newsId}/images/${imageId}`,
-    {
-      method: "PUT",
-      body: formData,
-    },
-  );
+  return apiFetch<NewsImage>(`/admin/news/${newsId}/images/${imageId}`, {
+    method: "PUT",
+    body: formData,
+  });
 }
 
 export function deleteAdminNewsImage(
   newsId: number,
   imageId: number,
 ): Promise<void> {
-  return apiFetch<void>(
-    `/admin/news/${newsId}/images/${imageId}`,
-    {
-      method: "DELETE",
-    },
-  );
+  return apiFetch<void>(`/admin/news/${newsId}/images/${imageId}`, {
+    method: "DELETE",
+  });
 }
