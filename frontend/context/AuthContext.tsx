@@ -80,11 +80,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * Logout tetap membersihkan state lokal meskipun request gagal.
    */
   const logout = useCallback(async (): Promise<void> => {
-    try {
-      await logoutRequest();
-    } finally {
-      setAdmin(null);
-    }
+    await logoutRequest();
+    setAdmin(null);
   }, []);
 
   /**

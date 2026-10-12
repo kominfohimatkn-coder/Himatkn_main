@@ -7,6 +7,7 @@ import { useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 
 import {
+  implementedAdminRoutes,
   isItemActive,
   managementNavItems,
   NavIcon,
@@ -27,33 +28,43 @@ export function AdminSidebar({
   const { admin, logout } = useAuth();
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
 
   const permissions = useMemo(
     () => new Set(admin?.permissions ?? []),
     [admin?.permissions],
   );
+  
+const visiblePrimaryItems = primaryNavItems.filter(
+  (item) =>
+    permissions.has(item.permission) &&
+    implementedAdminRoutes.has(item.href),
+);
 
-  const visiblePrimaryItems = primaryNavItems.filter((item) =>
-    permissions.has(item.permission),
-  );
-
-  const visibleManagementItems = managementNavItems.filter((item) =>
-    permissions.has(item.permission),
-  );
-
+const visibleManagementItems = managementNavItems.filter(
+  (item) =>
+    permissions.has(item.permission) &&
+    implementedAdminRoutes.has(item.href),
+);
+  
   async function handleLogout() {
-    if (isLoggingOut) {
-      return;
-    }
+    if (isLoggingOut) return;
 
     setIsLoggingOut(true);
+    setLogoutError(null);
 
     try {
       await logout();
-    } finally {
       router.replace("/login");
+    } catch {
+      setLogoutError(
+        "Logout gagal. Sesi server belum dapat dipastikan berakhir. Silakan coba lagi.",
+      );
+    } finally {
+      setIsLoggingOut(false);
     }
   }
+
 
   return (
     <div className="flex h-full flex-col bg-white">
@@ -141,6 +152,15 @@ export function AdminSidebar({
             </p>
           </div>
         </div>
+
+        {logoutError && (
+          <p
+            role="alert"
+            className="px-2 pt-2 text-xs leading-relaxed text-red-600"
+          >
+            {logoutError}
+          </p>
+        )}
 
         <button
           type="button"

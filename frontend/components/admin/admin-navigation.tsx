@@ -203,3 +203,8 @@ export function isItemActive(
     pathname.startsWith(`${item.href}/`)
   );
 }
+export const implementedAdminRoutes = new Set([
+  "/admin/dashboard",
+  "/admin/news",
+  "/admin/programs",
+]);
