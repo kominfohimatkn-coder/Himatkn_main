@@ -28,6 +28,12 @@ import type {
   NewsTag,
 } from "@/types/news";
 
+import {
+  NewsTags,
+  Spinner,
+  StatusBadge,
+} from "@/components/admin/news/NewsPrimitives";
+
 const PAGE_SIZE = 20;
 const REQUEST_SIZE = PAGE_SIZE + 1;
 
@@ -55,11 +61,6 @@ type DialogProps = {
   children: ReactNode;
 };
 
-const STATUS_LABELS: Record<NewsStatus, string> = {
-  draft: "Draft",
-  published: "Terbit",
-  archived: "Arsip",
-};
 
 const styles = {
   input:
@@ -109,50 +110,6 @@ function formatFileSize(size: number): string {
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${Math.ceil(size / 1024)} KB`;
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-// ## STATUS BADGE: beri penanda visual halus untuk status berita.
-function StatusBadge({ status }: { status: NewsStatus }) {
-  const colors: Record<NewsStatus, string> = {
-    draft: "border-gold/40 bg-gold/15 text-ink",
-    published: "border-bg-dark/20 bg-bg-dark/10 text-bg-dark",
-    archived: "border-paper-line bg-bg-light-2 text-ink-soft",
-  };
-
-  return (
-    <span
-      className={`inline-flex items-center border px-2.5 py-1 text-xs font-medium ${colors[status]}`}
-    >
-      {STATUS_LABELS[status]}
-    </span>
-  );
-}
-
-// ## NEWS TAGS: render daftar tag atau empty state ringkas.
-function NewsTags({ tags }: { tags: NewsTag[] }) {
-  if (tags.length === 0) {
-    return <span className="text-xs text-ink-soft/75">Tanpa tag</span>;
-  }
-
-  return (
-    <ul className="flex flex-wrap gap-x-3 gap-y-1">
-      {tags.map((tag) => (
-        <li key={tag.id} className="text-xs leading-5 text-ink-soft">
-          {tag.name}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-// ## SPINNER: indikator kecil untuk aksi yang sedang diproses.
-function Spinner() {
-  return (
-    <span
-      aria-hidden="true"
-      className="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none"
-    />
-  );
 }
 
 // ## SKELETON WRAPPER: menyatukan semantik aksesibilitas dan animasi skeleton.

@@ -23,12 +23,10 @@ export default function DashboardPage() {
   const hasDashboardPermission =
     admin?.permissions.includes("dashboard.view") ?? false;
 
-  useEffect(() => {
-    if (adminId === null || !hasDashboardPermission) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsLoading(false);
-      return;
-    }
+useEffect(() => {
+  if (adminId === null || !hasDashboardPermission) {
+    return;
+  }
 
     let active = true;
 
