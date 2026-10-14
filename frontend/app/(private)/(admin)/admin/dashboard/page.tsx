@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import {
   getDashboardStats,
   type DashboardStats,
-} from "@/lib/api/admin/dashboard";
+} from "@/lib/admin/dashboard";
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat("id-ID").format(value);

@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
-import { getAdminNews } from "@/lib/api/admin/news";
+import { getAdminNews } from "@/lib/admin/news";
 
 import type { AdminNews } from "@/types/news";
 
