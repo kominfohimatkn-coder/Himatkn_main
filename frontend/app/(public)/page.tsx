@@ -20,6 +20,7 @@ export default function HomePage() {
   return (
     <main>
       <h1>HIMATKN</h1>
+      <h2>Hola</h2>
 
       <p>
         API Status: {error || status}
