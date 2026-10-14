@@ -75,9 +75,7 @@ function getCsrfToken(): Promise<string> {
 
   const generation = csrfGeneration;
 
-  let pending: Promise<string>;
-
-  pending = fetchCsrfToken()
+  const pending = fetchCsrfToken()
     .then((token) => {
       if (generation === csrfGeneration) {
         csrfToken = token;
@@ -107,9 +105,7 @@ function refreshCsrfToken(rejectedToken: string): Promise<string> {
 
   const generation = csrfGeneration;
 
-  let pending: Promise<string>;
-
-  pending = fetchCsrfToken()
+  const pending = fetchCsrfToken()
     .then((token) => {
       if (generation === csrfGeneration) {
         csrfToken = token;
@@ -264,9 +260,8 @@ export function apiFetch<T>(
     return existing as Promise<T>;
   }
 
-  let pending: Promise<T>;
 
-  pending = request<T>(path, options, false).finally(() => {
+  const pending = request<T>(path, options, false).finally(() => {
     if (inFlightGetRequests.get(key) === pending) {
       inFlightGetRequests.delete(key);
     }
