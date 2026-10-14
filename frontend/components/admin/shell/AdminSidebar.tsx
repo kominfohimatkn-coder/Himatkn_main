@@ -166,7 +166,7 @@ const visibleManagementItems = managementNavItems.filter(
           type="button"
           onClick={handleLogout}
           disabled={isLoggingOut}
-          className="mt-2 flex min-h-11 w-full items-center gap-3 px-3 text-sm text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-2 flex min-h-11 w-full items-center gap-3 px-3 text-sm transition-colors bg-red-700 hover:bg-red-800 text-white! rounded-b-sm disabled:cursor-not-allowed disabled:opacity-50"
         >
           <NavIcon>
             <svg
