@@ -1,5 +1,6 @@
+// frontend/lib/api/client.ts
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
 
 if (!API_URL) {
   throw new Error("NEXT_PUBLIC_API_URL is not configured");
@@ -9,15 +10,11 @@ const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 const inFlightGetRequests = new Map<string, Promise<unknown>>();
 
-/**
- * Menyimpan Promise agar request mutasi yang berjalan bersamaan
- * menggunakan satu proses pengambilan token CSRF.
- */
+let csrfToken: string | null = null;
 let csrfPromise: Promise<string> | null = null;
+let csrfRefreshPromise: Promise<string> | null = null;
+let csrfGeneration = 0;
 
-/**
- * Mengambil token CSRF dari backend.
- */
 async function fetchCsrfToken(): Promise<string> {
   let response: Response;
 
@@ -25,6 +22,7 @@ async function fetchCsrfToken(): Promise<string> {
     response = await fetch(`${API_URL}/auth/csrf`, {
       method: "GET",
       credentials: "include",
+      cache: "no-store",
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
@@ -66,41 +64,81 @@ async function fetchCsrfToken(): Promise<string> {
   return data.csrf_token;
 }
 
-/**
- * Mendapatkan token CSRF.
- * Request yang bersamaan berbagi Promise yang sama.
- * Promise yang gagal dibuang agar bisa dicoba kembali.
- */
 function getCsrfToken(): Promise<string> {
-  if (csrfPromise) {
+  if (csrfToken !== null) {
+    return Promise.resolve(csrfToken);
+  }
+
+  if (csrfPromise !== null) {
     return csrfPromise;
   }
 
-  const pending: Promise<string> = fetchCsrfToken().catch(
-    (error: unknown) => {
+  const generation = csrfGeneration;
+
+  let pending: Promise<string>;
+
+  pending = fetchCsrfToken()
+    .then((token) => {
+      if (generation === csrfGeneration) {
+        csrfToken = token;
+      }
+
+      return token;
+    })
+    .finally(() => {
       if (csrfPromise === pending) {
         csrfPromise = null;
       }
-
-      throw error;
-    },
-  );
+    });
 
   csrfPromise = pending;
+
+  return pending;
+}
+
+function refreshCsrfToken(rejectedToken: string): Promise<string> {
+  if (csrfRefreshPromise !== null) {
+    return csrfRefreshPromise;
+  }
+
+  if (csrfToken !== null && csrfToken !== rejectedToken) {
+    return Promise.resolve(csrfToken);
+  }
+
+  const generation = csrfGeneration;
+
+  let pending: Promise<string>;
+
+  pending = fetchCsrfToken()
+    .then((token) => {
+      if (generation === csrfGeneration) {
+        csrfToken = token;
+      }
+
+      return token;
+    })
+    .finally(() => {
+      if (csrfRefreshPromise === pending) {
+        csrfRefreshPromise = null;
+      }
+    });
+
+  csrfRefreshPromise = pending;
+
   return pending;
 }
 
 /**
  * Mengosongkan cache token CSRF.
- * Cookie browser tidak dihapus oleh fungsi ini.
+ * Fungsi ini tidak menghapus cookie browser secara langsung.
  */
 export function resetCsrfToken(): void {
+  csrfGeneration += 1;
+  csrfToken = null;
   csrfPromise = null;
+  csrfRefreshPromise = null;
 }
 
-/**
- * Membaca pesan error backend.
- */
 async function readErrorMessage(response: Response): Promise<string> {
   const data: unknown = await response.json().catch(() => null);
 
@@ -116,12 +154,6 @@ async function readErrorMessage(response: Response): Promise<string> {
   return `Permintaan API gagal (${response.status}).`;
 }
 
-/**
- * Menjalankan request API.
- *
- * Retry hanya dilakukan satu kali jika backend secara eksplisit
- * menyatakan bahwa request ditolak karena CSRF.
- */
 async function request<T>(
   path: string,
   options: RequestInit,
@@ -131,17 +163,23 @@ async function request<T>(
   const requiresCsrf = UNSAFE_METHODS.has(method);
   const headers = new Headers(options.headers);
 
+  const isFormData =
+    typeof FormData !== "undefined" && options.body instanceof FormData;
+
   if (
-    options.body &&
-    !(options.body instanceof FormData) &&
+    options.body !== undefined &&
+    options.body !== null &&
+    !isFormData &&
     !headers.has("Content-Type")
   ) {
     headers.set("Content-Type", "application/json");
   }
 
+  let usedCsrfToken: string | null = null;
+
   if (requiresCsrf) {
-    const token = await getCsrfToken();
-    headers.set("X-CSRF-Token", token);
+    usedCsrfToken = await getCsrfToken();
+    headers.set("X-CSRF-Token", usedCsrfToken);
   }
 
   let response: Response;
@@ -168,8 +206,13 @@ async function request<T>(
     const isCsrfFailure =
       response.status === 403 && /\bcsrf\b/i.test(message);
 
-    if (requiresCsrf && isCsrfFailure && !isRetry) {
-      resetCsrfToken();
+    if (
+      requiresCsrf &&
+      isCsrfFailure &&
+      !isRetry &&
+      usedCsrfToken !== null
+    ) {
+      await refreshCsrfToken(usedCsrfToken);
 
       return request<T>(path, options, true);
     }
@@ -185,7 +228,10 @@ async function request<T>(
 }
 
 /**
- * Fungsi utama yang digunakan oleh seluruh modul API.
+ * Fungsi utama untuk seluruh modul API.
+ *
+ * GET biasa yang berjalan bersamaan dapat berbagi Promise.
+ * Request dengan AbortSignal atau opsi khusus tidak dideduplikasi.
  */
 export function apiFetch<T>(
   path: string,
@@ -193,9 +239,6 @@ export function apiFetch<T>(
 ): Promise<T> {
   const method = (options.method ?? "GET").toUpperCase();
 
-  // Deduplikasi hanya untuk GET biasa di browser.
-  // Request dengan AbortSignal tidak digabung agar mekanisme
-  // pembatalan request tetap berfungsi sesuai pemiliknya.
   const canDeduplicate =
     typeof window !== "undefined" &&
     method === "GET" &&
@@ -221,7 +264,9 @@ export function apiFetch<T>(
     return existing as Promise<T>;
   }
 
-  const pending = request<T>(path, options, false).finally(() => {
+  let pending: Promise<T>;
+
+  pending = request<T>(path, options, false).finally(() => {
     if (inFlightGetRequests.get(key) === pending) {
       inFlightGetRequests.delete(key);
     }
