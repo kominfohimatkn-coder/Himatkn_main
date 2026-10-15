@@ -1,14 +1,13 @@
+
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
+import FormDialog from "@/components/admin/shared/FormDialog";
 import { getAdminDivisions } from "@/lib/admin/organization";
 
 import type { AdminProgram, CreateProgramPayload } from "@/types/programs";
-import type {
-  AdminDivision,
-  AdminPeriod,
-} from "@/types/organization";
+import type { AdminDivision, AdminPeriod } from "@/types/organization";
 
 interface ProgramFormDialogProps {
   program?: AdminProgram;
@@ -106,11 +105,13 @@ export default function ProgramFormDialog({
   const isDivisionDataReady =
     divisionState?.periodId === selectedPeriodId;
 
-  const divisions =
-    isDivisionDataReady ? divisionState.items : [];
+  const divisions = isDivisionDataReady
+    ? divisionState.items
+    : [];
 
-  const divisionError =
-    isDivisionDataReady ? divisionState.error : "";
+  const divisionError = isDivisionDataReady
+    ? divisionState.error
+    : "";
 
   function updateField(
     field: keyof ProgramFormState,
@@ -122,9 +123,7 @@ export default function ProgramFormDialog({
     }));
   }
 
-  async function handleSubmit(
-    event: React.FormEvent<HTMLFormElement>,
-  ) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
 
@@ -174,287 +173,283 @@ export default function ProgramFormDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/45 p-4">
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="program-form-title"
-        className="my-auto max-h-[92vh] w-full max-w-2xl overflow-y-auto border border-paper-line bg-bg-light shadow-xl"
+    <FormDialog
+      open
+      eyebrow="Manajemen program"
+      title={
+        program ? "Edit program kerja" : "Tambah program kerja"
+      }
+      description="Lengkapi informasi program sesuai periode organisasi."
+      size="lg"
+      busy={isSaving}
+      onClose={onClose}
+    >
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-5 p-5 sm:p-7"
       >
-        <header className="border-b border-paper-line px-5 py-5 sm:px-7">
-          <p className="text-xs font-semibold uppercase tracking-widest text-gold">
-            Manajemen program
-          </p>
-
-          <h2
-            id="program-form-title"
-            className="mt-2 font-serif text-2xl font-semibold text-bg-dark"
+        {periodsError && (
+          <div
+            role="alert"
+            className="border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-800"
           >
-            {program ? "Edit program kerja" : "Tambah program kerja"}
-          </h2>
+            Daftar periode gagal dimuat: {periodsError}
+          </div>
+        )}
 
-          <p className="mt-2 text-sm leading-6 text-ink-soft">
-            Lengkapi informasi program sesuai periode organisasi.
+        {periods.length === 0 && !program && (
+          <div
+            role="alert"
+            className="border border-gold/40 bg-gold/10 p-3 text-sm leading-6 text-ink"
+          >
+            Periode belum tersedia atau akun tidak memiliki izin untuk
+            membacanya. Program baru belum bisa dibuat.
+          </div>
+        )}
+
+        <div>
+          <label htmlFor="program-name" className={labelStyle}>
+            Nama program
+          </label>
+
+          <input
+            id="program-name"
+            name="name"
+            value={form.name}
+            onChange={(event) =>
+              updateField("name", event.target.value)
+            }
+            minLength={2}
+            maxLength={255}
+            required
+            className={inputStyle}
+            placeholder="Contoh: Seminar Nasional"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="program-slug" className={labelStyle}>
+            Slug
+          </label>
+
+          <input
+            id="program-slug"
+            name="slug"
+            value={form.slug}
+            onChange={(event) =>
+              updateField("slug", event.target.value)
+            }
+            minLength={2}
+            maxLength={255}
+            required
+            className={inputStyle}
+            placeholder="seminar-nasional"
+          />
+
+          <p className="mt-1 text-xs leading-5 text-ink-soft">
+            Gunakan format singkat tanpa spasi, misalnya
+            seminar-nasional.
           </p>
-        </header>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5 p-5 sm:p-7">
-          {periodsError && (
-            <div
-              role="alert"
-              className="border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-800"
-            >
-              Daftar periode gagal dimuat: {periodsError}
-            </div>
-          )}
+        <div>
+          <label htmlFor="program-period" className={labelStyle}>
+            Periode organisasi
+          </label>
 
-          {periods.length === 0 && !program && (
-            <div
-              role="alert"
-              className="border border-gold/40 bg-gold/10 p-3 text-sm leading-6 text-ink"
-            >
-              Periode belum tersedia atau akun tidak memiliki izin untuk
-              membacanya. Program baru belum bisa dibuat.
-            </div>
-          )}
+          <select
+            id="program-period"
+            name="period_id"
+            value={form.period_id}
+            onChange={(event) => {
+              setForm((current) => ({
+                ...current,
+                period_id: event.target.value,
+                division_id: "",
+              }));
+            }}
+            required
+            className={inputStyle}
+          >
+            {!form.period_id && (
+              <option value="">Pilih periode</option>
+            )}
 
-          <div>
-            <label htmlFor="program-name" className={labelStyle}>
-              Nama program
-            </label>
-
-            <input
-              id="program-name"
-              name="name"
-              value={form.name}
-              onChange={(event) =>
-                updateField("name", event.target.value)
-              }
-              minLength={2}
-              maxLength={255}
-              required
-              className={inputStyle}
-              placeholder="Contoh: Seminar Nasional"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="program-slug" className={labelStyle}>
-              Slug
-            </label>
-
-            <input
-              id="program-slug"
-              name="slug"
-              value={form.slug}
-              onChange={(event) =>
-                updateField("slug", event.target.value)
-              }
-              minLength={2}
-              maxLength={255}
-              required
-              className={inputStyle}
-              placeholder="seminar-nasional"
-            />
-
-            <p className="mt-1 text-xs leading-5 text-ink-soft">
-              Gunakan format singkat tanpa spasi, misalnya seminar-nasional.
-            </p>
-          </div>
-
-          <div>
-            <label htmlFor="program-period" className={labelStyle}>
-              Periode organisasi
-            </label>
-
-            <select
-              id="program-period"
-              name="period_id"
-              value={form.period_id}
-              onChange={(event) => {
-                setForm((current) => ({
-                  ...current,
-                  period_id: event.target.value,
-                  division_id: "",
-                }));
-              }}
-              required
-              className={inputStyle}
-            >
-              {!form.period_id && (
-                <option value="">Pilih periode</option>
+            {program &&
+              !periods.some(
+                (period) => period.id === program.period_id,
+              ) && (
+                <option value={String(program.period_id)}>
+                  Periode #{program.period_id} (saat ini)
+                </option>
               )}
 
-              {program &&
-                !periods.some(
-                  (period) => period.id === program.period_id,
-                ) && (
-                  <option value={String(program.period_id)}>
-                    Periode #{program.period_id} (saat ini)
-                  </option>
-                )}
+            {periods.map((period) => (
+              <option key={period.id} value={String(period.id)}>
+                {period.name}
+                {period.is_active ? " (aktif)" : ""}
+              </option>
+            ))}
+          </select>
+        </div>
 
-              {periods.map((period) => (
-                <option key={period.id} value={String(period.id)}>
-                  {period.name}
-                  {period.is_active ? " (aktif)" : ""}
+        <div>
+          <label htmlFor="program-division" className={labelStyle}>
+            Divisi
+          </label>
+
+          <select
+            id="program-division"
+            name="division_id"
+            value={form.division_id}
+            onChange={(event) =>
+              updateField("division_id", event.target.value)
+            }
+            disabled={!form.period_id || Boolean(divisionError)}
+            className={inputStyle}
+          >
+            <option value="">Tidak terkait divisi tertentu</option>
+
+            {form.division_id &&
+              !divisions.some(
+                (division) =>
+                  division.id === Number(form.division_id),
+              ) && (
+                <option value={form.division_id}>
+                  Divisi #{form.division_id} (saat ini)
                 </option>
-              ))}
-            </select>
-          </div>
+              )}
 
+            {divisions.map((division) => (
+              <option
+                key={division.id}
+                value={String(division.id)}
+              >
+                {division.name}
+              </option>
+            ))}
+          </select>
+
+          {divisionError && (
+            <p role="alert" className="mt-1 text-xs text-red-700">
+              Daftar divisi gagal dimuat: {divisionError}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label
+            htmlFor="program-description"
+            className={labelStyle}
+          >
+            Deskripsi
+          </label>
+
+          <textarea
+            id="program-description"
+            name="description"
+            value={form.description}
+            onChange={(event) =>
+              updateField("description", event.target.value)
+            }
+            rows={4}
+            className={inputStyle}
+            placeholder="Jelaskan tujuan program kerja..."
+          />
+        </div>
+
+        <div>
+          <label htmlFor="program-status" className={labelStyle}>
+            Status
+          </label>
+
+          <input
+            id="program-status"
+            name="status"
+            value={form.status}
+            onChange={(event) =>
+              updateField("status", event.target.value)
+            }
+            maxLength={30}
+            className={inputStyle}
+            placeholder="planned"
+          />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="program-division" className={labelStyle}>
-              Divisi
-            </label>
-
-            <select
-              id="program-division"
-              name="division_id"
-              value={form.division_id}
-              onChange={(event) =>
-                updateField("division_id", event.target.value)
-              }
-              disabled={
-                !form.period_id ||
-                Boolean(divisionError)
-              }
-              className={inputStyle}
+            <label
+              htmlFor="program-start-date"
+              className={labelStyle}
             >
-              <option value="">Tidak terkait divisi tertentu</option>
-
-              {form.division_id &&
-                !divisions.some(
-                  (division) =>
-                    division.id === Number(form.division_id),
-                ) && (
-                  <option value={form.division_id}>
-                    Divisi #{form.division_id} (saat ini)
-                  </option>
-                )}
-
-              {divisions.map((division) => (
-                <option key={division.id} value={String(division.id)}>
-                  {division.name}
-                </option>
-              ))}
-            </select>
-
-            {divisionError && (
-              <p role="alert" className="mt-1 text-xs text-red-700">
-                Daftar divisi gagal dimuat: {divisionError}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="program-description" className={labelStyle}>
-              Deskripsi
-            </label>
-
-            <textarea
-              id="program-description"
-              name="description"
-              value={form.description}
-              onChange={(event) =>
-                updateField("description", event.target.value)
-              }
-              rows={4}
-              className={inputStyle}
-              placeholder="Jelaskan tujuan program kerja..."
-            />
-          </div>
-
-          <div>
-            <label htmlFor="program-status" className={labelStyle}>
-              Status
+              Tanggal mulai
             </label>
 
             <input
-              id="program-status"
-              name="status"
-              value={form.status}
+              id="program-start-date"
+              name="start_date"
+              type="date"
+              value={form.start_date}
               onChange={(event) =>
-                updateField("status", event.target.value)
+                updateField("start_date", event.target.value)
               }
-              maxLength={30}
               className={inputStyle}
-              placeholder="planned"
             />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="program-start-date" className={labelStyle}>
-                Tanggal mulai
-              </label>
-
-              <input
-                id="program-start-date"
-                name="start_date"
-                type="date"
-                value={form.start_date}
-                onChange={(event) =>
-                  updateField("start_date", event.target.value)
-                }
-                className={inputStyle}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="program-end-date" className={labelStyle}>
-                Tanggal selesai
-              </label>
-
-              <input
-                id="program-end-date"
-                name="end_date"
-                type="date"
-                value={form.end_date}
-                onChange={(event) =>
-                  updateField("end_date", event.target.value)
-                }
-                className={inputStyle}
-              />
-            </div>
-          </div>
-
-          {error && (
-            <div
-              role="alert"
-              className="border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-800"
+          <div>
+            <label
+              htmlFor="program-end-date"
+              className={labelStyle}
             >
-              {error}
-            </div>
-          )}
+              Tanggal selesai
+            </label>
 
-          <footer className="flex flex-col-reverse gap-2 border-t border-paper-line pt-5 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSaving}
-              className="min-h-11 border border-paper-line px-4 py-2 text-sm font-medium hover:bg-bg-light-2 disabled:opacity-50"
-            >
-              Batal
-            </button>
-
-            <button
-              type="submit"
-              disabled={
-                isSaving ||
-                (!program && periods.length === 0)
+            <input
+              id="program-end-date"
+              name="end_date"
+              type="date"
+              value={form.end_date}
+              onChange={(event) =>
+                updateField("end_date", event.target.value)
               }
-              className="min-h-11 border border-bg-dark bg-bg-dark px-4 py-2 text-sm font-medium text-white hover:bg-bg-dark/90 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isSaving
-                ? "Menyimpan..."
-                : program
-                  ? "Simpan perubahan"
-                  : "Simpan program"}
-            </button>
-          </footer>
-        </form>
-      </section>
-    </div>
+              className={inputStyle}
+            />
+          </div>
+        </div>
+
+        {error && (
+          <div
+            role="alert"
+            className="border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-800"
+          >
+            {error}
+          </div>
+        )}
+
+        <footer className="flex flex-col-reverse gap-2 border-t border-paper-line pt-5 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSaving}
+            className="min-h-11 border border-paper-line px-4 py-2 text-sm font-medium hover:bg-bg-light-2 disabled:opacity-50"
+          >
+            Batal
+          </button>
+
+          <button
+            type="submit"
+            disabled={isSaving || (!program && periods.length === 0)}
+            className="min-h-11 border border-bg-dark bg-bg-dark px-4 py-2 text-sm font-medium text-white hover:bg-bg-dark/90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isSaving
+              ? "Menyimpan..."
+              : program
+                ? "Simpan perubahan"
+                : "Simpan program"}
+          </button>
+        </footer>
+      </form>
+    </FormDialog>
   );
 }
