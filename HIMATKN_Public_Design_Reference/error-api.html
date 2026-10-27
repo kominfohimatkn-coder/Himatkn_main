@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="HIMATKN public design reference">
+  <title>API Error State • HIMATKN</title>
+  <link rel="stylesheet" href="assets/site.css">
+  
+</head>
+<body data-page="">
+  <header class="site-header" data-site-header></header>
+  
+<main><section class="page-hero"><div class="page-hero-inner"><div class="kicker">State</div><h1>Gagal Memuat Data.</h1><p>Gunakan state ini ketika fetch ke FastAPI gagal tetapi route frontend masih valid.</p></div></section><section class="section section-paper"><div class="section-inner"><div class="empty-box"><div class="state-icon" data-icon="server"></div><h3>Terjadi masalah saat mengambil data</h3><p>Pesan user-facing dibuat singkat. Detail error teknis tetap dicatat di log, bukan ditampilkan penuh pada visitor.</p><div class="state-actions"><button class="btn btn-dark" type="button" onclick="location.reload()">Coba lagi</button><a class="btn btn-light" href="index.html">Beranda</a></div></div></div></section></main>
+  <footer class="site-footer" data-site-footer></footer>
+  <script src="assets/icons.js"></script>
+  <script>window.ICONS = ICONS;</script>
+  <script src="assets/site.js"></script>
+</body>
+</html>

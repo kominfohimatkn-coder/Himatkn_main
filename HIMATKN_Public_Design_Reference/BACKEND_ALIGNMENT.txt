@@ -1,0 +1,11 @@
+# Backend alignment quick map
+
+public news -> /api/v1/public/news
+public news detail -> /api/v1/public/news/{slug}
+public programs -> /api/v1/public/programs
+public organization -> /api/v1/public/organization
+public visit tracking -> POST /api/v1/public/visits?page=...
+
+No public program detail route exists in current backend.
+No standalone public gallery route exists in current backend.
+No public documents, agenda, site settings, admin, or notification route exists in current backend.
