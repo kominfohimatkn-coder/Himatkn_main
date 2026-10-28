@@ -9,6 +9,7 @@ import type {
 interface GetPublicNewsParams {
   offset?: number;
   limit?: number;
+  signal?: AbortSignal;
 }
 
 export function getPublicNews(
@@ -21,6 +22,10 @@ export function getPublicNews(
 
   return apiFetch<NewsListResponse<PublicNewsItem>>(
     `/public/news?${query.toString()}`,
+    {
+      cache: "no-store",
+      signal: params.signal,
+    },
   );
 }
 

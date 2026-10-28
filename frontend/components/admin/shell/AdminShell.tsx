@@ -47,7 +47,7 @@ export function AdminShell({
   }, [mobileOpen, closeMobileMenu]);
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-950">
+    <div className="admin-theme min-h-screen bg-zinc-50 text-zinc-950">
       {mobileOpen && (
         <button
           type="button"

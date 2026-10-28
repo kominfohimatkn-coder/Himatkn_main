@@ -2,8 +2,12 @@
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
 
-if (!API_URL) {
-  throw new Error("NEXT_PUBLIC_API_URL is not configured");
+function getApiUrl(): string {
+  if (!API_URL) {
+    throw new Error("NEXT_PUBLIC_API_URL is not configured");
+  }
+
+  return API_URL;
 }
 
 const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -19,7 +23,7 @@ async function fetchCsrfToken(): Promise<string> {
   let response: Response;
 
   try {
-    response = await fetch(`${API_URL}/auth/csrf`, {
+    response = await fetch(`${getApiUrl()}/auth/csrf`, {
       method: "GET",
       credentials: "include",
       cache: "no-store",
@@ -181,7 +185,7 @@ async function request<T>(
   let response: Response;
 
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await fetch(`${getApiUrl()}${path}`, {
       ...options,
       credentials: "include",
       headers,
