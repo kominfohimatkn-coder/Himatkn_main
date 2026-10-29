@@ -323,6 +323,53 @@ Informasi ini berasal dari audit repo remote dan dapat berubah. Agent harus veri
 
 ---
 
+### Sesi 2026-10-29 - Perbaikan build Vercel Google Fonts (Next.js 16.4.3)
+
+- **Status:** Selesai; tidak commit, push, atau deploy.
+- **Commit dasar:** `c2919f1c066f73e61488dffa7f4c434a25ee5ef8`.
+- **Branch:** `feat/admin-ui-foundation`.
+- **Masalah:** Vercel gagal pada `next/font/google` Playfair Display melalui Turbopack dengan error `Can't resolve '@vercel/turbopack-next/internal/font/google/font` dan `next/font/google queries have exactly one entry`.
+- **Verifikasi rilis:**
+  - `npm view next@16.4.3` menunjukkan `16.4.3` sebagai dist-tag `latest` dan versi stabil.
+  - Catatan rilis resmi Next.js `v16.4.3` memuat perbaikan "Fix extensionless Google font URLs in both bundlers" (PR #100277), yaitu area kegagalan yang sama.
+  - Peer dependency Next.js 16.4.3 menerima React `^18.2.0 || ^19.0.0`; React proyek tetap `19.2.8` dan tidak diubah.
+  - Next.js 16.4.3 membutuhkan Node `>=20.9.0`; validasi lokal memakai Node `24.22.1`.
+  - `frontend/next.config.ts` tetap kosong dan tidak diubah.
+- **Perubahan dependency:**
+  - Sebelum: `next` `16.3.2`, `eslint-config-next` `16.3.2`.
+  - Sesudah: `next` `16.4.3`, `eslint-config-next` `16.4.3`.
+  - React dan React DOM tetap `19.2.8`.
+  - Package manager proyek adalah npm (`frontend/package-lock.json`, lockfile v3). Tidak ada lockfile kedua yang dibuat.
+  - Perubahan lockfile hanya untuk Next.js, paket `@next/*`, `eslint-config-next`, `sharp`/libvips, dan `fastq` sebagai transitive dependency yang ikut berubah.
+- **File yang diubah:**
+  - `frontend/package.json`
+  - `frontend/package-lock.json`
+  - `progress.md`
+- **Pemeriksaan yang dijalankan + hasil:**
+  - `npm ci`: berhasil setelah dev server lama dihentikan; 359 paket terpasang dari lockfile. npm melaporkan 4 high severity vulnerability yang tidak diperbaiki karena di luar scope perubahan ini.
+  - `npm run lint`: PASS, tanpa output error.
+  - `.next` dihapus sebelum build agar tidak memakai cache lama.
+  - `npm run build`: PASS dengan `Next.js 16.4.3 (Turbopack)`, compile sukses, TypeScript sukses, dan seluruh route existing terbentuk. Tidak ada error `next/font/google`.
+  - Build masih menampilkan warning lama tentang `pnpm-lock.yaml` di luar repository (`C:\Users\faqih`). File tersebut bukan lockfile proyek dan tidak dipakai; warning tidak menggagalkan build.
+  - `git diff --check`: tidak ada whitespace error; hanya warning normalisasi LF/CRLF.
+  - Playwright/Chrome pada production build bersih di 1280 px: lima keluarga font publik termuat (`Space Grotesk`, `Playfair Display`, `JetBrains Mono`, `Crimson Text`, `Inter`), `document.fonts.status` bernilai `loaded`, dan tidak ada overflow (`scrollWidth === clientWidth`).
+  - Tampilan font publik tidak berubah: body memakai Space Grotesk, heading memakai Playfair Display, tagline memakai Inter, kicker memakai JetBrains Mono, dan judul publikasi memakai Crimson Text.
+  - `/login` tetap memakai Playfair Display untuk heading dan Inter untuk input, tanpa overflow. `/admin/dashboard` tanpa sesi tetap diarahkan ke `/login`.
+  - Pemeriksaan login lokal sempat mencatat error CORS `auth/me` dari backend lokal pada origin port validasi; ini bukan regresi font dan konfigurasi CORS tidak diubah.
+- **Keputusan teknis:**
+  - Upgrade versi dipilih karena changelog resmi 16.4.3 secara eksplisit memperbaiki resolusi URL Google Fonts di kedua bundler. `next/font/local`, penggantian font, dan perubahan konfigurasi aplikasi tidak diperlukan.
+- **Konfirmasi batas scope:**
+  - Backend berubah: Tidak
+  - Database/schema/migration berubah: Tidak
+  - API contract berubah: Tidak
+  - Autentikasi/CORS/deployment berubah: Tidak
+  - Secret/kredensial diekspos: Tidak
+  - Commit/push/merge/rebase/deploy: Tidak
+- **Langkah berikutnya:**
+  - Tinjau diff dependency dan jalankan build Vercel dari commit lokal yang sudah memuat perubahan ini setelah di-commit oleh pemilik repository.
+
+---
+
 ## Template catatan sesi berikutnya
 
 Salin bagian ini dan isi dengan fakta aktual setiap selesai satu batch. Jangan mengklaim check/test berhasil jika tidak dijalankan.
