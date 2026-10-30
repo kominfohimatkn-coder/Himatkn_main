@@ -14,6 +14,37 @@ export interface AdminDivision {
   sort_order: number;
 }
 
+export interface PublicOrganizationPeriod {
+  id: number;
+  name: string;
+}
+
+export interface PublicOrganizationDivision {
+  id: number;
+  name: string;
+  description: string | null;
+}
+
+export interface PublicOrganizationPosition {
+  id: number;
+  name: string;
+}
+
+export interface PublicOrganizationMember {
+  id: number;
+  name: string;
+  division_id: number | null;
+  position_id: number;
+  photo_url: string | null;
+}
+
+export interface PublicOrganizationResponse {
+  period: PublicOrganizationPeriod | null;
+  divisions: PublicOrganizationDivision[];
+  members: PublicOrganizationMember[];
+  positions: PublicOrganizationPosition[];
+}
+
 export interface OrganizationListResponse<T> {
   items: T[];
 }

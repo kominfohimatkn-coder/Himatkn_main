@@ -3,9 +3,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
+import { OrganizationSection } from "@/components/public/OrganizationSection";
 import { PublicationsSection } from "@/components/public/PublicationsSection";
 import { ButtonLink } from "@/components/ui/Button";
 import { getPublicNews } from "@/lib/public/news";
+import { loadPublicOrganization } from "@/lib/public/organization";
 import type { PublicNewsItem } from "@/types/news";
 
 export const dynamic = "force-dynamic";
@@ -62,7 +64,10 @@ async function loadLatestNews(): Promise<{
 }
 
 export default async function HomePage() {
-  const { items, hasError } = await loadLatestNews();
+  const [news, organization] = await Promise.all([
+    loadLatestNews(),
+    loadPublicOrganization(),
+  ]);
 
   return (
     <>
@@ -101,7 +106,7 @@ export default async function HomePage() {
               Lihat program kerja
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </ButtonLink>
-            <ButtonLink href="#struktur" variant="secondary">
+            <ButtonLink href="/struktur" variant="secondary">
               Kenali pengurus
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </ButtonLink>
@@ -174,85 +179,15 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <PublicationsSection items={items} hasError={hasError} />
+      <PublicationsSection
+        items={news.items}
+        hasError={news.hasError}
+      />
 
-      <section
-        id="struktur"
-        className="public-section bg-paper"
-        aria-labelledby="structure-title"
-      >
-        <div className="site-container">
-          <div className="max-w-180">
-            <p className="kicker">Struktur kepengurusan</p>
-            <h2 id="structure-title" className="section-title mt-3">
-              Satu kepengurusan, banyak peran.
-            </h2>
-            <p className="section-copy">
-              Struktur HIMATKN akan ditampilkan setelah data periode aktif dan
-              susunan pengurus resmi tersedia.
-            </p>
-          </div>
-
-          <div className="structure-frame">
-            <div className="structure-bph">
-              <p className="structure-label">Badan Pengurus Harian</p>
-              <div className="structure-bph__body">
-                <h3>Data pengurus belum tersedia.</h3>
-                <p>
-                  Nama dan jabatan pengurus tidak ditampilkan sebelum datanya
-                  diverifikasi.
-                </p>
-              </div>
-            </div>
-
-            <div className="structure-divisions">
-              <div className="structure-cell">
-                <p className="structure-label">Divisi</p>
-                <h3>Data divisi belum tersedia.</h3>
-                <p>
-                  Nama divisi dan anggotanya akan tampil setelah periode aktif
-                  tersedia.
-                </p>
-              </div>
-
-              <div className="structure-cell">
-                <p className="structure-label">Periode aktif</p>
-                <h3>Belum diverifikasi.</h3>
-                <p>
-                  Jumlah divisi dan periode tidak dicantumkan sampai data
-                  organisasi terverifikasi.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="structure-summary">
-            <div>
-              <p className="structure-summary__mobile-title">
-                Data kepengurusan belum tersedia.
-              </p>
-              <div className="structure-summary__metrics">
-                <div>
-                  <p className="structure-summary__label">Jumlah divisi</p>
-                  <p className="structure-summary__value">
-                    Belum diverifikasi
-                  </p>
-                </div>
-                <div>
-                  <p className="structure-summary__label">Periode aktif</p>
-                  <p className="structure-summary__value">
-                    Belum diverifikasi
-                  </p>
-                </div>
-              </div>
-            </div>
-            <ButtonLink href="#tentang" variant="outline">
-              Tentang HIMATKN
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </ButtonLink>
-          </div>
-        </div>
-      </section>
+      <OrganizationSection
+        data={organization.data}
+        hasError={organization.hasError}
+      />
 
       <section
         id="kontak"

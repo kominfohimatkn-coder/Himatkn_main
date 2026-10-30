@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export function SiteFooter() {
   const year = new Date().getFullYear();
 
@@ -11,9 +13,20 @@ export function SiteFooter() {
           © {year} HIMATKN — Himpunan Mahasiswa Teknokimia Nuklir
         </p>
 
-        <a href="#top" className="w-fit py-1.5 hover:text-gold-bright">
-          Kembali ke atas
-        </a>
+        <nav
+          aria-label="Tautan footer"
+          className="flex items-center gap-4"
+        >
+          <Link
+            href="/struktur"
+            className="w-fit py-1.5 hover:text-gold-bright"
+          >
+            Struktur
+          </Link>
+          <a href="#top" className="w-fit py-1.5 hover:text-gold-bright">
+            Kembali ke atas
+          </a>
+        </nav>
       </div>
     </footer>
   );

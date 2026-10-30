@@ -370,6 +370,65 @@ Informasi ini berasal dari audit repo remote dan dapat berubah. Agent harus veri
 
 ---
 
+### Sesi 2026-10-29 - Batch 2.1 Integrasi struktur kepengurusan homepage
+
+- **Status:** Selesai; tidak commit, push, merge, rebase, atau deploy.
+- **Commit dasar:** `168473ba9a233e55cd8a4c8b66d2485c7a6bb11e`.
+- **Branch:** `feat/admin-ui-foundation`.
+- **Tujuan batch:** mengganti placeholder section Struktur Kepengurusan dengan data aktual dari `GET /api/v1/public/organization`, tanpa mengubah backend atau mengintegrasikan endpoint program.
+- **Kontrak dan data yang teramati:**
+  - Endpoint lokal merespons `200` dengan top-level key `period`, `divisions`, `members`, dan `positions`.
+  - `period` berisi `id` dan `name`; `divisions` berisi `id`, `name`, `description`; `members` berisi `id`, `name`, `division_id`, `position_id`, `photo_url`; `positions` berisi `id`, `name`.
+  - Periode aktif yang teramati: `2025/2026`.
+  - Jumlah aktual: 9 divisi, 57 anggota, dan 10 posisi/jabatan.
+  - Tidak ada anggota dengan `division_id` null, `position_id` null, atau `photo_url` terisi pada respons yang diperiksa.
+  - BPH tidak memiliki flag khusus pada model maupun respons. BPH muncul sebagai divisi bernama `Badan Pengurus Harian (BPH)` dan dikelompokkan netral berdasarkan `division_id`, bukan ditebak sebagai tipe tersendiri.
+- **Yang selesai:**
+  - Tipe publik ditambahkan ke `frontend/types/organization.ts` sesuai bentuk respons nyata; tipe admin existing tidak diubah.
+  - Service `frontend/lib/public/organization.ts` ditambahkan menggunakan `apiFetch`, `cache: "no-store"`, dan `AbortSignal`.
+  - Homepage memuat berita dan organisasi secara terpisah dengan timeout 5 detik; kegagalan salah satu endpoint tidak menjatuhkan section lainnya.
+  - `OrganizationSection` menampilkan periode aktif, divisi, anggota, jabatan, jumlah divisi, dan jumlah anggota dari data aktual. Tidak ada nama, jumlah, atau periode contoh yang di-hardcode.
+  - State dibedakan eksplisit: kegagalan API memakai panel `role="alert"` dan tombol coba lagi; tidak ada periode aktif memakai empty state tanpa tombol error; periode aktif tanpa divisi dan divisi tanpa anggota memiliki pesan masing-masing.
+  - Anggota dengan relasi divisi yang tidak tersedia dikelompokkan sebagai `Tanpa divisi` dengan keterangan bahwa respons API tidak menyertakan divisinya, bukan diberi divisi karangan.
+  - Layout desktop memakai dua kolom; mobile menjadi satu kolom. Jika jumlah divisi ganjil, sel terakhir memenuhi lebar grid agar tidak menyisakan blok kosong.
+  - Ringkasan section memakai dua metrik aktual: jumlah divisi dan jumlah anggota.
+- **File yang diubah/ditambahkan:**
+  - `frontend/app/(public)/page.tsx`
+  - `frontend/app/globals.css`
+  - `frontend/types/organization.ts`
+  - `frontend/lib/public/organization.ts` (baru)
+  - `frontend/components/public/OrganizationSection.tsx` (baru)
+  - `progress.md`
+  - `docs/validation/batch-2.1/` (screenshot dan laporan validasi, untracked)
+- **Pemeriksaan yang dijalankan + hasil:**
+  - `npm run lint`: PASS.
+  - `.next` dihapus setelah dev server dihentikan sementara, lalu `npm run build`: PASS dengan Next.js 16.4.3, TypeScript sukses, dan route final tidak memuat route validasi sementara.
+  - Pemeriksaan API lokal: `GET /api/v1/public/organization` merespons `200`; shape, periode, dan jumlah dicatat di `docs/validation/batch-2.1/organization-integration-report.json`.
+  - Chrome production build pada 1280 px: 9 divisi, 57 baris anggota, grid dua kolom, heading Playfair Display, body Space Grotesk, `scrollWidth` sama dengan viewport.
+  - Chrome production build pada 390 px: 9 divisi, 57 baris anggota, grid satu kolom, tidak ada horizontal overflow.
+  - State tanpa periode, error API, periode tanpa divisi, dan divisi tanpa anggota diperiksa melalui route sementara di build validasi. Route tersebut sudah dihapus dan tidak ada pada build final.
+  - `git diff --check`: tidak ada whitespace error; hanya warning normalisasi LF/CRLF.
+  - Dev server lokal dikembalikan berjalan di port 3000 dan halaman merespons `200` setelah build bersih.
+- **Risiko/pertanyaan yang belum terjawab:**
+  - Belum ada penanda BPH eksplisit. Perlu keputusan pemilik data apakah divisi BPH harus selalu ditampilkan sebagai baris khusus atau tetap sebagai bagian grid divisi.
+  - State tanpa periode aktif hanya diuji melalui data komponen sementara karena backend lokal saat ini memiliki periode aktif; tidak ada perubahan database untuk membuat state tersebut.
+  - Endpoint program kerja sengaja belum diintegrasikan; aturan visibilitas/statusnya tetap belum dikonfirmasi.
+  - Detail kontak, logo resmi, hak pakai foto hero, dan verifikasi visual admin setelah login masih menjadi blocker yang sudah tercatat pada sesi sebelumnya.
+- **Konfirmasi batas scope:**
+  - Backend berubah: Tidak
+  - Database/schema/migration berubah: Tidak
+  - API contract berubah: Tidak
+  - Autentikasi/CORS/CSRF/rate limit/Redis/storage berubah: Tidak
+  - Deployment/secret berubah: Tidak
+  - `package.json`/`package-lock.json`/`.gitignore`/`.agents` berubah pada batch ini: Tidak
+  - Commit/push/merge/rebase/reset/deploy: Tidak
+- **Langkah berikutnya:**
+  - Tinjau tampilan struktur populated dan state kosong pada screenshot batch 2.1.
+  - Konfirmasi keputusan tampilan BPH sebelum polish lanjutan.
+  - Setelah disetujui, lanjutkan batch terpisah untuk program kerja atau halaman publikasi berikutnya tanpa menebak kontrak API.
+
+---
+
 ## Template catatan sesi berikutnya
 
 Salin bagian ini dan isi dengan fakta aktual setiap selesai satu batch. Jangan mengklaim check/test berhasil jika tidak dijalankan.

@@ -11,7 +11,7 @@ const navigation = [
   { label: "Beranda", href: "/#beranda" },
   { label: "Tentang", href: "/#tentang" },
   { label: "Program Kerja", href: "/#program" },
-  { label: "Struktur", href: "/#struktur" },
+  { label: "Struktur", href: "/struktur" },
   { label: "Kontak", href: "/#kontak" },
 ];
 
@@ -20,6 +20,14 @@ export function SiteHeader() {
   const [isOpen, setIsOpen] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const isHome = pathname === "/";
+
+  function isActive(href: string): boolean {
+    if (href === "/struktur") {
+      return pathname === "/struktur";
+    }
+
+    return isHome && href === "/#beranda";
+  }
 
   useEffect(() => {
     if (!isOpen) return;
@@ -41,14 +49,13 @@ export function SiteHeader() {
   return (
     <header
       data-tone="dark"
-      className={`absolute inset-x-0 top-0 z-50 transition-colors
-      }`}
+      className="absolute inset-x-0 top-0 z-50 transition-colors"
     >
       <div className="site-container flex min-h-15 items-center justify-between gap-6 min-[900px]:min-h-18">
         <Link
           href="/"
           className="inline-flex items-center gap-2.5 text-on-dark"
-          aria-label="HIMATKN — Beranda"
+          aria-label="HIMATKN | Beranda"
         >
           <BrandMark className="h-6 w-6 shrink-0 text-on-dark" />
           <span className="font-mono text-[9px] font-medium tracking-[0.16em] uppercase sm:text-[10px]">
@@ -65,9 +72,7 @@ export function SiteHeader() {
               key={item.href}
               href={item.href}
               className="public-nav-link"
-              aria-current={
-                isHome && item.href === "/#beranda" ? "page" : undefined
-              }
+              aria-current={isActive(item.href) ? "page" : undefined}
             >
               {item.label}
             </Link>
@@ -106,7 +111,8 @@ export function SiteHeader() {
               key={item.href}
               href={item.href}
               onClick={() => setIsOpen(false)}
-              className="border-b border-on-dark/10 py-3 font-mono text-[11px] tracking-[0.06em] text-on-dark uppercase last:border-b-0 hover:text-gold-bright"
+              aria-current={isActive(item.href) ? "page" : undefined}
+              className="border-b border-on-dark/10 py-3 font-mono text-[12px] tracking-[0.06em] text-on-dark uppercase last:border-b-0 hover:text-gold-bright"
             >
               {item.label}
             </Link>
