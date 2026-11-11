@@ -172,7 +172,7 @@ export default async function HomePage() {
               publikasi HIMATKN untuk informasi kegiatan terbaru.
             </p>
             <Link href="#publikasi" className="program-empty-panel__link">
-              Lihat publikasi terbaru
+              Pantau kabar terbaru di Instagram
               <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
           </div>

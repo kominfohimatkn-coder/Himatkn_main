@@ -134,7 +134,7 @@ function MemberCard({
       <PublicImage
         src={member.photo_url}
         alt={member.name}
-        className="structure-card__photo"
+        className="aspect-square w-full"
       />
 
       <div className="structure-card__body">
@@ -159,12 +159,15 @@ function MemberGrid({
   positionsById: PositionLookup;
   periodName: string;
 }) {
+  const gridClasses = [
+    "grid gap-3 sm:gap-4",
+    members.length === 1
+      ? "grid-cols-[minmax(0,11.5rem)] justify-center"
+      : "grid-cols-2 min-[640px]:grid-cols-3 min-[900px]:grid-cols-4",
+  ].join(" ");
+
   return (
-    <div
-      className={`structure-card-grid${
-        members.length === 1 ? " structure-card-grid--single" : ""
-      }`}
-    >
+    <div className={gridClasses}>
       {members.map((member) => (
         <MemberCard
           key={member.id}

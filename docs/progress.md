@@ -454,3 +454,66 @@ Salin bagian ini dan isi dengan fakta aktual setiap selesai satu batch. Jangan m
   - Secret/kredensial diekspos: Tidak / Ya — berhenti dan eskalasi
 - **Langkah berikutnya:**
   - 
+
+---
+
+### Sesi 2026-10-30 — Perbaikan alignment kartu tunggal dan rasio foto Struktur
+
+- **Status:** Selesai; tidak commit, push, merge, rebase, atau deploy.
+- **Branch:** `feat/admin-ui-foundation`.
+- **HEAD teramati saat validasi:** `58b829c` (`penyesuaian desain struktur, landing pages`); commit eksternal yang sudah ada di branch, tidak dibuat oleh agent.
+- **Tujuan batch:** memusatkan kartu anggota tunggal pada halaman `/struktur`, mengubah area foto menjadi 1:1, membuat kartu lebih compact, dan memindahkan layout grid/foto ke Tailwind CSS v4.
+- **Root cause:**
+  - `MemberGrid` tetap memakai grid multi-kolom ketika hanya ada satu anggota, sehingga kartu menempati kolom pertama dan terlihat rata kiri.
+  - `.structure-card__photo` masih menetapkan `aspect-ratio: 4 / 5`, sehingga area foto terlalu tinggi.
+- **Yang selesai:**
+  - `MemberGrid` sekarang memakai utility Tailwind:
+    - satu anggota: `grid-cols-[minmax(0,11.5rem)] justify-center`;
+    - dua anggota atau lebih: `grid-cols-2 min-[640px]:grid-cols-3 min-[900px]:grid-cols-4`;
+    - gap: `gap-3 sm:gap-4`.
+  - `MemberCard` memakai `aspect-square w-full` pada `PublicImage`; fallback foto tetap memakai wrapper yang sama sehingga tetap persegi.
+  - Selector lama `.structure-card-grid`, seluruh responsive declaration-nya, gap mobile khusus, dan `.structure-card__photo` dihapus dari `frontend/app/globals.css`.
+  - BPH hierarchy, aturan centering BPH, mapping posisi, mekanisme foto, dan fallback foto tidak diubah.
+- **File yang diubah:**
+  - `frontend/components/public/StructureDirectory.tsx`
+  - `frontend/app/globals.css`
+  - `progress.md`
+- **Pemeriksaan yang dijalankan + hasil aktual:**
+  - `npm run lint` — lulus tanpa error.
+  - `npm run build` — lulus; build final dari `.next` yang dibersihkan, 9 route, fixture validasi sementara tidak ikut ter-build.
+  - `git diff --check` — tidak ada whitespace error; hanya warning normalisasi LF/CRLF pada file yang disentuh.
+  - `rg`/`Select-String` untuk `structure-card-grid` dan `structure-card__photo` — tidak ada selector lama tersisa.
+  - Validasi browser production di `http://localhost:3001` pada viewport 390, 768, dan 1280:
+    - Pembimbing 1 anggota: delta titik tengah kartu terhadap container, heading, dan dropdown = `0` pada ketiga viewport.
+    - Lihat Semua, Pembimbing 1 anggota: delta titik tengah kartu terhadap container = `0`; heading/informasi mengikuti layout existing.
+    - Rasio area foto = `1.0` pada Pembimbing, Lihat Semua, kartu dengan foto valid, dan fallback foto rusak.
+    - Divisi 2 anggota: 2 kartu berjajar; track grid 2/3/4 pada 390/768/1280.
+    - Divisi 5 anggota (Keuangan): track grid 2/3/4 pada 390/768/1280.
+    - Tidak ada horizontal overflow (`scrollWidth === innerWidth`) pada seluruh skenario.
+  - Screenshot dan laporan tersimpan di `docs/validation/batch-2.2/`:
+    - `pembimbing-390.png`, `pembimbing-768.png`, `pembimbing-1280.png`
+    - `lihat-semua-390.png`, `lihat-semua-768.png`, `lihat-semua-1280.png`
+    - `divisi-2-390.png`, `divisi-2-768.png`, `divisi-2-1280.png`
+    - `divisi-5-390.png`, `divisi-5-768.png`, `divisi-5-1280.png`
+    - `layout-validation-report.json`
+- **Catatan validasi:**
+  - Kasus 2 anggota dan foto rusak divalidasi memakai fixture sementara `frontend/app/(public)/structure-layout-test`; fixture dihapus sebelum build final dan tidak ada di route final.
+  - Screenshot memuat nama anggota publik dari API aktual; tinjau sebelum dipublikasikan atau di-commit.
+  - Perubahan lokal tak terkait pada `frontend/app/(public)/page.tsx` (teks CTA publikasi) tidak disentuh dan bukan bagian batch ini.
+- **Risiko/regresi yang diperiksa:**
+  - BPH hierarchy dan grid BPH tidak berubah.
+  - Kartu Pembimbing tetap memakai lebar maksimum 11.5rem dan berada di tengah pada semua breakpoint.
+  - Grid multi-anggota tetap 2/3/4 kolom pada 390/768/1280.
+  - Foto valid dan fallback sama-sama memakai wrapper 1:1; `object-cover` tetap aktif.
+- **Blocker/keputusan yang diperlukan:**
+  - Tidak ada blocker teknis.
+  - Perlu keputusan pemilik untuk meninjau screenshot dan melakukan commit jika hasil sudah disetujui.
+- **Konfirmasi batas scope:**
+  - Backend berubah: Tidak.
+  - Database/schema/migration berubah: Tidak.
+  - API contract/client/auth/CSRF/RBAC/cookie policy berubah: Tidak.
+  - Dependency, `.gitignore`, deployment, secret, atau konfigurasi environment berubah: Tidak.
+- **Langkah berikutnya:**
+  - Tinjau screenshot di `docs/validation/batch-2.2/`.
+  - Hubungkan aset foto dari `frontend/public/` sesuai mekanisme yang sudah ada.
+  - Commit hanya setelah pemilik menyetujui hasil.
