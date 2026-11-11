@@ -22,6 +22,12 @@ lalu buka http://localhost:8000. Untuk melihat semua state sekaligus, buka **`st
 | `404.html` | Halaman tidak ditemukan |
 | `states.html` | Galeri semua state dalam versi desktop + mobile |
 
+## Pembaruan terakhir
+- **Hero mobile** mengikuti slide 15 prototipe: overlay hijau gelap, teks putih di tengah, dua tombol berdampingan.
+- **Animasi**: fade-in saat halaman dibuka, hero masuk bertahap (foto zoom-out halus), reveal saat scroll, konten muncul bergiliran setelah loading, garis bawah navigasi, menu mobile bertahap, hover tombol/kartu/foto, transisi antarhalaman. Semua animasi dimatikan otomatis untuk pengguna dengan pengaturan *reduce motion*.
+- **Loading seluruh web**: progress bar tipis di atas halaman (saat halaman dibuka dan saat pindah halaman), skeleton di setiap bagian yang memuat data, shimmer pada foto sampai selesai dimuat, dan jeda jaringan simulasi 650 ms supaya loading terlihat (`?delay=0` untuk mematikan). `?loading=all` membuat seluruh halaman tertahan di keadaan memuat.
+- **Search bar** di halaman Program Kerja dan Publikasi (pencarian langsung saat mengetik, kata yang cocok di-highlight, jumlah hasil, tombol hapus, dan state tanpa hasil). Di halaman detail program kerja dan detail berita ada search bar ringkas yang mencari ke daftar terkait. URL ikut menyimpan kata kunci (`?q=`).
+
 ## State
 Panel **State UI** ada di pojok kanan bawah. State juga bisa diatur lewat URL:
 
@@ -36,7 +42,9 @@ Panel **State UI** ada di pojok kanan bawah. State juga bisa diatur lewat URL:
 | `header` | scrolled | semua halaman |
 | `view`, `div` | `view=semua`, `div=reaksi` | struktur |
 | `filter` | berjalan, terencana, selesai | kegiatan |
-| `q` | kata kunci | bank soal (contoh hasil kosong: `?q=termodinamika`) |
+| `q` | kata kunci | kegiatan, publikasi, bank soal (contoh: `kegiatan.html?q=podcast`) |
+| `loading` | all | seluruh bagian halaman dalam keadaan memuat |
+| `delay` | angka ms | lama simulasi loading (default 650, 0 = tanpa jeda) |
 | `panel` | off | sembunyikan panel state |
 
 Ada juga state yang muncul dari interaksi: hover/focus, filter yang tidak punya hasil, pencarian tanpa hasil, divisi tanpa data pengurus, artikel tidak ditemukan, dan peta yang gagal dimuat dalam 9 detik.
@@ -55,4 +63,4 @@ Gaya visualnya dipertahankan. Hanya bug yang kemarin ditemukan yang diperbaiki:
 - [ ] **Data pengurus divisi selain BPH** di `assets/app.js` (`DATA.divisions[].members`). Format: `{ role: "Kepala Divisi", name: "..." }`. Foto opsional lewat `photo: "assets/img/nama.jpg"`.
 - [ ] **Isi program kerja dan berita**: masih lorem ipsum seperti di desain.
 - [ ] **Bank soal**: daftar mata kuliah dan file di `DATA.soal` masih **contoh**. Tautan unduhannya juga belum ada.
-- [ ] Hapus `initPanel()` di `app.js` sebelum dirilis.
+- [ ] Sebelum dirilis, hapus `initPanel()` dan set `DELAY` ke 0 di `app.js`. Jeda loading hanya simulasi; di produksi, skeleton cukup tampil selama fetch API berjalan.

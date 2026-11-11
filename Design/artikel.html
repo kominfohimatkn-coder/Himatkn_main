@@ -41,7 +41,16 @@
   </nav>
   <main id="main">
     <section class="page">
-      <div class="container"><article class="article" id="artikel" aria-live="polite"></article></div>
+      <div class="container">
+        <div class="article">
+          <form class="search search--compact" id="detail-search" role="search" action="kegiatan.html">
+            <label class="visually-hidden" for="detail-q" id="detail-q-label">Cari</label>
+            <input class="input" id="detail-q" name="q" type="search" placeholder="Cari…" autocomplete="off" required>
+            <button class="btn btn--solid" type="submit">Cari</button>
+          </form>
+        </div>
+        <article class="article" id="artikel" aria-live="polite"></article>
+      </div>
     </section>
   </main>
   <footer class="site-footer on-dark">

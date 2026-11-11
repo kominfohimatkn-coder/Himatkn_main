@@ -45,7 +45,13 @@
         <h1 class="page-title">Program Kerja</h1>
         <p class="page-intro">Seluruh inisiatif dan agenda strategis HIMATKN Kabinet Nexus periode 2026.</p>
         <hr class="page-rule">
-        <div class="seg"><div class="seg__inner" id="kegiatan-seg" role="tablist" aria-label="Filter status">
+        <form class="search" role="search" action="">
+          <label class="visually-hidden" for="q">Cari program kerja</label>
+          <input class="input" id="q" name="q" type="search" placeholder="Cari program kerja…" autocomplete="off">
+          <div class="search__meta"><span class="spinner" aria-hidden="true"></span><button class="search__clear" type="button" hidden>Hapus</button></div>
+        </form>
+        <p class="search-info" id="search-info" aria-live="polite"></p>
+        <div class="seg" style="margin-top:8px"><div class="seg__inner" id="kegiatan-seg" role="tablist" aria-label="Filter status">
           <button type="button" role="tab" data-filter="semua">Semua</button>
           <button type="button" role="tab" data-filter="berjalan">Berjalan</button>
           <button type="button" role="tab" data-filter="terencana">Terencana</button>

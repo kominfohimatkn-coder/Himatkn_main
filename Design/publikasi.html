@@ -45,8 +45,14 @@
         <h1 class="page-title">Publikasi</h1>
         <p class="page-intro">Kabar, liputan kegiatan, dan dokumentasi HIMATKN.</p>
         <hr class="page-rule">
-        <div class="list-wrap" id="news-list" aria-live="polite"></div>
-        <nav class="pager" aria-label="Halaman publikasi" data-hide-when-empty>
+        <form class="search" role="search" action="">
+          <label class="visually-hidden" for="q">Cari publikasi</label>
+          <input class="input" id="q" name="q" type="search" placeholder="Cari berita atau publikasi…" autocomplete="off">
+          <div class="search__meta"><span class="spinner" aria-hidden="true"></span><button class="search__clear" type="button" hidden>Hapus</button></div>
+        </form>
+        <p class="search-info" id="search-info" aria-live="polite"></p>
+        <div class="list-wrap" id="news-list" aria-live="polite" style="margin-top:16px"></div>
+        <nav class="pager" aria-label="Halaman publikasi" data-hide-when-empty data-hide-when-searching>
           <span class="is-disabled" aria-hidden="true">←</span><span aria-current="page">1</span><a href="#">2</a><a href="#">3</a><a href="#" aria-label="Halaman berikutnya">→</a>
         </nav>
       </div>
