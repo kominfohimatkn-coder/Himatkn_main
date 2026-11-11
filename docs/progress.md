@@ -1,6 +1,25 @@
+
+
 # HIMATKN — Progress Tracker
 
 > Wajib dibaca pada awal setiap sesi dan diperbarui oleh agent pada akhir setiap sesi/batch. Jangan hapus riwayat lama; tambahkan entri baru.
+
+## Pemberitahuan — Perubahan Acuan Desain (11 November 2026)
+
+Mulai 11 November 2026, seluruh referensi desain `HIMATKN_Public_Design_Reference` dan `HIMATKN_Admin_Panel_Design_Reference` dinyatakan deprecated dan tidak lagi menjadi acuan visual maupun implementasi.
+
+Arah visual aktif menggunakan **HIMATKN V1 versi terbaru** yang disediakan oleh pemilik proyek dan ditempatkan di folder `Design/`.
+
+Seluruh catatan pekerjaan sebelum tanggal ini tetap dipertahankan sebagai riwayat historis, tetapi keputusan desain, token visual, layout, komponen, dan aturan UI di dalamnya tidak boleh digunakan sebagai acuan aktif apabila bertentangan dengan HIMATKN V1 terbaru.
+
+Untuk acuan aktif, baca:
+- `docs/HIMATKN_V1_REDESIGN_GUIDE.md`
+- `docs/DESIGN_REFERENCE_GUIDE.md`
+- `Design/README.md`
+
+Source code frontend V2 tetap menjadi sumber kebenaran untuk arsitektur, route, API, tipe data, autentikasi, dan perilaku teknis.
+
+---
 
 ## Kondisi awal paket konteks
 
