@@ -536,3 +536,52 @@ Salin bagian ini dan isi dengan fakta aktual setiap selesai satu batch. Jangan m
   - Tinjau screenshot di `docs/validation/batch-2.2/`.
   - Hubungkan aset foto dari `frontend/public/` sesuai mekanisme yang sudah ada.
   - Commit hanya setelah pemilik menyetujui hasil.
+
+---
+
+### Sesi 2026-11-12 - Audit redesign website publik V2 (read-only)
+
+- **Status:** Selesai; audit read-only; tidak commit, push, merge, rebase, atau deploy.
+- **Branch:** `feat/admin-ui-foundation`.
+- **HEAD saat audit:** `8e5afcb17aa4d2bda91a995a5d650db7f2e2d07b`.
+- **Tujuan:** memetakan Prototype Desain HIMATKN V1 di `Design/` ke route, komponen, data flow, dan kontrak API V2; menulis laporan audit dan menambahkan entri sesi tanpa mengubah source.
+- **Ruang lingkup:** website publik V2 dan panel admin existing. Bank soal di luar scope. Repo V1 live tidak dipakai sebagai acuan.
+- **Yang dilakukan:**
+  - Memeriksa branch, HEAD, `git status --short`, `git diff --stat`, dan perubahan lokal `Design/index.html`; seluruh perubahan lokal dipertahankan.
+  - Membaca dokumen di `docs/`, `Design/README.md`, source frontend publik/admin, API client/service/types, kontrak backend publik, model/schema/seed, dan dump `23_tabel_himatkn.sql`.
+  - Menginventarisasi route, komponen, state, aset, serta service publik yang dipakai dan belum dipakai.
+  - Menjalankan baseline `npm run lint` dan `npx tsc --noEmit` dari `frontend/`.
+- **Temuan utama:**
+  - Hanya `/` dan `/struktur` yang merupakan halaman publik produk; `/__structure-state` adalah fixture hardcoded yang masih dapat diakses publik dan tidak diblokir `robots.ts`.
+  - Visual V2 saat ini berbeda dari Prototype V1: cream/gold dan Playfair/Crimson/Space Grotesk vs mint/green dan Literata/Inter; header absolute vs sticky; hero terpusat vs kiri desktop; struktur kartu vs tree.
+  - Section Program Kerja homepage masih empty state meskipun `getPublicPrograms()` tersedia; link “Instagram” mengarah ke `#publikasi`.
+  - Publikasi hanya menampilkan judul/tanggal dengan “Detail segera hadir”; API list tidak menyediakan excerpt, search, atau total. Detail berita tersedia di API tetapi route belum ada.
+  - `OrganizationSection` hanya menampilkan periode dan jumlah anggota; berbeda dari catatan historis `docs/progress.md` yang menyebut divisi/anggota.
+  - Struktur memakai API nyata dan state yang cukup lengkap, tetapi dropdown masih native `<select>`, deteksi BPH memakai regex nama, dan visualnya berbeda dari Prototype.
+  - API program tidak menyediakan detail, filter status, search, total, atau metadata periode/divisi; status program berupa string bebas dan `cancelled` hanya dipetakan di UI admin.
+  - Aset logo asli tersedia di `frontend/public/favicon.png`/`icon.png` dan `Design/assets/img/favicon.png`, tetapi V2 memakai `BrandMark` abstrak dan Prototype masih memakai logo SVG tiruan.
+- **Pemeriksaan yang dijalankan + hasil aktual:**
+  - `npm run lint` — lulus tanpa error.
+  - `npx tsc --noEmit` — lulus tanpa output.
+  - `npm run build` — tidak dijalankan pada sesi audit ini.
+  - `git diff --check` — tidak ada whitespace error; hanya warning normalisasi LF/CRLF pada `Design/index.html` dan `docs/progress.md`.
+  - `git status --short --branch` akhir menunjukkan hanya `Design/index.html` dan `Design/assets/img/favicon.png` (kondisi awal yang dipertahankan), `docs/progress.md` (entri sesi), dan `docs/audit/` (laporan baru).
+- **File yang dibuat/diubah:**
+  - `docs/audit/REDESIGN_AUDIT_2026-11-12.md` (baru)
+  - `docs/progress.md` (entri baru; riwayat lama tidak diubah)
+- **Konfirmasi batas scope:**
+  - Backend/database/migration/seed berubah: Tidak.
+  - API contract/auth/CSRF/CORS/RBAC/cookie policy berubah: Tidak.
+  - Dependency/lockfile/environment/deployment berubah: Tidak.
+  - Source frontend, `Design/`, atau file lain diubah: Tidak.
+  - Isi `.env*` dibaca/dicetak: Tidak.
+  - Commit/push/merge/rebase/deploy: Tidak.
+- **Blocker/keputusan yang diperlukan:**
+  - Konfirmasi acuan visual final, font, logo resmi, hak pakai foto hero, dan kontak/peta.
+  - Keputusan apakah route publikasi/kegiatan/detail boleh dibuat; dokumentasi saat ini melarang route baru tanpa persetujuan.
+  - Keputusan status/visibilitas program, termasuk `cancelled` dan filter periode.
+  - Hapus atau lindungi `__structure-state` sebelum rilis.
+- **Langkah berikutnya:**
+  - Tinjau laporan audit dan jawab pertanyaan pemilik pada bagian 10.
+  - Setelah disetujui, mulai batch R1 (sistem visual publik + chrome + homepage), lalu R2 (struktur), lalu R3 (section data homepage) dengan batas API yang tercatat.
+  - Jangan implementasi sebelum keputusan acuan visual dan route diberikan.
