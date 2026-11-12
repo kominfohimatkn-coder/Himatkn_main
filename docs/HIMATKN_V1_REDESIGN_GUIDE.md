@@ -5,6 +5,8 @@ Untuk fase ini, HIMATKN V1 yang diberikan pemilik proyek adalah satu-satunya acu
 
 Folder referensi V1 ditempatkan di Design/ pada root repository. Periksa struktur aktual setelah ZIP diekstrak; jangan mengasumsikan file berada langsung di Design/ atau di subfolder tertentu.
 
+Keputusan pemilik yang paling baru (termasuk keputusan Bank Soal) tercatat di **Current Project State**, `docs/progress.md`; dokumen ini tidak menimpanya.
+
 V2 tetap menjadi fondasi teknis: route, komponen, data flow, API client, tipe, auth, RBAC, dan arsitektur existing tidak diganti demi meniru HTML referensi.
 
 ## Hierarki sumber kebenaran
@@ -14,6 +16,8 @@ V2 tetap menjadi fondasi teknis: route, komponen, data flow, API client, tipe, a
 4. Asumsi agent tidak boleh menggantikan informasi yang belum tersedia. Catat ambiguitas sebagai pertanyaan.
 
 Screenshot revisi yang dikirim pemilik proyek lebih baru daripada HTML ZIP jika keduanya berbeda. Screenshot tersebut mencakup homepage desktop/mobile dan halaman struktur desktop/mobile.
+
+**Catatan (Batch R0, 12 November 2026):** screenshot tersebut **tidak tersedia di repository**. Sampai screenshot ditambahkan, prototype di `Design/` menjadi acuan utama untuk visual dan interaksi, termasuk hero mobile. Keputusan terbaru (termasuk keputusan Bank Soal via link eksternal Google Drive) selalu cek di **Current Project State**, `docs/progress.md`.
 
 ## Referensi ZIP
 - index.html: homepage, hero, tentang, program kerja, publikasi, ringkasan kepengurusan, footer/lokasi.

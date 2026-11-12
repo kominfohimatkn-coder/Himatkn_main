@@ -1,8 +1,270 @@
-
-
 # HIMATKN — Progress Tracker
 
 > Wajib dibaca pada awal setiap sesi dan diperbarui oleh agent pada akhir setiap sesi/batch. Jangan hapus riwayat lama; tambahkan entri baru.
+
+Urutan membaca setiap sesi:
+1. **Current Project State** (Bagian 1) — kondisi repo, keputusan pemilik, blocker, rencana batch. Selalu baca bagian ini dulu.
+2. **Active Development Log** (Bagian 2) — entri sesi sejak 11 November 2026.
+3. **Historical Archive** (Bagian 3) — entri sebelum 11 November 2026. Baca penanda arsip di dalamnya sebelum memakai isinya.
+4. **Template Catatan Sesi** (Bagian 4) — salin untuk entri baru.
+
+Active Development Log dan Historical Archive bersifat **append-only**: entri lama tidak boleh diedit; tambahkan entri baru, dan bila ada koreksi, catat di Current Project State bagian "Koreksi atas catatan lama".
+
+---
+
+## 1. Current Project State
+
+> Terakhir diperbarui: 12 November 2026 (Batch R0). Perbarui bagian ini pada setiap batch.
+
+### a. Snapshot repository
+
+- Branch: `feat/admin-ui-foundation`.
+- HEAD terverifikasi saat Batch R0: `b388ae752270a03ae9a5fcbf25e44ad2b9c840fc` (`b388ae7` — "add something i thought was important").
+- HEAD remote yang sebelumnya diketahui: `5e9aa6c` ("remove unused state"). HEAD lokal sudah lebih baru dari itu; `b388ae7` hanya mengubah `README.md`.
+- `Design/bank-soal.html` sudah dihapus pada `5e9aa6c`; halaman tersebut bukan lagi bagian Prototype aktif. Link `bank-soal.html` yang masih tersisa di file `Design/` lain diabaikan.
+- Working tree bersih sebelum Batch R0 dimulai.
+
+### b. Scope fase saat ini
+
+- Redesign **website publik** V2, frontend-only.
+- Backend, database, migration, auth/CSRF/CORS/RBAC, storage, deployment, dan environment tidak diubah.
+- Panel admin **dipertahankan** sesuai desain dan implementasi V2 saat ini; hanya penyesuaian teknis untuk integrasi/konsistensi bila benar-benar diperlukan.
+
+### c. Acuan aktif dan urutan baca
+
+- Acuan visual dan interaksi aktif: **Prototype Desain HIMATKN V1** di `Design/` (7 halaman HTML + aset). Panduan: `docs/DESIGN_REFERENCE_GUIDE.md` dan `Design/README.md`.
+- Source code V2 (`frontend/`, `Backend/`) tetap menjadi sumber kebenaran teknis: route, API, tipe data, auth, dan arsitektur.
+- **Website V1 live** (`kominfohimatkn-coder/Himatknuklir_website`) **bukan acuan desain** dan tidak dipakai sebagai referensi apa pun.
+- Screenshot revisi pemilik (Figma) tidak tersedia di repository. Sampai screenshot ditambahkan, Prototype di `Design/` menjadi acuan utama untuk visual dan interaksi, termasuk hero mobile.
+- Urutan baca dokumen:
+  1. `docs/AGENTS.md`
+  2. `docs/progress.md` → Current Project State
+  3. `docs/HIMATKN_V1_REDESIGN_GUIDE.md`
+  4. `docs/DESIGN_REFERENCE_GUIDE.md`
+  5. `Design/README.md`
+  6. `docs/HIMATKN_FRONTEND_CONTEXT.md`
+  7. `docs/FRONTEND_ARCHITECTURE.md`
+  8. `frontend/AGENTS.md`
+  9. Laporan audit terbaru di `docs/audit/` (saat ini: `docs/audit/REDESIGN_AUDIT_2026-11-12.md`)
+
+### d. Referensi deprecated
+
+Referensi berikut **tidak boleh dipakai** sebagai acuan desain, token, font, layout, komponen, atau state apa pun:
+
+- `HIMATKN_Public_Design_Reference/`
+- `HIMATKN_Admin_Panel_Design_Reference/`
+- `HIMATKN_Public_Figma_Reference`, termasuk screenshot seperti `programs-empty-state-desktop.png` dan `programs-empty-state-mobile.png` yang dirujuk pada entri 29 Oktober 2026.
+- Token dan font dari batch lama sebagai keputusan visual: palet cream/gold, Cormorant Garamond/Manrope, serta Space Grotesk/Playfair Display/Crimson Text/JetBrains Mono.
+
+Entri historis yang masih memuat referensi tersebut tetap utuh di Historical Archive; jangan melanjutkan keputusan dari sana tanpa verifikasi.
+
+### e. Keputusan pemilik yang berlaku
+
+1. **Acuan visual aktif** adalah Prototype Desain HIMATKN V1 di `Design/`. Source code V2 tetap menjadi sumber kebenaran teknis (route, API, tipe, auth, arsitektur).
+2. **`Design/` hanya acuan visual dan interaksi.** Konten mengikuti data dari backend. Informasi penting tidak boleh di-hardcode dari prototype: nama pengurus, jumlah divisi, periode, stats hero, kontak, email, alamat, isi program, dan isi berita. Jika backend belum menyediakan data, tampilkan empty state yang jujur atau sembunyikan elemennya, lalu catat sebagai gap.
+3. Referensi deprecated: lihat bagian d di atas.
+4. **Bank Soal adalah requirement klien**, dipenuhi dengan **link eksternal ke folder Google Drive** yang dibuka di tab baru. V2 tidak membangun fitur bank soal sendiri (upload, pencarian, filter semester), karena V2 bukan portal akademik. Untuk sementara URL di-hardcode di **satu konstanta frontend** (misalnya `frontend/lib/public/links.ts`), dipakai oleh navbar desktop, menu mobile, dan footer. Ini **utang teknis** sampai backend menyediakan `GET /public/settings`. Database V2 saat ini tidak menyimpan link ini: `site_settings` kosong pada dump lokal 10 November 2026. Link `bank-soal.html` yang tersisa di file `Design/` diabaikan karena halaman itu sudah dihapus dari prototype.
+5. **Panel admin dipertahankan** sesuai desain dan implementasi V2 saat ini. Fokus redesign adalah website publik. Admin hanya mendapat penyesuaian teknis yang diperlukan untuk integrasi atau konsistensi.
+6. **Detail program kerja dan search publikasi belum didukung API.** Keduanya diperlakukan sebagai gap. Jangan membuat endpoint, parameter, atau data palsu.
+7. **Status program wajib memetakan keempat nilai:** `planned`, `ongoing`, `completed`, `cancelled`. `cancelled` tidak boleh diabaikan. Backend tidak memvalidasi enum status, jadi UI harus aman terhadap nilai yang tidak dikenal. Status diisi manual oleh admin dan **tidak dihitung dari tanggal**.
+
+### f. Kondisi aktual V2
+
+Ringkasan dari audit 12 November 2026; detail dan bukti line-by-line ada di `docs/audit/REDESIGN_AUDIT_2026-11-12.md` (rujukan; jangan disalin ulang).
+
+- Route publik produk: `/` dan `/struktur`. `/__structure-state` adalah **fixture** dengan data hardcoded yang masih dapat diakses publik dan belum diblokir `robots.ts`.
+- Route admin: `/login`, `/admin/dashboard`, `/admin/news` (read-only di UI), `/admin/programs` (CRUD).
+- Endpoint publik yang tersedia dan pemakaiannya:
+
+  | Endpoint | Dipakai frontend? |
+  |---|---|
+  | `/public/news` | Ya |
+  | `/public/news/{slug}` | Belum (service `getPublicNewsBySlug()` sudah ada; route detail belum ada) |
+  | `/public/programs` | Belum (service `getPublicPrograms()` sudah ada; section homepage masih empty state) |
+  | `/public/organization` | Ya |
+  | `POST /public/visits` | Belum |
+
+- Baseline: `npm run lint` dan `npx tsc --noEmit` lulus pada audit. `npm run build` belum dijalankan sejak audit.
+
+### g. Keputusan yang masih tertunda (blok batch R1 dan seterusnya)
+
+Semua butir berstatus **Menunggu keputusan pemilik**:
+
+1. Font final: Literata + Inter dari prototype, atau yang lain. README prototype menyebut Literata masih perkiraan.
+2. Logo header: apakah `frontend/public/favicon.png` / `icon.png` (1080×1350) adalah logo resmi. Favicon butuh versi persegi.
+3. Foto hero: versi `Design/assets/img/hero.jpg` (4160×3120) atau `frontend/public/images/hero-group.jpg` (2400×1800), serta hak pakainya.
+4. Acuan hero mobile: screenshot Figma slide 15–18 tidak ada di repository. Pilihannya: screenshot ditambahkan ke repo, atau prototype dipakai sebagai acuan.
+5. Izin route baru: `/publikasi`, `/publikasi/[slug]`, dan halaman daftar program kerja.
+6. Nama route program kerja: `/program-kerja` atau `/kegiatan`.
+7. Perlakuan status `cancelled` di UI publik.
+8. Program dari periode mana yang ditampilkan di publik. API tidak punya filter periode.
+9. Kontak, alamat, dan peta: nilai resmi dan sudah terverifikasi, atau disembunyikan dulu.
+10. Penanganan `/__structure-state` sebelum rilis.
+11. Domain canonical: `himatknuklir.web.id` atau `himatknuklir.vercel.app`. Saat ini `metadataBase` berbeda dengan sitemap/robots.
+
+### h. Blocker teknis yang masih terbuka
+
+- Konfirmasi origin frontend/backend dan format `NEXT_PUBLIC_API_URL` (harus mencakup `/api/v1`). **Belum terverifikasi.**
+- Kebijakan cookie/CORS admin lintas origin belum terverifikasi di production. **Belum terverifikasi.**
+- Tampilan admin setelah login belum pernah divalidasi visual. **Masih berlaku.**
+- `npm` melaporkan 4 high severity vulnerability (sesi 29 Oktober). **Belum ditangani.**
+- Warning Turbopack tentang lockfile di luar repository (`C:\Users\faqih`). **Tidak menggagalkan build.**
+- Representasi BPH: source mendeteksi BPH lewat regex nama divisi/jabatan (`frontend/components/public/StructureDirectory.tsx`), karena API tidak punya flag BPH. **Perlu keputusan pemilik apakah ini diterima.** (Koreksi atas klaim historis: lihat bagian i.)
+
+### i. Koreksi atas catatan lama
+
+Entri lama **tidak diubah**; koreksinya hanya dicatat di sini:
+
+| Entri lama | Klaim | Kondisi terverifikasi (audit 12 Nov) |
+|---|---|---|
+| Batch 2.1 (29 Okt) | BPH dikelompokkan netral, tidak ditebak | Source mendeteksi BPH via regex (`StructureDirectory.tsx`) |
+| Batch 2.1 (29 Okt) | `OrganizationSection` menampilkan divisi, anggota, dan jabatan | Hanya menampilkan periode dan jumlah anggota (`OrganizationSection.tsx`) |
+| 30 Okt | Fixture validasi tidak ikut build | `/__structure-state` adalah route nyata dan tidak diblokir `robots.ts` |
+| Beberapa entri | Merujuk `progress.md` dan `AGENTS.md` di root | Lokasi aktual: `docs/progress.md` dan `docs/AGENTS.md` |
+| Baseline 27 Okt | Next.js 16.3.2; `Button.tsx` kosong | Next.js 16.4.3; `Button.tsx` sudah terimplementasi |
+
+### j. Temuan data (dump lokal 10 November 2026; belum diverifikasi terhadap production)
+
+Hanya agregat; tidak ada data pribadi:
+
+- `site_settings` kosong (tidak ada INSERT pada dump).
+- Tabel `permissions` berisi 22 baris dan **tidak memuat** `media.manage`, padahal `Backend/app/seed.py` mendefinisikan 23 termasuk `media.manage`. Akibatnya `POST /media/images` berpotensi 403 untuk semua role. Perlu dicek di DB production.
+- Role `admin` dan `editor` memiliki set permission yang identik.
+- Ada 1 periode aktif, 9 divisi, dan 57 anggota. Semua `photo_url` bernilai NULL.
+- Dump lokal memuat 1 berita berstatus `published` dengan 1 gambar galeri dan `featured_image` NULL. **Catatan ambiguitas:** ringkasan prompt Batch R0 menyebut "3 berita (1 published, 1 draft, 1 archived)", tetapi dump lokal yang ada di repo tidak menunjukkan itu; klaim tersebut tidak dapat diverifikasi dari dump lokal dan tidak dipakai sebagai fakta.
+- Tidak ada INSERT `programs` pada dump. **Catatan ambiguitas:** prompt menyebut "1 program berstatus `planned`", tetapi dump lokal tidak memuat baris program. State "program terisi" tidak dapat diverifikasi dari data saat ini.
+- Terdapat data uji (berita, dokumen) yang harus dibersihkan sebelum rilis. Isinya tidak dirinci di sini.
+
+### k. Rencana batch
+
+| Batch | Isi | Status |
+|---|---|---|
+| R0 | Dokumentasi | Sesi ini |
+| R1 | Sistem visual publik (token di-scope agar admin tidak berubah, font dikurangi), header/menu mobile/footer/logo, konstanta link Bank Soal, hero, Tentang, kartu publikasi, 404, penanganan fixture, domain metadata | Diblok keputusan g.1–4, g.9–11 |
+| R2 | Halaman `/struktur`: dropdown custom yang aksesibel, visual tree/kartu/avatar, fallback foto | — |
+| R3 | Data homepage: grid divisi, program dengan 4 status, perbaikan link "Instagram" | Diblok keputusan g.7–8 |
+| R4 | `/publikasi` dan `/publikasi/[slug]` | Diblok keputusan g.5 |
+
+### l. Backlog untuk sesi backend
+
+Bukan untuk dikerjakan OpenCode frontend:
+
+1. `GET /public/settings` dengan whitelist key publik (misalnya `bank_soal_url`, `instagram_url`, `contact_email`, `secretariat_address`, `maps_url`), validasi URL hanya `https://` pada `PUT /admin/settings/{key}`, lalu halaman admin Pengaturan.
+2. Detail program publik per slug; filter periode dan status; `total` di respons list; metadata periode/divisi pada respons program.
+3. Search dan `total` untuk `/public/news`. Pertimbangkan excerpt dan tag.
+4. Verifikasi `media.manage` di DB production.
+5. Pembedaan permission role `admin` dan `editor`.
+6. Pembersihan data uji sebelum rilis.
+
+---
+
+## 2. Active Development Log
+
+Entri sesi sejak 11 November 2026. Append-only: tambahkan entri baru di bawah; jangan mengubah entri lama.
+
+### Sesi 2026-11-12 - Audit redesign website publik V2 (read-only)
+
+- **Status:** Selesai; audit read-only; tidak commit, push, merge, rebase, atau deploy.
+- **Branch:** `feat/admin-ui-foundation`.
+- **HEAD saat audit:** `8e5afcb17aa4d2bda91a995a5d650db7f2e2d07b`.
+- **Tujuan:** memetakan Prototype Desain HIMATKN V1 di `Design/` ke route, komponen, data flow, dan kontrak API V2; menulis laporan audit dan menambahkan entri sesi tanpa mengubah source.
+- **Ruang lingkup:** website publik V2 dan panel admin existing. Bank soal di luar scope. Repo V1 live tidak dipakai sebagai acuan.
+- **Yang dilakukan:**
+  - Memeriksa branch, HEAD, `git status --short`, `git diff --stat`, dan perubahan lokal `Design/index.html`; seluruh perubahan lokal dipertahankan.
+  - Membaca dokumen di `docs/`, `Design/README.md`, source frontend publik/admin, API client/service/types, kontrak backend publik, model/schema/seed, dan dump `23_tabel_himatkn.sql`.
+  - Menginventarisasi route, komponen, state, aset, serta service publik yang dipakai dan belum dipakai.
+  - Menjalankan baseline `npm run lint` dan `npx tsc --noEmit` dari `frontend/`.
+- **Temuan utama:**
+  - Hanya `/` dan `/struktur` yang merupakan halaman publik produk; `/__structure-state` adalah fixture hardcoded yang masih dapat diakses publik dan tidak diblokir `robots.ts`.
+  - Visual V2 saat ini berbeda dari Prototype V1: cream/gold dan Playfair/Crimson/Space Grotesk vs mint/green dan Literata/Inter; header absolute vs sticky; hero terpusat vs kiri desktop; struktur kartu vs tree.
+  - Section Program Kerja homepage masih empty state meskipun `getPublicPrograms()` tersedia; link “Instagram” mengarah ke `#publikasi`.
+  - Publikasi hanya menampilkan judul/tanggal dengan “Detail segera hadir”; API list tidak menyediakan excerpt, search, atau total. Detail berita tersedia di API tetapi route belum ada.
+  - `OrganizationSection` hanya menampilkan periode dan jumlah anggota; berbeda dari catatan historis `docs/progress.md` yang menyebut divisi/anggota.
+  - Struktur memakai API nyata dan state yang cukup lengkap, tetapi dropdown masih native `<select>`, deteksi BPH memakai regex nama, dan visualnya berbeda dari Prototype.
+  - API program tidak menyediakan detail, filter status, search, total, atau metadata periode/divisi; status program berupa string bebas dan `cancelled` hanya dipetakan di UI admin.
+  - Aset logo asli tersedia di `frontend/public/favicon.png`/`icon.png` dan `Design/assets/img/favicon.png`, tetapi V2 memakai `BrandMark` abstrak dan Prototype masih memakai logo SVG tiruan.
+- **Pemeriksaan yang dijalankan + hasil aktual:**
+  - `npm run lint` — lulus tanpa error.
+  - `npx tsc --noEmit` — lulus tanpa output.
+  - `npm run build` — tidak dijalankan pada sesi audit ini.
+  - `git diff --check` — tidak ada whitespace error; hanya warning normalisasi LF/CRLF pada `Design/index.html` dan `docs/progress.md`.
+  - `git status --short --branch` akhir menunjukkan hanya `Design/index.html` dan `Design/assets/img/favicon.png` (kondisi awal yang dipertahankan), `docs/progress.md` (entri sesi), dan `docs/audit/` (laporan baru).
+- **File yang dibuat/diubah:**
+  - `docs/audit/REDESIGN_AUDIT_2026-11-12.md` (baru)
+  - `docs/progress.md` (entri baru; riwayat lama tidak diubah)
+- **Konfirmasi batas scope:**
+  - Backend/database/migration/seed berubah: Tidak.
+  - API contract/auth/CSRF/CORS/RBAC/cookie policy berubah: Tidak.
+  - Dependency/lockfile/environment/deployment berubah: Tidak.
+  - Source frontend, `Design/`, atau file lain diubah: Tidak.
+  - Isi `.env*` dibaca/dicetak: Tidak.
+  - Commit/push/merge/rebase/deploy: Tidak.
+- **Blocker/keputusan yang diperlukan:**
+  - Konfirmasi acuan visual final, font, logo resmi, hak pakai foto hero, dan kontak/peta.
+  - Keputusan apakah route publikasi/kegiatan/detail boleh dibuat; dokumentasi saat ini melarang route baru tanpa persetujuan.
+  - Keputusan status/visibilitas program, termasuk `cancelled` dan filter periode.
+  - Hapus atau lindungi `__structure-state` sebelum rilis.
+- **Langkah berikutnya:**
+  - Tinjau laporan audit dan jawab pertanyaan pemilik pada bagian 10.
+  - Setelah disetujui, mulai batch R1 (sistem visual publik + chrome + homepage), lalu R2 (struktur), lalu R3 (section data homepage) dengan batas API yang tercatat.
+  - Jangan implementasi sebelum keputusan acuan visual dan route diberikan.
+
+---
+
+### Sesi 2026-11-12 — Batch R0: Restrukturisasi dokumentasi
+
+- **Status:** Selesai; tidak commit, push, merge, rebase, atau deploy.
+- **Branch:** `feat/admin-ui-foundation`.
+- **HEAD saat sesi:** `b388ae752270a03ae9a5fcbf25e44ad2b9c840fc` (`b388ae7` — "add something i thought was important").
+- **Tujuan batch:** merapikan dokumentasi agar setiap sesi berikutnya membaca konteks yang benar dan terkini — acuan desain aktif, keputusan pemilik, blocker terbuka, dan rencana batch — tanpa mengubah kode, desain, backend, atau konfigurasi apa pun.
+- **Yang selesai:**
+  - Verifikasi kondisi repository: branch `feat/admin-ui-foundation`, HEAD `b388ae7`, working tree bersih sebelum perubahan; tidak ada perubahan lokal pada file yang diedit batch ini.
+  - Menulis ulang `docs/progress.md` menjadi empat bagian: Current Project State (snapshot repo, scope, acuan aktif, referensi deprecated, keputusan pemilik, kondisi aktual V2, keputusan tertunda g.1–g.11, blocker teknis, koreksi catatan lama, temuan data dump 10 Nov, rencana batch R0–R4, backlog backend), Active Development Log (entri audit 12 Nov dipindah verbatim + entri R0), Historical Archive (blok Pemberitahuan 11 Nov, Kondisi awal paket konteks, Baseline 27 Okt, dan seluruh Catatan sesi kerja Sesi 0–30 Okt dipindah verbatim dengan penanda arsip baru), dan Template Catatan Sesi di bagian paling bawah.
+  - Menjalankan verifikasi verbatim read-only (skrip di luar repository) terhadap `git show HEAD:docs/progress.md`: setiap baris non-kosong asli ditemukan di file baru; pengecualian hanya baris judul template dan baris baru pada template.
+  - Memperbarui `docs/AGENTS.md` (bagian "Mulai di sini", urutan baca, aturan tidak mengandalkan auto-load, path `docs/`, aturan no-hardcode konten prototype + pengecualian link Bank Soal, izin laporan audit di `docs/audit/`).
+  - Menulis ulang `docs/DESIGN_REFERENCE_GUIDE.md` sepenuhnya berdasarkan isi aktual `Design/` (halaman, token terverifikasi dari CSS, komponen/interaksi, batasan non-produksi, aturan konten backend, pemetaan ke Next.js/Tailwind v4, daftar deprecated).
+  - Memperbaiki `docs/INSTALL_GUIDE.md` (path `docs/`, instruksi ekstrak `Design/`).
+  - Memperbarui `docs/OPEN_CODE_FIRST_PROMPT.md` (entry point `docs/AGENTS.md`, acuan `Design/`, izin laporan audit di `docs/audit/`, audit tetap read-only).
+  - Memperbarui `docs/HIMATKN_FRONTEND_CONTEXT.md` (acuan `Design/`, scope Bank Soal, inventaris endpoint/service/route aktual terverifikasi, path `docs/`).
+  - Dua koreksi minimal pada `docs/HIMATKN_V1_REDESIGN_GUIDE.md` (screenshot tidak tersedia di repository; rujukan Current Project State untuk keputusan terbaru termasuk Bank Soal).
+- **File yang diubah:**
+  - `docs/progress.md`
+  - `docs/AGENTS.md`
+  - `docs/DESIGN_REFERENCE_GUIDE.md`
+  - `docs/INSTALL_GUIDE.md`
+  - `docs/OPEN_CODE_FIRST_PROMPT.md`
+  - `docs/HIMATKN_FRONTEND_CONTEXT.md`
+  - `docs/HIMATKN_V1_REDESIGN_GUIDE.md`
+- **Pemeriksaan yang dijalankan + hasil:**
+  - Verifikasi verbatim `docs/progress.md`: baris non-kosong asli 537; ditemukan di file baru 536; pengecualian eksplisit 1 (`## Template catatan sesi berikutnya` — judul bagian template diganti `## 4. Template Catatan Sesi` sesuai restrukturisasi). Urutan relatif di dalam setiap blok/entri yang dipindah terverifikasi sama oleh skrip (skrip read-only di direktori sementara di luar repository, membandingkan dengan `git show HEAD:docs/progress.md`).
+  - `git status --short` dan `git diff --stat`: berubah hanya tujuh file dokumentasi di Bagian 1 prompt, ditambah perubahan lokal lain yang sudah ada sebelum/di luar sesi ini dan dipertahankan apa adanya: `frontend/components/public/SiteHeader.tsx` (modified) dan `frontend/lib/public/link.ts` (untracked). Perubahan frontend tersebut bukan hasil Batch R0 dan tidak disentuh.
+  - `git diff --color-moved=dimmed-zebra --stat docs/progress.md`: 292 insertions, 73 deletions; selain pemindahan, perubahan hanya blok baru (Current Project State, penanda arsip, entri audit 12 Nov dipindah, entri R0, dan pembaruan template).
+  - Grep referensi deprecated di `docs/`: hanya muncul di Historical Archive, daftar deprecated Current Project State, atau sebagai penanda deprecated.
+  - Cek path: seluruh path yang dirujuk `docs/AGENTS.md` dan Current Project State ada di repository (Test-Path, semua ada).
+  - Tidak ada nama anggota, username admin, hash password, atau data pribadi dari `*.sql` yang masuk dokumentasi; hanya agregat (9 divisi, 57 anggota, 1 periode, dll.).
+  - `git diff --check`: 7 baris trailing whitespace terdeteksi, semuanya baris template kosong (`- **Branch:** `, `  - `) yang **disalin verbatim dari HEAD**. Versi HEAD juga memuat trailing whitespace yang sama pada baris tersebut; menghapusnya berarti mengubah karakter baris yang dipindah, bertentangan dengan aturan verbatim. Konflik kecil antara dua aturan prompt ini diputuskan dengan memprioritaskan verbatim; pemilik dapat membersihkan whitespace saat commit bila diinginkan.
+- **Konfirmasi batas scope:**
+  - Backend berubah: Tidak.
+  - Database/schema/migration berubah: Tidak.
+  - API contract/auth/CSRF/CORS/RBAC/cookie policy berubah: Tidak.
+  - Source frontend berubah: Tidak.
+  - `Design/` berubah: Tidak.
+  - Dependency/lockfile/environment/deployment berubah: Tidak.
+  - Isi `.env*` dibaca/dicetak: Tidak.
+  - Dokumentasi/Design berubah: Ya — hanya tujuh file di `docs/` yang diizinkan prompt.
+  - Commit/push/merge/rebase/reset/deploy: Tidak.
+- **Ambiguitas yang dicatat:**
+  - Klaim prompt "3 berita (1 published/1 draft/1 archived)" dan "1 program planned" tidak cocok dengan dump lokal `23_tabel_himatkn.sql` yang ada di repo (hanya 1 berita published dengan 1 gambar galeri; tidak ada INSERT `programs`). Dicatat sebagai ambiguitas di Current Project State bagian j, bukan sebagai fakta repo.
+  - Selama sesi berjalan muncul perubahan lokal di luar scope yang bukan hasil Batch R0: `frontend/components/public/SiteHeader.tsx` (modified, +2/−1) dan `frontend/lib/public/link.ts` (untracked, konstanta link Bank Soal Google Drive). Sesuai aturan, perubahan lokal di file lain dipertahankan apa adanya dan tidak disentuh; kemungkinan berasal dari kerja pemilik atau sesi lain.
+- **Langkah berikutnya:**
+  - Pemilik proyek meninjau diff dokumentasi dan commit sendiri.
+  - Jawab keputusan tertunda g.1–g.11 sebelum batch R1.
+
+---
+
+## 3. Historical Archive
+
+> **Arsip historis.** Entri di bawah ini dibuat sebelum 11 November 2026 dan memakai referensi desain yang sudah deprecated. Keputusan visual di dalamnya (token, font, layout, komposisi) **tidak berlaku**. Fakta teknis (dependency, kontrak API, hasil validasi, konfigurasi) hanya berlaku jika masih sesuai dengan source code terkini; verifikasi ulang sebelum dipakai. Jangan melanjutkan tugas atau "langkah berikutnya" dari entri ini tanpa konfirmasi. Untuk koreksi yang sudah diketahui, lihat Current Project State bagian Koreksi.
 
 ## Pemberitahuan — Perubahan Acuan Desain (11 November 2026)
 
@@ -448,34 +710,6 @@ Informasi ini berasal dari audit repo remote dan dapat berubah. Agent harus veri
 
 ---
 
-## Template catatan sesi berikutnya
-
-Salin bagian ini dan isi dengan fakta aktual setiap selesai satu batch. Jangan mengklaim check/test berhasil jika tidak dijalankan.
-
-### Sesi YYYY-MM-DD — Judul batch
-
-- **Status:** Belum mulai / Berjalan / Selesai / Terblokir
-- **Branch:** 
-- **Tujuan batch:** 
-- **Yang selesai:**
-  - 
-- **File yang diubah:**
-  - 
-- **Pemeriksaan yang dijalankan + hasil:**
-  - 
-- **Risiko/regresi yang diperiksa:**
-  - 
-- **Blocker/keputusan yang diperlukan:**
-  - Tidak ada / jelaskan
-- **Konfirmasi batas scope:**
-  - Backend berubah: Tidak / Ya — wajib eskalasi jika tidak diizinkan
-  - Database/schema/migration berubah: Tidak / Ya — wajib eskalasi jika tidak diizinkan
-  - Secret/kredensial diekspos: Tidak / Ya — berhenti dan eskalasi
-- **Langkah berikutnya:**
-  - 
-
----
-
 ### Sesi 2026-10-30 — Perbaikan alignment kartu tunggal dan rasio foto Struktur
 
 - **Status:** Selesai; tidak commit, push, merge, rebase, atau deploy.
@@ -539,49 +773,33 @@ Salin bagian ini dan isi dengan fakta aktual setiap selesai satu batch. Jangan m
 
 ---
 
-### Sesi 2026-11-12 - Audit redesign website publik V2 (read-only)
+## 4. Template Catatan Sesi
 
-- **Status:** Selesai; audit read-only; tidak commit, push, merge, rebase, atau deploy.
-- **Branch:** `feat/admin-ui-foundation`.
-- **HEAD saat audit:** `8e5afcb17aa4d2bda91a995a5d650db7f2e2d07b`.
-- **Tujuan:** memetakan Prototype Desain HIMATKN V1 di `Design/` ke route, komponen, data flow, dan kontrak API V2; menulis laporan audit dan menambahkan entri sesi tanpa mengubah source.
-- **Ruang lingkup:** website publik V2 dan panel admin existing. Bank soal di luar scope. Repo V1 live tidak dipakai sebagai acuan.
-- **Yang dilakukan:**
-  - Memeriksa branch, HEAD, `git status --short`, `git diff --stat`, dan perubahan lokal `Design/index.html`; seluruh perubahan lokal dipertahankan.
-  - Membaca dokumen di `docs/`, `Design/README.md`, source frontend publik/admin, API client/service/types, kontrak backend publik, model/schema/seed, dan dump `23_tabel_himatkn.sql`.
-  - Menginventarisasi route, komponen, state, aset, serta service publik yang dipakai dan belum dipakai.
-  - Menjalankan baseline `npm run lint` dan `npx tsc --noEmit` dari `frontend/`.
-- **Temuan utama:**
-  - Hanya `/` dan `/struktur` yang merupakan halaman publik produk; `/__structure-state` adalah fixture hardcoded yang masih dapat diakses publik dan tidak diblokir `robots.ts`.
-  - Visual V2 saat ini berbeda dari Prototype V1: cream/gold dan Playfair/Crimson/Space Grotesk vs mint/green dan Literata/Inter; header absolute vs sticky; hero terpusat vs kiri desktop; struktur kartu vs tree.
-  - Section Program Kerja homepage masih empty state meskipun `getPublicPrograms()` tersedia; link “Instagram” mengarah ke `#publikasi`.
-  - Publikasi hanya menampilkan judul/tanggal dengan “Detail segera hadir”; API list tidak menyediakan excerpt, search, atau total. Detail berita tersedia di API tetapi route belum ada.
-  - `OrganizationSection` hanya menampilkan periode dan jumlah anggota; berbeda dari catatan historis `docs/progress.md` yang menyebut divisi/anggota.
-  - Struktur memakai API nyata dan state yang cukup lengkap, tetapi dropdown masih native `<select>`, deteksi BPH memakai regex nama, dan visualnya berbeda dari Prototype.
-  - API program tidak menyediakan detail, filter status, search, total, atau metadata periode/divisi; status program berupa string bebas dan `cancelled` hanya dipetakan di UI admin.
-  - Aset logo asli tersedia di `frontend/public/favicon.png`/`icon.png` dan `Design/assets/img/favicon.png`, tetapi V2 memakai `BrandMark` abstrak dan Prototype masih memakai logo SVG tiruan.
-- **Pemeriksaan yang dijalankan + hasil aktual:**
-  - `npm run lint` — lulus tanpa error.
-  - `npx tsc --noEmit` — lulus tanpa output.
-  - `npm run build` — tidak dijalankan pada sesi audit ini.
-  - `git diff --check` — tidak ada whitespace error; hanya warning normalisasi LF/CRLF pada `Design/index.html` dan `docs/progress.md`.
-  - `git status --short --branch` akhir menunjukkan hanya `Design/index.html` dan `Design/assets/img/favicon.png` (kondisi awal yang dipertahankan), `docs/progress.md` (entri sesi), dan `docs/audit/` (laporan baru).
-- **File yang dibuat/diubah:**
-  - `docs/audit/REDESIGN_AUDIT_2026-11-12.md` (baru)
-  - `docs/progress.md` (entri baru; riwayat lama tidak diubah)
-- **Konfirmasi batas scope:**
-  - Backend/database/migration/seed berubah: Tidak.
-  - API contract/auth/CSRF/CORS/RBAC/cookie policy berubah: Tidak.
-  - Dependency/lockfile/environment/deployment berubah: Tidak.
-  - Source frontend, `Design/`, atau file lain diubah: Tidak.
-  - Isi `.env*` dibaca/dicetak: Tidak.
-  - Commit/push/merge/rebase/deploy: Tidak.
+Salin bagian ini dan isi dengan fakta aktual setiap selesai satu batch. Jangan mengklaim check/test berhasil jika tidak dijalankan.
+
+Salin entri ke Active Development Log (Bagian 2) di `docs/progress.md`; jangan mengubah entri lama.
+
+### Sesi YYYY-MM-DD — Judul batch
+
+- **Status:** Belum mulai / Berjalan / Selesai / Terblokir
+- **Branch:** 
+- **Tujuan batch:** 
+- **Yang selesai:**
+  - 
+- **File yang diubah:**
+  - 
+- **Pemeriksaan yang dijalankan + hasil:**
+  - 
+- **Risiko/regresi yang diperiksa:**
+  - 
 - **Blocker/keputusan yang diperlukan:**
-  - Konfirmasi acuan visual final, font, logo resmi, hak pakai foto hero, dan kontak/peta.
-  - Keputusan apakah route publikasi/kegiatan/detail boleh dibuat; dokumentasi saat ini melarang route baru tanpa persetujuan.
-  - Keputusan status/visibilitas program, termasuk `cancelled` dan filter periode.
-  - Hapus atau lindungi `__structure-state` sebelum rilis.
+  - Tidak ada / jelaskan
+- **Konfirmasi batas scope:**
+  - Backend berubah: Tidak / Ya — wajib eskalasi jika tidak diizinkan
+  - Database/schema/migration berubah: Tidak / Ya — wajib eskalasi jika tidak diizinkan
+  - Secret/kredensial diekspos: Tidak / Ya — berhenti dan eskalasi
+  - Dokumentasi/Design berubah: Tidak / Ya — sebutkan file yang berubah
 - **Langkah berikutnya:**
-  - Tinjau laporan audit dan jawab pertanyaan pemilik pada bagian 10.
-  - Setelah disetujui, mulai batch R1 (sistem visual publik + chrome + homepage), lalu R2 (struktur), lalu R3 (section data homepage) dengan batas API yang tercatat.
-  - Jangan implementasi sebelum keputusan acuan visual dan route diberikan.
+  - 
+
+---
