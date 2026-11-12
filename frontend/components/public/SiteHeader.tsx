@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-
 import { BrandMark } from "@/components/public/BrandMark";
+import { PUBLIC_LINKS } from "@/lib/public/link";
 
 const navigation = [
   { label: "Beranda", href: "/#beranda" },
@@ -13,6 +13,7 @@ const navigation = [
   { label: "Program Kerja", href: "/#program" },
   { label: "Struktur", href: "/struktur" },
   { label: "Kontak", href: "/#kontak" },
+  { label: "Bank Soal", href: PUBLIC_LINKS.bankSoal.href, target: "_blank", rel: "noopener noreferrer" },
 ];
 
 export function SiteHeader() {
