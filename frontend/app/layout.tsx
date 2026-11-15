@@ -1,32 +1,25 @@
 import type { Metadata } from "next";
 import {
-  Crimson_Text,
   Inter,
   JetBrains_Mono,
+  Literata,
   Playfair_Display,
-  Space_Grotesk,
 } from "next/font/google";
 
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  display: "swap",
-});
-
-const crimsonText = Crimson_Text({
-  variable: "--font-crimson",
+/**
+ * Font publik mengikuti Prototype Desain HIMATKN V1:
+ * Literata (serif/judul) + Inter (sans/UI).
+ * Playfair Display + Inter dipertahankan untuk scope admin (.admin-theme).
+ * JetBrains Mono dipertahankan karena masih dirujuk admin (`font-mono`) dan
+ * label teknis di halaman publik yang belum dimigrasikan (R2).
+ */
+const literata = Literata({
+  variable: "--font-literata",
   subsets: ["latin"],
   weight: ["600", "700"],
+  style: ["normal", "italic"],
   display: "swap",
 });
 
@@ -43,8 +36,15 @@ const playfair = Playfair_Display({
   display: "swap",
 });
 
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://himatknuklir.vercel.app"),
+  metadataBase: new URL("https://www.himatknuklir.web.id"),
 
   title: {
     default: "HIMATKN — Himpunan Mahasiswa Teknokimia Nuklir",
@@ -68,7 +68,7 @@ export const metadata: Metadata = {
     title: "HIMATKN — Himpunan Mahasiswa Teknokimia Nuklir",
     description:
       "Website resmi HIMATKN, himpunan mahasiswa Teknokimia Nuklir.",
-    url: "https://himatknuklir.vercel.app",
+    url: "https://www.himatknuklir.web.id",
     siteName: "HIMATKN",
     locale: "id_ID",
     type: "website",
@@ -83,7 +83,7 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} ${crimsonText.variable} ${inter.variable} ${playfair.variable}`}
+      className={`${literata.variable} ${inter.variable} ${playfair.variable} ${jetbrainsMono.variable}`}
     >
       <body className="font-sans">{children}</body>
     </html>

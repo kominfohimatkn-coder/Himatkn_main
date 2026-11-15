@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function NotFound() {
   return (
-    <div id="top">
+    <div id="top" className="public-site">
       <SiteHeader />
 
       <main
@@ -21,13 +21,13 @@ export default function NotFound() {
       >
         <div className="w-full max-w-3xl">
           <p className="kicker kicker--dark">Error 404</p>
-          <p className="mt-4 font-serif text-[clamp(7rem,20vw,14rem)] leading-none tracking-[-0.05em] text-gold-bright">
+          <p className="mt-4 font-serif text-[clamp(7rem,20vw,14rem)] leading-none tracking-tighter text-gold-bright">
             404
           </p>
           <h1 className="mt-6 text-[clamp(2.375rem,5vw,3.625rem)] text-on-dark">
             Halaman tidak ditemukan.
           </h1>
-          <p className="mx-auto mt-3 max-w-[560px] text-sm leading-7 text-on-dark-soft">
+          <p className="mx-auto mt-3 max-w-140 text-sm leading-7 text-on-dark-soft">
             Alamat yang kamu buka tidak tersedia atau sudah dipindahkan.
             Periksa kembali tautannya atau kembali ke beranda.
           </p>

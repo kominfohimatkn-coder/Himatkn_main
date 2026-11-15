@@ -14,15 +14,17 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 
 ## 1. Current Project State
 
-> Terakhir diperbarui: 12 November 2026 (Batch R0). Perbarui bagian ini pada setiap batch.
+> Terakhir diperbarui: 15 November 2026 (Batch R1 Fase A). Perbarui bagian ini pada setiap batch.
 
 ### a. Snapshot repository
 
 - Branch: `feat/admin-ui-foundation`.
+- HEAD terverifikasi saat Batch R1 Fase A: `00bf955cb9bb35c8adcf9e480834b01e43f11b2c` (`00bf955`), ahead 2 dari remote yang diketahui.
 - HEAD terverifikasi saat Batch R0: `b388ae752270a03ae9a5fcbf25e44ad2b9c840fc` (`b388ae7` — "add something i thought was important").
 - HEAD remote yang sebelumnya diketahui: `5e9aa6c` ("remove unused state"). HEAD lokal sudah lebih baru dari itu; `b388ae7` hanya mengubah `README.md`.
 - `Design/bank-soal.html` sudah dihapus pada `5e9aa6c`; halaman tersebut bukan lagi bagian Prototype aktif. Link `bank-soal.html` yang masih tersisa di file `Design/` lain diabaikan.
 - Working tree bersih sebelum Batch R0 dimulai.
+- Batch R1 Fase A (15 Nov) meninggalkan perubahan **belum di-commit** di 6 file (4 diubah, 2 dihapus); lihat Active Development Log entri 15 November 2026.
 
 ### b. Scope fase saat ini
 
@@ -72,7 +74,7 @@ Entri historis yang masih memuat referensi tersebut tetap utuh di Historical Arc
 
 Ringkasan dari audit 12 November 2026; detail dan bukti line-by-line ada di `docs/audit/REDESIGN_AUDIT_2026-11-12.md` (rujukan; jangan disalin ulang).
 
-- Route publik produk: `/` dan `/struktur`. `/__structure-state` adalah **fixture** dengan data hardcoded yang masih dapat diakses publik dan belum diblokir `robots.ts`.
+- Route publik produk: `/` dan `/struktur`. Fixture `/__structure-state` **sudah dihapus pada R1 Fase A** (folder berawalan `_` sebenarnya tidak pernah menjadi route Next; URL-nya 404 bahkan sebelum dihapus).
 - Route admin: `/login`, `/admin/dashboard`, `/admin/news` (read-only di UI), `/admin/programs` (CRUD).
 - Endpoint publik yang tersedia dan pemakaiannya:
 
@@ -84,23 +86,25 @@ Ringkasan dari audit 12 November 2026; detail dan bukti line-by-line ada di `doc
   | `/public/organization` | Ya |
   | `POST /public/visits` | Belum |
 
-- Baseline: `npm run lint` dan `npx tsc --noEmit` lulus pada audit. `npm run build` belum dijalankan sejak audit.
+- Baseline: `npm run lint` dan `npx tsc --noEmit` lulus pada audit. `npm run build` pertama kali dijalankan pada R1 Fase A (15 Nov): **gagal** karena `frontend/app/(private)/(admin)/loading.tsx` berukuran 0 byte; setelah file itu dihapus (disetujui pemilik) build lulus 9 route.
 
 ### g. Keputusan yang masih tertunda (blok batch R1 dan seterusnya)
 
-Semua butir berstatus **Menunggu keputusan pemilik**:
+Status per 15 November 2026 (Batch R1 Fase A):
 
-1. Font final: Literata + Inter dari prototype, atau yang lain. README prototype menyebut Literata masih perkiraan.
-2. Logo header: apakah `frontend/public/favicon.png` / `icon.png` (1080×1350) adalah logo resmi. Favicon butuh versi persegi.
-3. Foto hero: versi `Design/assets/img/hero.jpg` (4160×3120) atau `frontend/public/images/hero-group.jpg` (2400×1800), serta hak pakainya.
-4. Acuan hero mobile: screenshot Figma slide 15–18 tidak ada di repository. Pilihannya: screenshot ditambahkan ke repo, atau prototype dipakai sebagai acuan.
-5. Izin route baru: `/publikasi`, `/publikasi/[slug]`, dan halaman daftar program kerja.
-6. Nama route program kerja: `/program-kerja` atau `/kegiatan`.
-7. Perlakuan status `cancelled` di UI publik.
-8. Program dari periode mana yang ditampilkan di publik. API tidak punya filter periode.
-9. Kontak, alamat, dan peta: nilai resmi dan sudah terverifikasi, atau disembunyikan dulu.
-10. Penanganan `/__structure-state` sebelum rilis.
-11. Domain canonical: `himatknuklir.web.id` atau `himatknuklir.vercel.app`. Saat ini `metadataBase` berbeda dengan sitemap/robots.
+| # | Keputusan | Status |
+|---|---|---|
+| 1 | Font final: Literata + Inter dari prototype, atau yang lain | **Diputuskan pemilik:** Literata + Inter untuk publik |
+| 2 | Logo header: apakah `frontend/public/favicon.png` / `icon.png` (1080×1350) adalah logo resmi | **Diputuskan pemilik:** `favicon.png` adalah logo resmi, dipakai header + footer |
+| 3 | Foto hero: `Design/assets/img/hero.jpg` atau `frontend/public/images/hero-group.jpg` | **Diputuskan pemilik:** `frontend/public/images/hero-group.jpg` via optimasi Next.js |
+| 4 | Acuan hero mobile: screenshot Figma slide 15–18 tidak ada di repo | **Diputuskan pemilik:** ikuti prototype untuk hero mobile |
+| 5 | Izin route baru: `/publikasi`, `/publikasi/[slug]`, halaman daftar program kerja | Menunggu keputusan pemilik |
+| 6 | Nama route program kerja: `/program-kerja` atau `/kegiatan` | Menunggu keputusan pemilik |
+| 7 | Perlakuan status `cancelled` di UI publik | Menunggu keputusan pemilik |
+| 8 | Program dari periode mana yang ditampilkan di publik (API tanpa filter periode) | Menunggu keputusan pemilik |
+| 9 | Kontak, alamat, dan peta: nilai resmi terverifikasi atau disembunyikan | **Diputuskan pemilik:** disembunyikan dulu; terblokir `GET /public/settings`, jangan hardcode |
+| 10 | Penanganan `/__structure-state` sebelum rilis | **Diputuskan pemilik:** fixture dihapus pada R1 |
+| 11 | Domain canonical: `himatknuklir.web.id` atau `himatknuklir.vercel.app` | **Diputuskan pemilik:** `himatknuklir.web.id`; host kanonis dipakai `www.himatknuklir.web.id` (sama dengan sitemap/robots) |
 
 ### h. Blocker teknis yang masih terbuka
 
@@ -110,6 +114,7 @@ Semua butir berstatus **Menunggu keputusan pemilik**:
 - `npm` melaporkan 4 high severity vulnerability (sesi 29 Oktober). **Belum ditangani.**
 - Warning Turbopack tentang lockfile di luar repository (`C:\Users\faqih`). **Tidak menggagalkan build.**
 - Representasi BPH: source mendeteksi BPH lewat regex nama divisi/jabatan (`frontend/components/public/StructureDirectory.tsx`), karena API tidak punya flag BPH. **Perlu keputusan pemilik apakah ini diterima.** (Koreksi atas klaim historis: lihat bagian i.)
+- `frontend/app/(private)/(admin)/loading.tsx` (0 byte, commit `8cf6f75`) dihapus di R1 karena membuat build gagal. Loading state admin perlu dibuat dengan benar di batch admin terpisah.
 
 ### i. Koreksi atas catatan lama
 
@@ -119,9 +124,12 @@ Entri lama **tidak diubah**; koreksinya hanya dicatat di sini:
 |---|---|---|
 | Batch 2.1 (29 Okt) | BPH dikelompokkan netral, tidak ditebak | Source mendeteksi BPH via regex (`StructureDirectory.tsx`) |
 | Batch 2.1 (29 Okt) | `OrganizationSection` menampilkan divisi, anggota, dan jabatan | Hanya menampilkan periode dan jumlah anggota (`OrganizationSection.tsx`) |
-| 30 Okt | Fixture validasi tidak ikut build | `/__structure-state` adalah route nyata dan tidak diblokir `robots.ts` |
+| 30 Okt | Fixture validasi tidak ikut build | `/__structure-state` adalah folder berawalan `_`, sehingga **tidak pernah** menjadi route Next dan URL-nya 404; tetap dihapus pada R1 Fase A |
 | Beberapa entri | Merujuk `progress.md` dan `AGENTS.md` di root | Lokasi aktual: `docs/progress.md` dan `docs/AGENTS.md` |
 | Baseline 27 Okt | Next.js 16.3.2; `Button.tsx` kosong | Next.js 16.4.3; `Button.tsx` sudah terimplementasi |
+| Bagian j (R0) | Judul bagian j menyebut "dump lokal 10 November 2026" | File dump di dalam repo adalah `23_tabel_himatkn.sql` (16 Sep 2026). Dump 10 Nov 2026 adalah `New_Himatkn_database.sql` dan berada **di luar repo** (`..\New folder\`). Angka pada bagian j berasal dari dump 16 Sep |
+| Bagian j (R0) | "3 berita (1 published/1 draft/1 archived)" tidak dapat diverifikasi, dianggap ambiguitas | **Terverifikasi pada dump 10 Nov 2026:** 3 baris `news` dengan status 1 `published`, 1 `draft`, 1 `archived`. Ambiguitas selesai |
+| Bagian j (R0) | "1 program berstatus `planned`" tidak dapat diverifikasi, dianggap ambiguitas | **Terverifikasi pada dump 10 Nov 2026:** 1 baris `programs` berstatus `planned`. Ambiguitas selesai. Dump lama 16 Sep memang tidak memuat `programs` |
 
 ### j. Temuan data (dump lokal 10 November 2026; belum diverifikasi terhadap production)
 
@@ -139,8 +147,9 @@ Hanya agregat; tidak ada data pribadi:
 
 | Batch | Isi | Status |
 |---|---|---|
-| R0 | Dokumentasi | Sesi ini |
-| R1 | Sistem visual publik (token di-scope agar admin tidak berubah, font dikurangi), header/menu mobile/footer/logo, konstanta link Bank Soal, hero, Tentang, kartu publikasi, 404, penanganan fixture, domain metadata | Diblok keputusan g.1–4, g.9–11 |
+| R0 | Dokumentasi | Selesai (12 Nov 2026) |
+| R1 Fase A | Sistem visual publik: token prototype di-scope `.public-site`, font Literata + Inter, header sticky 72px + nav 6 item, menu mobile prototype, footer, logo resmi, konstanta link Bank Soal dipakai header/menu/footer, hapus fixture `__structure-state`, domain canonical | **Selesai 15 Nov 2026; menunggu persetujuan pemilik sebelum Fase B.** Perubahan belum di-commit |
+| R1 Fase B | Hero, Tentang, section Program visual, Publikasi, Kepengurusan, Kontak disembunyikan, restyle 404, loading state | **Belum dikerjakan; diblok persetujuan pemilik atas Fase A** |
 | R2 | Halaman `/struktur`: dropdown custom yang aksesibel, visual tree/kartu/avatar, fallback foto | — |
 | R3 | Data homepage: grid divisi, program dengan 4 status, perbaikan link "Instagram" | Diblok keputusan g.7–8 |
 | R4 | `/publikasi` dan `/publikasi/[slug]` | Diblok keputusan g.5 |
@@ -259,6 +268,65 @@ Entri sesi sejak 11 November 2026. Append-only: tambahkan entri baru di bawah; j
 - **Langkah berikutnya:**
   - Pemilik proyek meninjau diff dokumentasi dan commit sendiri.
   - Jawab keputusan tertunda g.1–g.11 sebelum batch R1.
+
+---
+
+### Sesi 2026-11-15 — Batch R1 Fase A: Sistem visual publik (token, font, header, menu mobile, footer, logo, domain)
+
+- **Status:** Selesai untuk Fase A; **berhenti menunggu persetujuan pemilik sebelum Fase B**. Tidak commit, push, merge, rebase, reset, clean, atau deploy.
+- **Branch:** `feat/admin-ui-foundation`. HEAD `00bf955cb9bb35c8adcf9e480834b01e43f11b2c` (`00bf955`, ahead 2).
+- **Tujuan:** menyelaraskan sistem visual publik V2 dengan Prototype Desain HIMATKN V1 (token di-scope, font, header sticky, menu mobile, footer, logo, hapus fixture, domain canonical) **tanpa menyentuh backend/admin/API**. Hero, Tentang, Program, Publikasi, Kepengurusan, Kontak, restyle 404, dan loading state sengaja ditunda ke Fase B.
+- **Keputusan pemilik yang dipakai:** g.1 Literata + Inter; g.2 `frontend/public/favicon.png` sebagai logo resmi header/footer; g.3 `frontend/public/images/hero-group.jpg` via optimasi Next.js; g.4 hero mobile mengikuti prototype; g.9 kontak/alamat/peta **disembunyikan** (blocked by API, tidak di-hardcode); g.10 fixture `__structure-state` dihapus; g.11 domain canonical `himatknuklir.web.id` dengan host `www.himatknuklir.web.id`.
+- **File yang diubah:**
+  - `frontend/app/layout.tsx` (+21/−21): font `Literata` (600/700, normal+italic) + `Inter` menggantikan Space Grotesk + Crimson Text; Playfair Display dan JetBrains Mono dipertahankan untuk admin. `metadataBase` dan `openGraph.url` → `https://www.himatknuklir.web.id`.
+  - `frontend/app/globals.css` (+53/−47; 1480 → 1487 baris): blok token prototype di `.public-site` (`--green-900/800/700`, `--mint`, `--paper`, `--ink`, `--ink-soft`, `--muted`, `--on-dark`, `--on-dark-soft`, `--line`, `--line-on-dark`, `--amber`, `--radius`, `--container: 1130px`, `--gutter: 24px/16px`, `--header-h: 72px`), utility `@theme inline` baru (mint, green-950/900/800/700, line, line-on-dark, amber), stack tipografi default → Inter/Literata, `.site-container` → max 1130px + gutter, skip-link hijau, `section[id] { scroll-margin-top: calc(var(--header-h) + 1rem) }`. `.public-nav-link` (6 rule) dihapus karena tidak lagi dipakai; `@media (max-width: 640px)` tidak lagi menimpa `.site-container`.
+  - `frontend/components/public/SiteHeader.tsx` (+222/−57): header sticky `bg-paper` tinggi 72px, logo `next/image` 29×36, brand Literata uppercase, nav desktop 6 item (**Beranda, Tentang, Kegiatan, Publikasi, Bank Soal, Struktur**) dengan `aria-current`, menu mobile panel prototype (fixed, transisi, `prefers-reduced-motion`, `aria-expanded`/`aria-controls`, Escape, klik luar, focus trap, scroll lock, target sentuh 57px), Bank Soal eksternal `target="_blank"` + `rel` dari konstanta + penanda sr-only.
+  - `frontend/components/public/SiteFooter.tsx` (+91/−20): footer `bg-green-950` + border `line-on-dark`, brand + logo (tile putih), nav 6 item (Bank Soal eksternal), copyright + "Kembali ke atas". Tanpa alamat, email, atau peta.
+  - `frontend/app/not-found.tsx` (+3/−3): hanya menambahkan scope `className="public-site"`; dua perubahan pemilik yang belum di-commit (`tracking-tighter`, `max-w-140`) dipertahankan.
+  - `frontend/app/(public)/__structure-state/page.tsx` (dihapus, 63 baris).
+  - **Di luar scope R1, disetujui pemilik:** `frontend/app/(private)/(admin)/loading.tsx` (0 byte, commit `8cf6f75`) dihapus karena membuat `npm run build` gagal. Loading state admin perlu dibuat benar di batch admin terpisah (dicatat di Current Project State bagian h).
+- **Keputusan teknis mandiri + alasan:**
+  - Token prototype hanya di `.public-site`; `:root` dan `.admin-theme` tidak diubah sehingga admin/`/login` identik.
+  - `--line-dark` V2 tidak di-override (masih rgba transparan yang dipakai komponen publik lama); ditambah token baru `--line-on-dark: #1c3d31` untuk garis permukaan gelap agar tidak mengubah tampilan lama di luar scope.
+  - `--header-h: 72px` di semua breakpoint mengikuti instruksi prompt (prototype 68px di ≤640).
+  - Anchor memakai `scroll-margin-top` per `section[id]`, bukan `scroll-padding-top` di `html`, agar aturan global tidak berubah.
+  - Nav memakai label "Publikasi" (prototype footer menulis "Berita") agar konsisten dengan nama section; "Kegiatan" → `/#program` dan "Publikasi" → `/#publikasi` diberi komentar sementara sampai route tersedia.
+  - Logo memakai atribut `width={29} height={36}`, bukan utility `h-9`, karena `img { height: auto }` unlayered mengalahkan utility Tailwind.
+  - Logo footer diberi tile `bg-white` karena PNG 1080×1350 berlatar putih akan tampak sebagai kotak di atas hijau gelap.
+- **Pemeriksaan yang dijalankan + hasil aktual:**
+  - `npm run lint` — lulus tanpa error.
+  - `npx tsc --noEmit` — lulus tanpa output.
+  - `npm run build` — **gagal** sebelum file `(admin)/loading.tsx` dihapus ("The default export is not a React Component in /admin/dashboard/loading"); setelah dihapus **lulus 9 route** (`/`, `/_not-found`, `/admin/dashboard`, `/admin/news`, `/admin/programs`, `/login`, `/robots.txt`, `/sitemap.xml`, `/struktur`).
+  - Validasi produksi (`npm start`, port 3100, build final): tanpa overflow horizontal di 390/768/1280 untuk `/`, `/struktur`, 404, `/login` (`scrollWidth === clientWidth`).
+  - Header sticky: `position: sticky`, tinggi 72px, `top: 0` setelah scroll 1200px.
+  - Anchor: `#beranda`, `#tentang`, `#program`, `#publikasi`, `#struktur`, `#top` semua ada; klik "Tentang" mendarat di `top: 88px` (header 72 + 16).
+  - Menu mobile: Escape dan klik luar menutup panel dan mengembalikan fokus ke tombol; Tab berputar di dalam header (tombol + 6 tautan); `aria-expanded` dan `body overflow: hidden` benar; tinggi tiap tautan 57px.
+  - `/admin/dashboard` tanpa sesi → redirect ke `/login`.
+  - Kontras terukur: brand green-900/paper 15.06:1, nav muted/paper 5.70:1, nav aktif green-800/paper 9.63:1, muted/mint 4.90:1, footer link 7.78:1, teks putih footer 16.14:1, skip-link 9.84:1, ink/paper 16.46:1.
+  - Keluarga font: sebelum 5 dimuat (Space Grotesk, Playfair Display, Crimson Text, Inter, JetBrains Mono) → sesudah **4** (Literata, Inter, Playfair Display, JetBrains Mono). Halaman publik hanya memakai **3** (Inter, Literata, JetBrains Mono).
+  - `/login` sebelum vs sesudah: computed style identik (h1 Playfair 24px/600 `rgb(22,38,29)`, label Inter 14px/500, input Inter 16px latar putih, tombol Inter 16px `rgb(14,32,24)`); kontras 13.61:1 dan 14.58:1.
+- **Screenshot validasi:**
+  - `docs/validation/r1/before/` — 14 file baseline (390/768/1280: home, struktur, 404, login; menu-open di 390 dan 768).
+  - `docs/validation/r1/phase-a/` — 14 file sesudah, set yang sama.
+  - **Catatan privasi:** screenshot `/struktur` memuat nama pengurus dari API; pemilik perlu meninjau sebelum commit/publikasi.
+- **Blocked by API:**
+  - `GET /public/settings` belum ada → kontak, alamat, dan peta disembunyikan; tidak di-hardcode. Section kontak homepage masih menampilkan "Menunggu verifikasi" sampai Fase B.
+- **Deviasi/keterbatasan yang dicatat:**
+  - Homepage masih memakai class lama (`.home-hero`, `.program-empty-panel`, `.contact-section`, `.publication-*`) dan belum di-restyle; hero/struktur punya padding ekstra karena header kini sticky — diperbaiki di Fase B/R2.
+  - `/struktur` belum di-restyle (R2).
+  - File `New_Himatkn_database.sql` (dump 10 Nov) berada di luar repo; koreksi sumber data dicatat di Current Project State bagian i.
+- **Konfirmasi batas scope:**
+  - Backend/database/migration berubah: Tidak.
+  - API contract/auth/CSRF/CORS/RBAC/cookie policy berubah: Tidak.
+  - `apiFetch`, struktur `lib/*`, tipe API berubah: Tidak.
+  - Tampilan admin/`/login` berubah: Tidak (diverifikasi via computed style).
+  - Route baru/endpoint/parameter/data palsu: Tidak.
+  - Dependency/lockfile/environment/deployment/konfigurasi berubah: Tidak.
+  - `Design/`, `.gitignore` berubah: Tidak.
+  - Isi `.env*` dibaca/dicetak: Tidak.
+  - Commit/push/merge/rebase/reset/clean/deploy: Tidak.
+- **Langkah berikutnya:**
+  - Pemilik meninjau laporan Fase A dan screenshot, lalu memberi persetujuan untuk Fase B (hero, Tentang, Program, Publikasi, Kepengurusan, kontak disembunyikan, restyle 404, loading state).
 
 ---
 
