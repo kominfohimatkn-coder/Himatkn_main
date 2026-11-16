@@ -1,3 +1,12 @@
+export const PROGRAM_STATUSES = [
+  "planned",
+  "ongoing",
+  "completed",
+  "cancelled",
+] as const;
+
+export type ProgramStatus = (typeof PROGRAM_STATUSES)[number];
+
 export interface AdminProgram {
   id: number;
   period_id: number;
@@ -6,6 +15,10 @@ export interface AdminProgram {
   name: string;
   slug: string;
   description: string | null;
+  /**
+   * Data lama belum tentu memakai nilai enum resmi, jadi tipe admin tetap
+   * `string` dan dinormalisasi lewat helper status.
+   */
   status: string;
   start_date: string | null;
   end_date: string | null;
@@ -13,14 +26,34 @@ export interface AdminProgram {
   updated_at: string;
 }
 
+export interface PublicProgramDivision {
+  id: number;
+  name: string;
+}
+
+export interface PublicProgramPeriod {
+  id: number;
+  name: string;
+}
+
 export interface PublicProgram {
   id: number;
   name: string;
   slug: string;
   description: string | null;
-  status: string;
+  status: ProgramStatus;
   start_date: string | null;
   end_date: string | null;
+  division: PublicProgramDivision | null;
+  period: PublicProgramPeriod;
+}
+
+export interface PublicProgramListResponse {
+  items: PublicProgram[];
+  total: number;
+  offset: number;
+  limit: number;
+  period: PublicProgramPeriod | null;
 }
 
 export interface ProgramListResponse<T> {
@@ -35,7 +68,7 @@ export interface ProgramInput {
   name: string;
   slug: string;
   description?: string | null;
-  status?: string;
+  status: ProgramStatus;
   start_date?: string | null;
   end_date?: string | null;
 }

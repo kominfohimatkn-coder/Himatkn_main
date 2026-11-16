@@ -5,8 +5,16 @@ import { useEffect, useState, type FormEvent } from "react";
 
 import FormDialog from "@/components/admin/shared/FormDialog";
 import { getAdminDivisions } from "@/lib/admin/organization";
+import {
+  normalizeProgramStatus,
+  programStatusLabel,
+} from "@/lib/programs/status";
 
-import type { AdminProgram, CreateProgramPayload } from "@/types/programs";
+import { PROGRAM_STATUSES } from "@/types/programs";
+import type {
+  AdminProgram,
+  CreateProgramPayload,
+} from "@/types/programs";
 import type { AdminDivision, AdminPeriod } from "@/types/organization";
 
 interface ProgramFormDialogProps {
@@ -113,6 +121,11 @@ export default function ProgramFormDialog({
     ? divisionState.error
     : "";
 
+  const selectedStatus = normalizeProgramStatus(form.status);
+
+  const hasLegacyStatus =
+    form.status.trim().length > 0 && selectedStatus === null;
+
   function updateField(
     field: keyof ProgramFormState,
     value: string,
@@ -143,6 +156,15 @@ export default function ProgramFormDialog({
       return;
     }
 
+    const status = normalizeProgramStatus(form.status);
+
+    if (!status) {
+      setError(
+        "Pilih salah satu dari empat status program yang valid.",
+      );
+      return;
+    }
+
     const payload: CreateProgramPayload = {
       period_id: periodId,
       division_id: form.division_id
@@ -151,7 +173,7 @@ export default function ProgramFormDialog({
       name: form.name.trim(),
       slug: form.slug.trim(),
       description: form.description.trim() || null,
-      status: form.status.trim() || "planned",
+      status,
       start_date: form.start_date || null,
       end_date: form.end_date || null,
     };
@@ -363,17 +385,28 @@ export default function ProgramFormDialog({
             Status
           </label>
 
-          <input
+          <select
             id="program-status"
             name="status"
-            value={form.status}
+            value={selectedStatus ?? ""}
             onChange={(event) =>
               updateField("status", event.target.value)
             }
-            maxLength={30}
+            required
             className={inputStyle}
-            placeholder="planned"
-          />
+          >
+            <option value="" disabled>
+              {hasLegacyStatus
+                ? `Status lain (${form.status.trim()})`
+                : "Pilih status"}
+            </option>
+
+            {PROGRAM_STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {programStatusLabel(status)}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">

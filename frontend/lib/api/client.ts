@@ -1,5 +1,7 @@
 // frontend/lib/api/client.ts
 
+import { ApiError } from "./errors";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
 
 function getApiUrl(): string {
@@ -19,6 +21,90 @@ let csrfPromise: Promise<string> | null = null;
 let csrfRefreshPromise: Promise<string> | null = null;
 let csrfGeneration = 0;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function summarizeValidationDetail(detail: unknown[]): string {
+  const messages = detail
+    .slice(0, 3)
+    .map((entry) => {
+      if (typeof entry === "string") {
+        return entry.trim();
+      }
+
+      if (isRecord(entry) && typeof entry.msg === "string") {
+        return entry.msg.trim();
+      }
+
+      return "";
+    })
+    .filter((message) => message.length > 0);
+
+  if (messages.length === 0) {
+    return "Data yang dikirim tidak valid.";
+  }
+
+  return `Data yang dikirim tidak valid: ${messages.join("; ")}`;
+}
+
+function readDetail(data: unknown): string | null {
+  if (!isRecord(data) || !("detail" in data)) {
+    return null;
+  }
+
+  const detail = data.detail;
+
+  if (typeof detail === "string") {
+    const trimmed = detail.trim();
+
+    return trimmed.length > 0 ? trimmed : null;
+  }
+
+  if (Array.isArray(detail)) {
+    return summarizeValidationDetail(detail);
+  }
+
+  return null;
+}
+
+function readFieldErrors(
+  data: unknown,
+): Record<string, string> | undefined {
+  if (!isRecord(data) || !("errors" in data)) {
+    return undefined;
+  }
+
+  const raw = data.errors;
+
+  if (!isRecord(raw)) {
+    return undefined;
+  }
+
+  const entries = Object.entries(raw).filter(
+    (entry): entry is [string, string] =>
+      typeof entry[1] === "string",
+  );
+
+  return entries.length > 0
+    ? Object.fromEntries(entries)
+    : undefined;
+}
+
+function readRetryAfter(response: Response): number | undefined {
+  const header = response.headers.get("Retry-After");
+
+  if (!header) {
+    return undefined;
+  }
+
+  const seconds = Number.parseInt(header, 10);
+
+  return Number.isFinite(seconds) && seconds >= 0
+    ? seconds
+    : undefined;
+}
+
 async function fetchCsrfToken(): Promise<string> {
   let response: Response;
 
@@ -33,26 +119,22 @@ async function fetchCsrfToken(): Promise<string> {
       throw error;
     }
 
-    throw new Error(
-      "Tidak dapat mengambil token keamanan. Periksa koneksi kamu.",
-    );
+    throw new ApiError({
+      status: 0,
+      detail:
+        "Tidak dapat mengambil token keamanan. Periksa koneksi kamu.",
+    });
   }
 
   const data: unknown = await response.json().catch(() => null);
 
   if (!response.ok) {
-    let message = `Inisialisasi CSRF gagal (${response.status}).`;
-
-    if (
-      typeof data === "object" &&
-      data !== null &&
-      "detail" in data &&
-      typeof data.detail === "string"
-    ) {
-      message = data.detail;
-    }
-
-    throw new Error(message);
+    throw new ApiError({
+      status: response.status,
+      detail:
+        readDetail(data) ??
+        `Inisialisasi CSRF gagal (${response.status}).`,
+    });
   }
 
   if (
@@ -62,7 +144,10 @@ async function fetchCsrfToken(): Promise<string> {
     typeof data.csrf_token !== "string" ||
     data.csrf_token.length === 0
   ) {
-    throw new Error("Token CSRF tidak ditemukan pada respons backend.");
+    throw new ApiError({
+      status: response.status,
+      detail: "Token CSRF tidak ditemukan pada respons backend.",
+    });
   }
 
   return data.csrf_token;
@@ -139,19 +224,19 @@ export function resetCsrfToken(): void {
   csrfRefreshPromise = null;
 }
 
-async function readErrorMessage(response: Response): Promise<string> {
+async function readErrorResponse(
+  response: Response,
+): Promise<ApiError> {
   const data: unknown = await response.json().catch(() => null);
 
-  if (
-    typeof data === "object" &&
-    data !== null &&
-    "detail" in data &&
-    typeof data.detail === "string"
-  ) {
-    return data.detail;
-  }
-
-  return `Permintaan API gagal (${response.status}).`;
+  return new ApiError({
+    status: response.status,
+    detail:
+      readDetail(data) ??
+      `Permintaan API gagal (${response.status}).`,
+    errors: readFieldErrors(data),
+    retryAfter: readRetryAfter(response),
+  });
 }
 
 async function request<T>(
@@ -195,16 +280,18 @@ async function request<T>(
       throw error;
     }
 
-    throw new Error(
-      "Tidak dapat terhubung ke server. Periksa koneksi kamu.",
-    );
+    throw new ApiError({
+      status: 0,
+      detail:
+        "Tidak dapat terhubung ke server. Periksa koneksi kamu.",
+    });
   }
 
   if (!response.ok) {
-    const message = await readErrorMessage(response);
+    const apiError = await readErrorResponse(response);
 
     const isCsrfFailure =
-      response.status === 403 && /\bcsrf\b/i.test(message);
+      response.status === 403 && /\bcsrf\b/i.test(apiError.message);
 
     if (
       requiresCsrf &&
@@ -217,7 +304,7 @@ async function request<T>(
       return request<T>(path, options, true);
     }
 
-    throw new Error(message);
+    throw apiError;
   }
 
   if (response.status === 204) {

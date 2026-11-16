@@ -23,11 +23,13 @@ export interface PublicOrganizationDivision {
   id: number;
   name: string;
   description: string | null;
+  sort_order: number;
 }
 
 export interface PublicOrganizationPosition {
   id: number;
   name: string;
+  sort_order: number;
 }
 
 export interface PublicOrganizationMember {

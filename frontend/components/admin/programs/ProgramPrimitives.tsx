@@ -1,37 +1,36 @@
-const STATUS_LABELS: Record<string, string> = {
-  planned: "Direncanakan",
-  ongoing: "Berjalan",
-  completed: "Selesai",
-  cancelled: "Dibatalkan",
-};
+import {
+  normalizeProgramStatus,
+  programStatusLabel,
+} from "@/lib/programs/status";
 
-const STATUS_COLORS: Record<string, string> = {
+import type { ProgramStatus } from "@/types/programs";
+
+const STATUS_COLORS: Record<ProgramStatus, string> = {
   planned: "border-gold/40 bg-gold/15 text-ink",
   ongoing: "border-blue-200 bg-blue-50 text-blue-800",
   completed: "border-green-200 bg-green-50 text-green-800",
   cancelled: "border-paper-line bg-bg-light-2 text-ink-soft",
 };
 
+const DEFAULT_STATUS_COLOR =
+  "border-paper-line bg-bg-light-2 text-ink-soft";
+
 export function ProgramStatusBadge({
   status,
 }: {
   status: string;
 }) {
-  const normalizedStatus = status.trim().toLowerCase();
+  const normalizedStatus = normalizeProgramStatus(status);
 
-  const label =
-    STATUS_LABELS[normalizedStatus] ??
-    status.replace(/[_-]/g, " ");
-
-  const color =
-    STATUS_COLORS[normalizedStatus] ??
-    "border-paper-line bg-bg-light-2 text-ink-soft";
+  const color = normalizedStatus
+    ? STATUS_COLORS[normalizedStatus]
+    : DEFAULT_STATUS_COLOR;
 
   return (
     <span
       className={`inline-flex items-center border px-2.5 py-1 text-xs font-medium ${color}`}
     >
-      {label || "Tidak diketahui"}
+      {programStatusLabel(status)}
     </span>
   );
 }

@@ -31,17 +31,34 @@ export interface AdminNews {
   images: NewsImage[];
 }
 
-export interface PublicNewsItem {
+export interface PublicNewsBase {
   id: number;
   title: string;
   slug: string;
   featured_image: string | null;
   published_at: string | null;
+  tags: NewsTag[];
   images: NewsImage[];
 }
 
-export interface PublicNewsDetail extends PublicNewsItem {
+export interface PublicNewsItem extends PublicNewsBase {
+  /** Potongan teks polos dari `content`, dibuat di server. */
+  excerpt: string;
+}
+
+/**
+ * Detail berita mengirim `content` penuh dan `tags`, tetapi tidak mengirim
+ * `excerpt` (lihat `Backend/app/routers/public.py`).
+ */
+export interface PublicNewsDetail extends PublicNewsBase {
   content: string;
+}
+
+export interface PublicNewsListResponse {
+  items: PublicNewsItem[];
+  total: number;
+  offset: number;
+  limit: number;
 }
 
 export interface NewsListResponse<T> {
