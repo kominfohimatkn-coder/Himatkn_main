@@ -28,7 +28,7 @@ coverage/
 # File log
 *.log
 
-/23_tabel_himatkn.sql
+/*.sql
 isrgrootx1.pem
 
 
