@@ -81,7 +81,7 @@ export default async function HomePage() {
     <>
       <section
         id="beranda"
-        className="relative flex min-h-[654px] flex-col justify-center overflow-hidden bg-[#2F3D36] max-[640px]:min-h-[620px]"
+        className="relative flex min-h-163.5 flex-col justify-center overflow-hidden bg-[#2F3D36] max-[640px]:min-h-155"
         aria-labelledby="home-title"
       >
         <div className="absolute inset-0" aria-hidden="true">
@@ -99,7 +99,7 @@ export default async function HomePage() {
           aria-hidden="true"
         />
 
-        <div className="site-container relative z-10 pt-[120px] pb-10 text-white max-[640px]:pt-[140px] max-[640px]:pb-[150px] max-[640px]:text-center">
+        <div className="site-container relative z-10 pt-30 pb-10 text-white max-[640px]:pt-35 max-[640px]:pb-37.5 max-[640px]:text-center">
           <h1
             id="home-title"
             className="font-serif text-[clamp(36px,3.6vw,56px)] leading-[1.12] font-bold text-white max-[640px]:text-[38px] max-[640px]:leading-[1.18]"
@@ -107,14 +107,14 @@ export default async function HomePage() {
             Himpunan Mahasiswa{" "}
             <em className="block italic">Teknokimia Nuklir</em>
           </h1>
-          <p className="mt-[18px] text-base text-white/90 max-[640px]:mx-auto max-[640px]:mt-1.5 max-[640px]:max-w-[22ch] max-[640px]:text-[15px]">
+          <p className="mt-4.5 text-base text-white/90 max-[640px]:mx-auto max-[640px]:mt-1.5 max-[640px]:max-w-[22ch] max-[640px]:text-[15px]">
             {period?.name ?? "HIMATKN"} — Beyond Chemistry Into Energy
           </p>
-          <div className="mt-[26px] flex flex-wrap gap-3 max-[640px]:mt-[22px] max-[640px]:flex-nowrap max-[640px]:justify-center max-[640px]:gap-2">
+          <div className="mt-6.5 flex flex-wrap gap-3 max-[640px]:mt-5.5 max-[640px]:flex-nowrap max-[640px]:justify-center max-[640px]:gap-2">
             <PublicButtonLink
               href="#program"
               tone="white"
-              className="max-[640px]:max-w-[165px] max-[640px]:flex-1 max-[640px]:whitespace-nowrap"
+              className="max-[640px]:max-w-41.25 max-[640px]:flex-1 max-[640px]:whitespace-nowrap"
             >
               Lihat program kerja
               <ArrowRight
@@ -125,14 +125,14 @@ export default async function HomePage() {
             <PublicButtonLink
               href="/struktur"
               tone="outlineWhite"
-              className="max-[640px]:max-w-[165px] max-[640px]:flex-1 max-[640px]:whitespace-nowrap"
+              className="max-[640px]:max-w-41.25 max-[640px]:flex-1 max-[640px]:whitespace-nowrap"
             >
               Kenali pengurus
             </PublicButtonLink>
           </div>
 
           {period ? (
-            <div className="mt-[110px] flex max-w-[915px] gap-14 border-t border-white/45 pt-4 max-[640px]:hidden">
+            <div className="mt-27.5 flex max-w-228.75 gap-14 border-t border-white/45 pt-4 max-[640px]:hidden">
               <div>
                 <strong className="block font-serif text-[13px] font-bold tracking-[0.04em] uppercase">
                   {period.name}
@@ -156,7 +156,7 @@ export default async function HomePage() {
 
       <section
         id="tentang"
-        className="bg-mint py-24 max-[640px]:py-[72px]"
+        className="bg-mint py-24 max-[640px]:py-18"
         aria-labelledby="about-title"
       >
         <div className="site-container grid gap-10 min-[961px]:grid-cols-[1fr_1.25fr] min-[961px]:gap-16">
@@ -168,7 +168,7 @@ export default async function HomePage() {
             >
               Ruang untuk benar-benar paham apa yang kami pelajari.
             </h2>
-            <p className="mt-[22px] max-w-[46ch] text-base text-muted">
+            <p className="mt-5.5 max-w-[46ch] text-base text-muted">
               HIMATKN adalah himpunan mahasiswa Teknokimia Nuklir. Kami
               menghubungkan pembelajaran, riset, dan komunitas dalam satu ruang
               gerak organisasi.
@@ -179,9 +179,9 @@ export default async function HomePage() {
             {pillars.map((pillar) => (
               <li
                 key={pillar.title}
-                className="grid grid-cols-[110px_1fr] gap-4 border-b border-[#C9D7CF] py-[26px] max-[640px]:grid-cols-1 max-[640px]:gap-1.5 max-[640px]:py-[22px]"
+                className="grid grid-cols-[110px_1fr] gap-4 border-b border-[#C9D7CF] py-6.5 max-[640px]:grid-cols-1 max-[640px]:gap-1.5 max-[640px]:py-5.5"
               >
-                <PublicLabel className="pt-[5px] max-[640px]:pt-0">
+                <PublicLabel className="pt-1.25 max-[640px]:pt-0">
                   {pillar.title}
                 </PublicLabel>
                 <p className="text-sm text-muted">{pillar.description}</p>
@@ -193,26 +193,26 @@ export default async function HomePage() {
 
       <section
         id="program"
-        className="border-t border-line bg-paper py-24 max-[640px]:py-[72px]"
+        className="border-t border-line bg-paper py-24 max-[640px]:py-18"
         aria-labelledby="program-title"
       >
         <div className="site-container">
-          <div className="max-w-[560px]">
+          <div className="max-w-140">
             <PublicLabel>Program kerja</PublicLabel>
             <h2
               id="program-title"
-              className="mt-3.5 font-serif text-[clamp(26px,2.6vw,34px)] leading-[1.25] font-bold text-green-900"
+              className="mt-3.5 font-serif text-[clamp(26px,2.6vw,34px)] leading-tight font-bold text-green-900"
             >
               Inisiatif dan agenda strategis HIMATKN
             </h2>
-            <p className="mt-4 max-w-[42rem] text-sm leading-7 text-ink-soft">
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-ink-soft">
               Program kerja resmi akan tampil di sini setelah daftar kegiatannya
               siap dipublikasikan.
             </p>
           </div>
 
           <PublicStateBox
-            icon={<CalendarDays className="size-[22px]" />}
+            icon={<CalendarDays className="size-5.5" />}
             label="Program kerja"
             title="Belum ada program kerja"
             action={

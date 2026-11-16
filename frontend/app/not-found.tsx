@@ -15,16 +15,16 @@ export default function NotFound() {
 
       <main
         id="main-content"
-        className="grid min-h-[calc(100svh_-_var(--header-h))] place-items-center px-6 py-16 text-center"
+        className="grid min-h-[calc(100svh-var(--header-h))] place-items-center px-6 py-16 text-center"
       >
-        <div className="w-full max-w-[560px]">
+        <div className="w-full max-w-140">
           <p
             className="font-serif text-[clamp(88px,12vw,140px)] leading-none font-bold text-mint [-webkit-text-stroke:1px_#B9CBC1]"
             aria-hidden="true"
           >
             404
           </p>
-          <h1 className="mt-3 font-serif text-[clamp(28px,3vw,36px)] leading-[1.25] font-bold text-green-900">
+          <h1 className="mt-3 font-serif text-[clamp(28px,3vw,36px)] leading-tight font-bold text-green-900">
             Halaman tidak ditemukan
           </h1>
           <p className="mx-auto mt-3 max-w-[44ch] text-muted">

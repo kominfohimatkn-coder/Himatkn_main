@@ -21,7 +21,7 @@ export function PublicLabel({
 }: PublicLabelProps) {
   return (
     <p
-      className={`text-xs font-semibold tracking-[0.1em] uppercase ${toneClasses[tone]} ${className}`.trim()}
+      className={`text-xs font-semibold tracking-widest uppercase ${toneClasses[tone]} ${className}`.trim()}
     >
       {children}
     </p>
