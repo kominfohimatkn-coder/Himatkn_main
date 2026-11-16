@@ -6,4 +6,14 @@ export const PUBLIC_LINKS = {
     target: "_blank",
     rel: "noopener noreferrer",
   },
+  /**
+   * Sementara sampai `GET /public/settings` (key: `instagram_url`) tersedia.
+   * URL dikonfirmasi pemilik; parameter share `rpxt` dibuang agar tautan stabil.
+   */
+  instagram: {
+    label: "Instagram @himatknuklir",
+    href: "https://www.instagram.com/himatknuklir",
+    target: "_blank",
+    rel: "noopener noreferrer",
+  },
 } as const;

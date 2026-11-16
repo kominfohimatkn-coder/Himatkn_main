@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import { SiteFooter } from "@/components/public/SiteFooter";
 import { SiteHeader } from "@/components/public/SiteHeader";
-import { ButtonLink } from "@/components/ui/Button";
+import { PublicButtonLink } from "@/components/public/PublicButton";
 
 export const metadata: Metadata = {
   title: "Halaman tidak ditemukan",
@@ -16,30 +15,29 @@ export default function NotFound() {
 
       <main
         id="main-content"
-        data-tone="dark"
-        className="flex min-h-[calc(100svh-3.5rem)] items-center justify-center bg-bg-dark px-5 pt-24 pb-16 text-center text-on-dark"
+        className="grid min-h-[calc(100svh_-_var(--header-h))] place-items-center px-6 py-16 text-center"
       >
-        <div className="w-full max-w-3xl">
-          <p className="kicker kicker--dark">Error 404</p>
-          <p className="mt-4 font-serif text-[clamp(7rem,20vw,14rem)] leading-none tracking-tighter text-gold-bright">
+        <div className="w-full max-w-[560px]">
+          <p
+            className="font-serif text-[clamp(88px,12vw,140px)] leading-none font-bold text-mint [-webkit-text-stroke:1px_#B9CBC1]"
+            aria-hidden="true"
+          >
             404
           </p>
-          <h1 className="mt-6 text-[clamp(2.375rem,5vw,3.625rem)] text-on-dark">
-            Halaman tidak ditemukan.
+          <h1 className="mt-3 font-serif text-[clamp(28px,3vw,36px)] leading-[1.25] font-bold text-green-900">
+            Halaman tidak ditemukan
           </h1>
-          <p className="mx-auto mt-3 max-w-140 text-sm leading-7 text-on-dark-soft">
+          <p className="mx-auto mt-3 max-w-[44ch] text-muted">
             Alamat yang kamu buka tidak tersedia atau sudah dipindahkan.
             Periksa kembali tautannya atau kembali ke beranda.
           </p>
-          <div className="mt-7 flex flex-wrap justify-center gap-2.5">
-            <ButtonLink href="/" variant="primary">
-              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          <div className="mt-7 flex flex-wrap justify-center gap-3">
+            <PublicButtonLink href="/" tone="solid">
               Kembali ke beranda
-            </ButtonLink>
-            <ButtonLink href="/#publikasi" variant="secondary">
-              Lihat publikasi
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </ButtonLink>
+            </PublicButtonLink>
+            <PublicButtonLink href="/#program" tone="outline">
+              Lihat program kerja
+            </PublicButtonLink>
           </div>
         </div>
       </main>

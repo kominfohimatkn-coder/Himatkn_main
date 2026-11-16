@@ -14,17 +14,20 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 
 ## 1. Current Project State
 
-> Terakhir diperbarui: 15 November 2026 (Batch R1 Fase A). Perbarui bagian ini pada setiap batch.
+> Terakhir diperbarui: 16 November 2026 (Batch R1 Fase B). Perbarui bagian ini pada setiap batch.
 
 ### a. Snapshot repository
 
 - Branch: `feat/admin-ui-foundation`.
+- HEAD terverifikasi saat Batch R1 Fase B: `733a561` (Fase A, disetujui dan di-commit pemilik). Batch R1 Fase B belum di-commit.
 - HEAD terverifikasi saat Batch R1 Fase A: `00bf955cb9bb35c8adcf9e480834b01e43f11b2c` (`00bf955`), ahead 2 dari remote yang diketahui.
 - HEAD terverifikasi saat Batch R0: `b388ae752270a03ae9a5fcbf25e44ad2b9c840fc` (`b388ae7` — "add something i thought was important").
 - HEAD remote yang sebelumnya diketahui: `5e9aa6c` ("remove unused state"). HEAD lokal sudah lebih baru dari itu; `b388ae7` hanya mengubah `README.md`.
 - `Design/bank-soal.html` sudah dihapus pada `5e9aa6c`; halaman tersebut bukan lagi bagian Prototype aktif. Link `bank-soal.html` yang masih tersisa di file `Design/` lain diabaikan.
 - Working tree bersih sebelum Batch R0 dimulai.
-- Batch R1 Fase A (15 Nov) meninggalkan perubahan **belum di-commit** di 6 file (4 diubah, 2 dihapus); lihat Active Development Log entri 15 November 2026.
+- Batch R1 Fase A (15 Nov) sudah di-commit pemilik sebagai `733a561`.
+- Batch R1 Fase B (16 Nov) meninggalkan perubahan **belum di-commit** di 9 file yang diubah dan 3 komponen baru; lihat Active Development Log entri 16 November 2026. `frontend/AGENTS.md` juga tampak termodifikasi karena blok aturan Next.js ditulis ulang otomatis oleh `next dev`; bukan bagian Fase B.
+- URL Instagram `https://www.instagram.com/himatknuklir` **dikonfirmasi pemilik** pada 16 Nov. Konstanta dipertahankan sebagai utang teknis (lihat e.8); parameter share `rpxt` pada URL yang dikirim pemilik dibuang agar tautan stabil.
 
 ### b. Scope fase saat ini
 
@@ -69,6 +72,7 @@ Entri historis yang masih memuat referensi tersebut tetap utuh di Historical Arc
 5. **Panel admin dipertahankan** sesuai desain dan implementasi V2 saat ini. Fokus redesign adalah website publik. Admin hanya mendapat penyesuaian teknis yang diperlukan untuk integrasi atau konsistensi.
 6. **Detail program kerja dan search publikasi belum didukung API.** Keduanya diperlakukan sebagai gap. Jangan membuat endpoint, parameter, atau data palsu.
 7. **Status program wajib memetakan keempat nilai:** `planned`, `ongoing`, `completed`, `cancelled`. `cancelled` tidak boleh diabaikan. Backend tidak memvalidasi enum status, jadi UI harus aman terhadap nilai yang tidak dikenal. Status diisi manual oleh admin dan **tidak dihitung dari tanggal**.
+8. **Instagram adalah utang teknis yang sama seperti Bank Soal.** Pemilik mengonfirmasi URL resmi `https://www.instagram.com/himatknuklir` pada 16 November 2026. URL untuk sementara di-hardcode di `frontend/lib/public/link.ts` (komentar menunjuk `GET /public/settings`, key `instagram_url`) dan dipakai CTA empty state Program/Publikasi. Jangan menambah tautan sosial lain tanpa data backend.
 
 ### f. Kondisi aktual V2
 
@@ -86,11 +90,11 @@ Ringkasan dari audit 12 November 2026; detail dan bukti line-by-line ada di `doc
   | `/public/organization` | Ya |
   | `POST /public/visits` | Belum |
 
-- Baseline: `npm run lint` dan `npx tsc --noEmit` lulus pada audit. `npm run build` pertama kali dijalankan pada R1 Fase A (15 Nov): **gagal** karena `frontend/app/(private)/(admin)/loading.tsx` berukuran 0 byte; setelah file itu dihapus (disetujui pemilik) build lulus 9 route.
+- Baseline: `npm run lint` dan `npx tsc --noEmit` lulus pada audit. `npm run build` pertama kali dijalankan pada R1 Fase A (15 Nov): **gagal** karena `frontend/app/(private)/(admin)/loading.tsx` berukuran 0 byte; setelah file itu dihapus (disetujui pemilik) build lulus 9 route. Batch R1 Fase B (16 Nov) mengulang lint, tsc, dan build: ketiganya lulus 9 route.
 
 ### g. Keputusan yang masih tertunda (blok batch R1 dan seterusnya)
 
-Status per 15 November 2026 (Batch R1 Fase A):
+Status per 16 November 2026 (Batch R1 Fase B):
 
 | # | Keputusan | Status |
 |---|---|---|
@@ -115,6 +119,8 @@ Status per 15 November 2026 (Batch R1 Fase A):
 - Warning Turbopack tentang lockfile di luar repository (`C:\Users\faqih`). **Tidak menggagalkan build.**
 - Representasi BPH: source mendeteksi BPH lewat regex nama divisi/jabatan (`frontend/components/public/StructureDirectory.tsx`), karena API tidak punya flag BPH. **Perlu keputusan pemilik apakah ini diterima.** (Koreksi atas klaim historis: lihat bagian i.)
 - `frontend/app/(private)/(admin)/loading.tsx` (0 byte, commit `8cf6f75`) dihapus di R1 karena membuat build gagal. Loading state admin perlu dibuat dengan benar di batch admin terpisah.
+- **404 global memakai `.public-site`.** `frontend/app/not-found.tsx` membungkus konten dengan `.public-site`, dan tidak ada `not-found` khusus admin. Akibatnya 404 yang muncul dari URL area admin (misalnya `/admin/...` yang tidak ada) memakai tipografi, header, dan footer publik (Literata + Inter), bukan `.admin-theme`. Ini diketahui dan **belum diperbaiki**; penanganan 404 admin masuk batch admin terpisah.
+- Tautan **Bank Soal** dan **Instagram** masih hardcoded di `frontend/lib/public/link.ts` sampai `GET /public/settings` tersedia (utang teknis; lihat e.4 dan e.8).
 
 ### i. Koreksi atas catatan lama
 
@@ -148,8 +154,8 @@ Hanya agregat; tidak ada data pribadi:
 | Batch | Isi | Status |
 |---|---|---|
 | R0 | Dokumentasi | Selesai (12 Nov 2026) |
-| R1 Fase A | Sistem visual publik: token prototype di-scope `.public-site`, font Literata + Inter, header sticky 72px + nav 6 item, menu mobile prototype, footer, logo resmi, konstanta link Bank Soal dipakai header/menu/footer, hapus fixture `__structure-state`, domain canonical | **Selesai 15 Nov 2026; menunggu persetujuan pemilik sebelum Fase B.** Perubahan belum di-commit |
-| R1 Fase B | Hero, Tentang, section Program visual, Publikasi, Kepengurusan, Kontak disembunyikan, restyle 404, loading state | **Belum dikerjakan; diblok persetujuan pemilik atas Fase A** |
+| R1 Fase A | Sistem visual publik: token prototype di-scope `.public-site`, font Literata + Inter, header sticky 72px + nav 6 item, menu mobile prototype, footer, logo resmi, konstanta link Bank Soal dipakai header/menu/footer, hapus fixture `__structure-state`, domain canonical | **Selesai 15 Nov 2026; di-commit pemilik sebagai `733a561`** |
+| R1 Fase B | Hero, Tentang, section Program visual, Publikasi, Kepengurusan, Kontak disembunyikan, restyle 404, loading state | **Selesai dan terverifikasi 16 Nov 2026; perubahan belum di-commit, menunggu tinjauan pemilik. Berhenti sebelum R2.** |
 | R2 | Halaman `/struktur`: dropdown custom yang aksesibel, visual tree/kartu/avatar, fallback foto | — |
 | R3 | Data homepage: grid divisi, program dengan 4 status, perbaikan link "Instagram" | Diblok keputusan g.7–8 |
 | R4 | `/publikasi` dan `/publikasi/[slug]` | Diblok keputusan g.5 |
@@ -327,6 +333,120 @@ Entri sesi sejak 11 November 2026. Append-only: tambahkan entri baru di bawah; j
   - Commit/push/merge/rebase/reset/clean/deploy: Tidak.
 - **Langkah berikutnya:**
   - Pemilik meninjau laporan Fase A dan screenshot, lalu memberi persetujuan untuk Fase B (hero, Tentang, Program, Publikasi, Kepengurusan, kontak disembunyikan, restyle 404, loading state).
+
+---
+
+### Sesi 2026-11-16 — Batch R1 Fase B: Hero, Tentang, Program, Publikasi, Kepengurusan, 404, loading publik
+
+- **Status:** Selesai untuk Fase B; **berhenti sebelum R2**. Tidak commit, push, merge, rebase, reset, clean, atau deploy.
+- **Branch:** `feat/admin-ui-foundation`. HEAD `733a561` (Fase A, sudah di-commit pemilik). Perubahan Fase B masih di working tree.
+- **Tujuan:** menyelaraskan homepage, section kepengurusan, halaman 404, dan loading publik dengan Prototype V1; menyembunyikan kontak (blocked by API); menghapus CSS lama yang tidak terpakai; tanpa mengubah `/struktur`, admin, backend, API, atau dependency.
+- **File yang diubah:**
+  - `frontend/app/(public)/page.tsx` (+118/−117): hero `next/image` + overlay, judul Literata dengan `<em>` italic, dua tombol prototipe, stats periode/anggota dari API (disembunyikan bila tidak ada periode); Tentang mint 2 kolom dengan pillar; Program memakai `PublicStateBox`; section kontak dihapus.
+  - `frontend/components/public/OrganizationSection.tsx` (+67/−58): section `bg-green-950`, label/heading prototipe, state box dark untuk error/kosong, stats periode + jumlah anggota nyata, tombol "Selengkapnya" ke `/struktur`. Grid divisi tidak dibuat (R3).
+  - `frontend/components/public/PublicationsSection.tsx` (+58/−48): heading prototipe, state box error/kosong, list 180px + konten, thumbnail grayscale, tanggal + "Detail segera hadir"; tanpa mono dan tanpa excerpt/link detail.
+  - `frontend/components/public/PublicButton.tsx` (baru, 70 baris): varian `solid`/`white`/`outline`/`outlineWhite`, termasuk `PublicButtonAnchor` untuk tautan eksternal.
+  - `frontend/components/public/PublicStateBox.tsx` (baru, 81 baris): state box prototipe tone `light`/`dark`/`error`.
+  - `frontend/components/public/PublicLabel.tsx` (baru, 29 baris): label Inter kapital pengganti `.kicker` mono di homepage.
+  - `frontend/components/public/RefreshButton.tsx` (+35/−15): memakai `PublicButton` untuk homepage; prop `variant` lama dipertahankan agar `/struktur` (R2) tidak berubah.
+  - `frontend/app/not-found.tsx` (+16/−18): 404 terang mengikuti prototype (kode mint + stroke, dua tombol solid/outline, tanpa kicker/ikon/mono).
+  - `frontend/app/(public)/loading.tsx` (+64/−17): skeleton utility untuk hero, Tentang, Program, Publikasi, dan Kepengurusan; tanpa `.home-hero`, gold, atau mono.
+  - `frontend/app/globals.css` (+4/−498; **1486 → 992 baris**): token `--green-950` publik, `--header-h: 68px` pada ≤640px, penghapusan CSS lama homepage/kontak.
+  - `frontend/lib/public/link.ts` (+10): **perubahan bersamaan di working tree** menambahkan `PUBLIC_LINKS.instagram`; dipakai empty state Program/Publikasi. Pemilik perlu meninjau karena g.9 menyebut kontak disembunyikan sampai `GET /public/settings`.
+- **Keputusan teknis + alasan:**
+  - `--header-h` mobile 68px hanya di dalam `.public-site`; header, panel mobile, dan `scroll-margin-top` membaca var yang sama (terukur 72/68px dan 88/84px).
+  - Hero stats hanya memakai data nyata (`period.name`, jumlah anggota) dan hilang bila periode tidak ada; stat prototype (Kabinet/Divisi/Lokasi) tidak di-hardcode.
+  - Pillar Tentang memakai `pillar.title` sebagai label dan `pillar.description` sebagai isi; tidak mengarang heading baru.
+  - Program tetap empty state jujur karena belum ada route daftar program (g.5/g.6); Publikasi tanpa excerpt/detail karena API list tidak menyediakannya.
+  - Kepengurusan menampilkan stats periode + anggota, bukan grid divisi; grid divisi adalah R3 dan masih diblok g.7–g.8.
+  - Kontak/alamat/peta dihapus dari homepage; tidak di-hardcode.
+  - CSS lama dihapus setelah dipastikan tidak dipakai: `.home-hero*`, `.about-intro/features/feature*`, `.program-empty-panel*`, `.publication-*`, `.structure-teaser*`, `.contact-*`, `.meta*`, `.section-copy--dark`, `.public-section`, dan media query terkait. `.kicker`, `.section-title`, `.section-copy`, `.empty-panel*`, dan seluruh `.structure-*` dipertahankan untuk `/struktur` (R2).
+- **Pemeriksaan yang dijalankan + hasil aktual:**
+  - `npm run lint` — lulus tanpa error.
+  - `npx tsc --noEmit` — lulus tanpa output.
+  - `npm run build` — lulus 9 route (`/`, `/_not-found`, `/admin/dashboard`, `/admin/news`, `/admin/programs`, `/login`, `/robots.txt`, `/sitemap.xml`, `/struktur`).
+  - Validasi produksi `npx next start -p 3100`: tidak ada overflow horizontal di 390/768/1280 untuk `/` dan 404 (`scrollWidth === clientWidth`, `offenders: []`).
+  - Header: 72px desktop / 68px mobile; `scroll-margin-top` section 88px/84px; klik nav "Tentang" mendarat di `top: 88px`.
+  - Font homepage dan 404 hanya **Inter + Literata** (computed families); tidak ada JetBrains Mono di homepage, 404, atau loading publik. Mono di `/struktur` dibiarkan untuk R2.
+  - Kontras terukur: judul hero putih/latar dasar 11.40:1; label Tentang 6.80:1; judul section 14.14–16.46:1; body Tentang 4.90:1; body Program/Publikasi 5.70:1; salinan Kepengurusan 7.78:1; tombol hero putih/hijau 15.38:1. Body Tentang 4.90:1 lulus ambang AA teks normal (4.5:1).
+  - `globals.css`: 1486 → 992 baris (−494; `git diff --numstat` 4/498). `rg`/Select-String untuk seluruh selector yang dihapus menghasilkan **0 match** di `globals.css` maupun TSX.
+  - Audit font admin di luar `.admin-theme`: `(private)/layout.tsx` hanya `AuthProvider`; layout admin, loading state, `AdminShell`, dan `/login` semuanya memakai `.admin-theme`. Tidak ada `error.tsx`/`global-error.tsx` admin, sehingga error boundary default Next.js akan memakai font root (Inter), bukan Playfair. **Dilaporkan, tidak diperbaiki.**
+  - `/admin/dashboard` tanpa sesi tetap redirect ke `/login`; tidak ada perubahan auth.
+- **Screenshot validasi:**
+  - `docs/validation/r1/phase-b/` — 14 file (390/768/1280: home, struktur, 404, login; menu-open di 390 dan 768).
+  - **Catatan privasi:** screenshot `/struktur` memuat nama pengurus dari API; pemilik perlu meninjau sebelum commit/publikasi.
+- **Blocked by API:**
+  - `GET /public/settings` belum ada → kontak, alamat, peta, dan tautan resmi disembunyikan.
+  - Route `/kegiatan`/`/publikasi` belum ada (g.5/g.6) → tombol "Lihat semua" tidak dibuat; empty state memakai tautan Instagram yang tersedia.
+  - `/public/programs` belum dipakai untuk daftar program (g.7–g.8) → Program tetap empty state jujur.
+- **Deviasi/keterbatasan yang dicatat:**
+  - Hero hanya menampilkan 2 stats nyata (periode, anggota), bukan 3 stats prototype.
+  - Kepengurusan menampilkan stats, bukan grid divisi (R3).
+  - Publikasi hanya tanggal + "Detail segera hadir"; tidak ada excerpt atau link detail.
+  - Tautan Instagram di `lib/public/link.ts` dan aksi empty state "Buka Instagram" muncul di working tree selama sesi (perubahan bersamaan); ini perlu keputusan pemilik karena beririsan dengan g.9.
+- **Konfirmasi batas scope:**
+  - Backend/database/migration berubah: Tidak.
+  - API contract/auth/CSRF/CORS/RBAC/cookie policy berubah: Tidak.
+  - `apiFetch`, struktur `lib/*`, tipe API berubah: Tidak (hanya `lib/public/link.ts` menambah konstanta tautan).
+  - Tampilan admin/`/login` berubah: Tidak.
+  - Route baru/endpoint/parameter/data palsu: Tidak.
+  - Dependency/lockfile/environment/deployment/konfigurasi berubah: Tidak.
+  - `Design/`, `.gitignore` berubah: Tidak.
+  - Isi `.env*` dibaca/dicetak: Tidak.
+  - Commit/push/merge/rebase/reset/clean/deploy: Tidak.
+- **Langkah berikutnya:**
+  - Pemilik meninjau laporan Fase B, screenshot, dan tautan Instagram; setelah disetujui, lanjut R2 (`/struktur`). **Jangan mulai R2 sebelum persetujuan.**
+
+---
+
+### Sesi 2026-11-16 — Batch R1 Fase B: verifikasi produksi dan pencatatan
+
+- **Status:** Verifikasi selesai; implementasi Fase B tidak diubah (selain normalisasi URL Instagram yang dikonfirmasi pemilik). **Berhenti sebelum R2.** Tidak commit, push, merge, rebase, reset, clean, atau deploy.
+- **Branch:** `feat/admin-ui-foundation`; HEAD `733a561`. Seluruh perubahan Fase B masih di working tree.
+- **Tujuan:** menjalankan pemeriksaan Bagian 5.8/4.8, mengambil bukti screenshot, dan mencatat hasil di `docs/progress.md`.
+- **Keputusan pemilik (koreksi atas entri Fase B di atas):**
+  - URL Instagram resmi: `https://www.instagram.com/himatknuklir` (pemilik mengirim versi dengan parameter share `rpxt`; parameter dibuang agar tautan stabil). Konstanta dipertahankan, bukan dihapus.
+  - Komentar di `frontend/lib/public/link.ts` menunjuk `GET /public/settings` (key: `instagram_url`) dan dicatat sebagai utang teknis bersama Bank Soal (Current Project State e.8).
+  - Entri Fase B di atas menyebut tautan Instagram "perlu ditinjau pemilik"; status itu **selesai** dengan keputusan ini.
+- **Yang dilakukan:**
+  - Menjalankan `npm run lint`, `npx tsc --noEmit`, dan `npm run build` dari `frontend/` dengan `.env.local` asli.
+  - Menjalankan build produksi lokal (`next start -p 3100`) dan memverifikasi lewat Chrome headless via CDP (Playwright/Puppeteer tidak terpasang). Skrip verifikasi berada di luar repo (`%TEMP%`).
+  - Mengambil ulang seluruh screenshot utama pada build final, plus screenshot state publikasi memakai mock API sementara (`127.0.0.1:3999`) dan build sementara; setelah itu `.next` dibangun ulang dengan `.env.local` asli dan screenshot utama diambil ulang.
+  - Mencari data hardcoded prototype dengan `git grep` (`rg` tidak tersedia): `Kabinet Nexus`, `7 Divisi`, `Babarsari`, `Student Center`, `Nexus 2026`, alamat, dan `Yogyakarta`.
+  - Membandingkan `/login` Fase B dengan screenshot Fase A secara piksel dan computed style.
+  - Menghitung delta `globals.css` terhadap `733a561` dan memastikan setiap selector yang dihapus tidak lagi dipakai TSX.
+- **Hasil pemeriksaan aktual:**
+  - `npm run lint` — **PASS** (tanpa output error).
+  - `npx tsc --noEmit` — **PASS** (tanpa output).
+  - `npm run build` — **PASS**, 9 route (`/`, `/_not-found`, `/admin/dashboard`, `/admin/news`, `/admin/programs`, `/login`, `/robots.txt`, `/sitemap.xml`, `/struktur`). Satu-satunya warning: lockfile `pnpm-lock.yaml` di luar repo (`C:\Users\faqih`), tidak menggagalkan build.
+  - **Screenshot:** `docs/validation/r1/phase-b/` berisi 23 file — 390/768/1280 untuk home, struktur, 404, login; menu-open 390/768; publikasi happy/empty/error di 390/768/1280. Konvensi mengikuti Fase A: 390 CSS px pada DPR 2 (gambar 780 px), 768 dan 1280 pada DPR 1. Folder `docs/validation/` di-ignore Git, jadi bukti ini lokal dan tidak muncul di `git status`.
+  - **Anchor:** `#beranda`, `#tentang`, `#program`, `#publikasi`, `#struktur` ada di semua lebar. `scroll-margin-top` 84px di 390 dan 88px di 768/1280; `scrollIntoView` mendarat tepat di `top: 84/88` (tidak tertutup header).
+  - **Header:** 68px di 390, 72px di 768/1280, `position: sticky`; panel menu mobile mulai tepat di 68/72px; tinggi link menu mobile ±57px; menu bisa dibuka (`aria-expanded="true"`, panel visible).
+  - **Overflow horizontal:** 0 di home, 404, login, dan struktur pada 390/768/1280 (`scrollWidth === clientWidth`).
+  - **Console/network:** tidak ada error di home dan `/struktur` publik. `/404` sengaja mencatat HTTP 404 (perilaku wajar). `/login` mencatat kegagalan CORS `auth/me` ke `http://localhost:8000` karena origin `localhost:3100` tidak diizinkan backend lokal — kondisi environment, bukan regresi Fase B.
+  - **Kontras terukur (rasio):** brand/paper 15.06; nav-muted/paper 5.70; nav-active/paper 9.63; muted/mint 4.90; ink/paper 16.46; footer link/dark 7.78; teks 404 muted/mint 4.90. Semua pasangan lulus AA untuk peran teksnya.
+  - **`/login` identik:** computed style tidak berubah — h1 Playfair 24px/600 `rgb(22, 38, 29)`, label Inter 14px/500, input Inter 16px latar putih, tombol Inter 16px. Selisih piksel vs Fase A: rata-rata delta RGB 0.354 (390) dan 0.205 (1280), setara noise JPEG. Tidak ada perubahan admin.
+  - **Data hardcoded prototype:** 0 match selain referensi Instagram yang dikonfirmasi pemilik. Stats, periode, jumlah anggota, dan publikasi berasal dari API; kontak/alamat tetap disembunyikan.
+  - **Publikasi:** happy (API asli, 1 berita) menampilkan tanggal + "Detail segera hadir"; empty menampilkan "Belum ada publikasi" + CTA Instagram; error menampilkan state `role="alert"` + tombol "Coba lagi". Ketiganya benar di 390/768/1280 dan tanpa overflow.
+  - **`globals.css`:** 1486 → **992 baris** (net −494; `git diff --numstat` +4/−498). **77 blok aturan dihapus**, **53 nama selector unik** (termasuk satu `@media (max-width: 900px)`), **0 selector baru**. Yang dihapus: `.home-hero*`, `.about-intro`, `.about-features`, `.about-feature*`, `.program-section*`, `.program-empty-panel*`, `.publication-*`, `.structure-teaser*`, `.contact-*`, `.meta*`, `.public-section`, `.section-title`, `.section-copy`, `.section-copy--dark`, dan media query terkait. Yang ditambahkan hanya token `--green-950`, komentar, dan `--header-h: 68px` di dalam `.public-site`. `.kicker*`, `.empty-panel*`, dan seluruh `.structure-*` dipertahankan untuk R2.
+  - **Koreksi kecil atas entri Fase B di atas:** entri itu menyebut `.section-title` dan `.section-copy` dipertahankan; pada keadaan final keduanya **dihapus** karena `git grep` menunjukkan 0 pemakaian di TSX. `.kicker` dan `.empty-panel*` tetap ada.
+- **File yang berubah pada sesi verifikasi:**
+  - `frontend/lib/public/link.ts` — komentar utang teknis Instagram + URL dinormalisasi (tanpa `rpxt`).
+  - `docs/progress.md` — Current Project State (snapshot, keputusan e.8, blocker h, status batch) dan entri ini.
+  - `frontend/AGENTS.md` — blok aturan Next.js ditulis ulang otomatis oleh `next dev`; bukan perubahan Fase B dan aman diabaikan/di-commit terpisah.
+- **Konfirmasi batas scope:**
+  - Backend/database/migration/seed berubah: Tidak.
+  - API contract/auth/CSRF/CORS/RBAC/cookie policy berubah: Tidak.
+  - Dependency/lockfile/environment/deployment berubah: Tidak.
+  - Tampilan admin/`/login` berubah: Tidak.
+  - Route baru/endpoint/parameter/data palsu: Tidak.
+  - Isi `.env*` dibaca/dicetak: Tidak (hanya nama variabel yang diverifikasi).
+  - Commit/push/merge/rebase/reset/clean/deploy: Tidak.
+- **Blocker/utang teknis yang tetap terbuka:**
+  - `GET /public/settings` belum ada → Bank Soal dan Instagram tetap hardcoded; kontak/alamat/peta disembunyikan.
+  - 404 global memakai `.public-site`, sehingga 404 dari area admin bertipografi publik (dicatat di Current Project State bagian h; perbaikan di batch admin).
+- **Langkah berikutnya:**
+  - Pemilik meninjau laporan dan screenshot Fase B, lalu menyetujui commit. **R2 belum dimulai.**
 
 ---
 
