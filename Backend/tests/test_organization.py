@@ -150,3 +150,46 @@ def test_organization_crud_writes_audit_log(client):
             )
         )
         assert log is not None
+def _headers(client):
+    return {"X-CSRF-Token": login(client), "Origin": "http://localhost:3000"}
+
+
+def _active_period_ids():
+    with SessionLocal() as db:
+        return set(db.scalars(select(Period.id).where(Period.is_active.is_(True))).all())
+
+
+def test_create_active_period_deactivates_others(client):
+    headers = _headers(client)
+
+    first = client.post(
+        "/api/v1/admin/organization/periods",
+        json={"name": "TEST-ACTIVE-A-2030", "start_date": "2030-01-01",
+              "end_date": "2030-12-31", "is_active": True},
+        headers=headers,
+    )
+    assert first.status_code == 201
+
+    second = client.post(
+        "/api/v1/admin/organization/periods",
+        json={"name": "TEST-ACTIVE-B-2031", "start_date": "2031-01-01",
+              "end_date": "2031-12-31", "is_active": True},
+        headers=headers,
+    )
+    assert second.status_code == 201
+
+    assert _active_period_ids() == {second.json()["id"]}
+
+
+def test_create_inactive_period_keeps_current_active(client):
+    headers = _headers(client)
+    before = _active_period_ids()
+
+    response = client.post(
+        "/api/v1/admin/organization/periods",
+        json={"name": "TEST-INACTIVE-2032", "start_date": "2032-01-01",
+              "end_date": "2032-12-31", "is_active": False},
+        headers=headers,
+    )
+    assert response.status_code == 201
+    assert _active_period_ids() == before

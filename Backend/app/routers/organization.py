@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-
+from app.utils.ip import get_client_ip
 from app.database.connection import get_db
 from app.database.dependencies import require_csrf, require_permission
 from app.models import Admin, Division, Member, Period, Position
@@ -149,6 +149,12 @@ def create_period(
             status_code=status.HTTP_409_CONFLICT,
             detail="Periode sudah ada",
         )
+    if payload.is_active:
+        db.execute(
+            update(Period)
+            .where(Period.is_active.is_(True))
+            .values(is_active=False)
+        )
 
     row = Period(**payload.model_dump(exclude={"name"}), name=payload.name.strip())
     db.add(row)
@@ -161,7 +167,8 @@ def create_period(
     entity_type="period",
     entity_id=row.id,
     description=f"Membuat periode {row.name}",
-    )
+    ip_address=get_client_ip(request),
+    user_agent=request.headers.get("user-agent", "")[:500],    )
     
     _commit_or_conflict(db)
     db.refresh(row)
