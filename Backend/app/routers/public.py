@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from hashlib import sha256
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
@@ -18,6 +18,7 @@ from app.models import (
     Program,
     VisitorLog,
 )
+from app.services.site_settings import resolve_public_settings
 
 
 router = APIRouter(
@@ -236,6 +237,35 @@ def public_org(
             for position in positions
         ],
     }
+
+
+@router.get("/settings")
+async def public_settings(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+):
+    client_ip = limiter.client_ip(request)
+
+    allowed, retry_after = await limiter.allow(
+        f"read:public-settings:{client_ip}",
+        settings.general_read_limit,
+        settings.general_read_window_seconds,
+    )
+
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Terlalu banyak permintaan.",
+            headers={
+                "Retry-After": str(retry_after),
+                "X-RateLimit-Limit": str(settings.general_read_limit),
+            },
+        )
+
+    response.headers["Cache-Control"] = "public, max-age=60"
+
+    return {"settings": resolve_public_settings(db)}
 
 
 @router.post("/visits", status_code=status.HTTP_201_CREATED)

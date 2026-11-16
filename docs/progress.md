@@ -14,24 +14,28 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 
 ## 1. Current Project State
 
-> Terakhir diperbarui: 16 November 2026 (Batch R1 Fase B). Perbarui bagian ini pada setiap batch.
+> Terakhir diperbarui: 16 November 2026 (Batch API-B1 — Site Settings API). Perbarui bagian ini pada setiap batch.
 
 ### a. Snapshot repository
 
 - Branch: `feat/admin-ui-foundation`.
-- HEAD terverifikasi saat Batch R1 Fase B: `733a561` (Fase A, disetujui dan di-commit pemilik). Batch R1 Fase B belum di-commit.
+- HEAD terverifikasi saat Batch API-B1: `cc1d496` (R1 Fase B, sudah di-commit pemilik). Perubahan API-B1 belum di-commit.
+- HEAD terverifikasi saat Batch R1 Fase B: `733a561` (Fase A). Fase B kemudian di-commit pemilik sebagai `cc1d496`.
 - HEAD terverifikasi saat Batch R1 Fase A: `00bf955cb9bb35c8adcf9e480834b01e43f11b2c` (`00bf955`), ahead 2 dari remote yang diketahui.
 - HEAD terverifikasi saat Batch R0: `b388ae752270a03ae9a5fcbf25e44ad2b9c840fc` (`b388ae7` — "add something i thought was important").
 - HEAD remote yang sebelumnya diketahui: `5e9aa6c` ("remove unused state"). HEAD lokal sudah lebih baru dari itu; `b388ae7` hanya mengubah `README.md`.
 - `Design/bank-soal.html` sudah dihapus pada `5e9aa6c`; halaman tersebut bukan lagi bagian Prototype aktif. Link `bank-soal.html` yang masih tersisa di file `Design/` lain diabaikan.
 - Working tree bersih sebelum Batch R0 dimulai.
 - Batch R1 Fase A (15 Nov) sudah di-commit pemilik sebagai `733a561`.
-- Batch R1 Fase B (16 Nov) meninggalkan perubahan **belum di-commit** di 9 file yang diubah dan 3 komponen baru; lihat Active Development Log entri 16 November 2026. `frontend/AGENTS.md` juga tampak termodifikasi karena blok aturan Next.js ditulis ulang otomatis oleh `next dev`; bukan bagian Fase B.
+- Batch R1 Fase B (16 Nov) sudah di-commit pemilik sebagai `cc1d496`.
+- Batch API-B1 (16 Nov) menambahkan Site Settings API: registry 45 key, `GET /public/settings`, `GET/PUT/PATCH/DELETE /admin/settings`, validasi, audit, dan test. Perubahan berada di working tree (`Backend/` + dokumen); **belum di-deploy**.
+- Working tree juga memuat perubahan lokal pemilik di `frontend/app/(public)/page.tsx` (konversi arbitrary spacing Tailwind) dan `frontend/AGENTS.md` (blok aturan Next.js ditulis ulang `next dev`). Keduanya **bukan bagian API-B1** dan tidak diubah oleh batch ini.
 - URL Instagram `https://www.instagram.com/himatknuklir` **dikonfirmasi pemilik** pada 16 Nov. Konstanta dipertahankan sebagai utang teknis (lihat e.8); parameter share `rpxt` pada URL yang dikirim pemilik dibuang agar tautan stabil.
 
 ### b. Scope fase saat ini
 
 - Redesign **website publik** V2, frontend-only.
+- **Pengecualian Batch API-B1 (izin eksplisit pemilik, 16 Nov):** perubahan diizinkan pada `Backend/app/{routers,schemas,services}`, `Backend/tests/`, `Backend/docs/`, `Backend/README.md`, `Backend/routes.txt`, dan `docs/progress.md`. Model ORM, schema/Alembic, auth/CSRF/CORS, storage, environment, production, dan `frontend/` tetap dilarang.
 - Backend, database, migration, auth/CSRF/CORS/RBAC, storage, deployment, dan environment tidak diubah.
 - Panel admin **dipertahankan** sesuai desain dan implementasi V2 saat ini; hanya penyesuaian teknis untuk integrasi/konsistensi bila benar-benar diperlukan.
 
@@ -73,6 +77,7 @@ Entri historis yang masih memuat referensi tersebut tetap utuh di Historical Arc
 6. **Detail program kerja dan search publikasi belum didukung API.** Keduanya diperlakukan sebagai gap. Jangan membuat endpoint, parameter, atau data palsu.
 7. **Status program wajib memetakan keempat nilai:** `planned`, `ongoing`, `completed`, `cancelled`. `cancelled` tidak boleh diabaikan. Backend tidak memvalidasi enum status, jadi UI harus aman terhadap nilai yang tidak dikenal. Status diisi manual oleh admin dan **tidak dihitung dari tanggal**.
 8. **Instagram adalah utang teknis yang sama seperti Bank Soal.** Pemilik mengonfirmasi URL resmi `https://www.instagram.com/himatknuklir` pada 16 November 2026. URL untuk sementara di-hardcode di `frontend/lib/public/link.ts` (komentar menunjuk `GET /public/settings`, key `instagram_url`) dan dipakai CTA empty state Program/Publikasi. Jangan menambah tautan sosial lain tanpa data backend.
+9. **Site Settings memakai registry paritas V1 (Batch API-B1).** Daftar key resmi hanya di `Backend/app/services/site_settings.py`; key di luar registry diabaikan publik dan dilaporkan sebagai `unknown_keys` di admin. `hero_image` ditunda (V2 memakai storage sendiri), `period_label`/`structure_item_*`/`contact_back_label` tidak dimasukkan. Key data default `""`; key copy default netral tanpa nama kabinet/tahun/divisi. URL wajib `https` dengan host whitelist exact; `maps_embed_url` wajib path `/maps/embed`. Frontend belum memakai endpoint ini sampai batch API-F.
 
 ### f. Kondisi aktual V2
 
@@ -88,9 +93,11 @@ Ringkasan dari audit 12 November 2026; detail dan bukti line-by-line ada di `doc
   | `/public/news/{slug}` | Belum (service `getPublicNewsBySlug()` sudah ada; route detail belum ada) |
   | `/public/programs` | Belum (service `getPublicPrograms()` sudah ada; section homepage masih empty state) |
   | `/public/organization` | Ya |
+  | `/public/settings` | Belum (baru tersedia di branch; frontend memakai hardcode sampai batch API-F) |
   | `POST /public/visits` | Belum |
 
-- Baseline: `npm run lint` dan `npx tsc --noEmit` lulus pada audit. `npm run build` pertama kali dijalankan pada R1 Fase A (15 Nov): **gagal** karena `frontend/app/(private)/(admin)/loading.tsx` berukuran 0 byte; setelah file itu dihapus (disetujui pemilik) build lulus 9 route. Batch R1 Fase B (16 Nov) mengulang lint, tsc, dan build: ketiganya lulus 9 route.
+- Admin settings API (Batch API-B1): `GET /admin/settings` (`settings.view`), `PUT`/`DELETE /admin/settings/{key}` dan `PATCH /admin/settings` (`settings.manage` + CSRF), dengan registry 45 key dan validasi. Frontend admin settings belum dibuat.
+- Baseline: `npm run lint` dan `npx tsc --noEmit` lulus pada audit. `npm run build` pertama kali dijalankan pada R1 Fase A (15 Nov): **gagal** karena `frontend/app/(private)/(admin)/loading.tsx` berukuran 0 byte; setelah file itu dihapus (disetujui pemilik) build lulus 9 route. Batch R1 Fase B (16 Nov) mengulang lint, tsc, dan build: ketiganya lulus 9 route. Baseline backend sebelum API-B1: `compileall` lulus, `pytest -q` **71 passed**; setelah API-B1: **102 passed**.
 
 ### g. Keputusan yang masih tertunda (blok batch R1 dan seterusnya)
 
@@ -106,7 +113,7 @@ Status per 16 November 2026 (Batch R1 Fase B):
 | 6 | Nama route program kerja: `/program-kerja` atau `/kegiatan` | Menunggu keputusan pemilik |
 | 7 | Perlakuan status `cancelled` di UI publik | Menunggu keputusan pemilik |
 | 8 | Program dari periode mana yang ditampilkan di publik (API tanpa filter periode) | Menunggu keputusan pemilik |
-| 9 | Kontak, alamat, dan peta: nilai resmi terverifikasi atau disembunyikan | **Diputuskan pemilik:** disembunyikan dulu; terblokir `GET /public/settings`, jangan hardcode |
+| 9 | Kontak, alamat, dan peta: nilai resmi terverifikasi atau disembunyikan | **Diputuskan pemilik:** disembunyikan dulu. **API-B1 menyediakan `GET /public/settings` + admin settings**; frontend baru boleh menampilkan setelah batch API-F mengisi nilai resmi lewat API |
 | 10 | Penanganan `/__structure-state` sebelum rilis | **Diputuskan pemilik:** fixture dihapus pada R1 |
 | 11 | Domain canonical: `himatknuklir.web.id` atau `himatknuklir.vercel.app` | **Diputuskan pemilik:** `himatknuklir.web.id`; host kanonis dipakai `www.himatknuklir.web.id` (sama dengan sitemap/robots) |
 
@@ -155,7 +162,8 @@ Hanya agregat; tidak ada data pribadi:
 |---|---|---|
 | R0 | Dokumentasi | Selesai (12 Nov 2026) |
 | R1 Fase A | Sistem visual publik: token prototype di-scope `.public-site`, font Literata + Inter, header sticky 72px + nav 6 item, menu mobile prototype, footer, logo resmi, konstanta link Bank Soal dipakai header/menu/footer, hapus fixture `__structure-state`, domain canonical | **Selesai 15 Nov 2026; di-commit pemilik sebagai `733a561`** |
-| R1 Fase B | Hero, Tentang, section Program visual, Publikasi, Kepengurusan, Kontak disembunyikan, restyle 404, loading state | **Selesai dan terverifikasi 16 Nov 2026; perubahan belum di-commit, menunggu tinjauan pemilik. Berhenti sebelum R2.** |
+| R1 Fase B | Hero, Tentang, section Program visual, Publikasi, Kepengurusan, Kontak disembunyikan, restyle 404, loading state | **Selesai, terverifikasi, dan di-commit pemilik sebagai `cc1d496`** |
+| API-B1 | Site Settings: registry 45 key, `GET /public/settings`, admin `GET/PUT/PATCH/DELETE`, validasi URL/email/teks, audit, test | **Selesai 16 Nov 2026; belum di-commit dan belum di-deploy. Berhenti sebelum API-B2.** |
 | R2 | Halaman `/struktur`: dropdown custom yang aksesibel, visual tree/kartu/avatar, fallback foto | — |
 | R3 | Data homepage: grid divisi, program dengan 4 status, perbaikan link "Instagram" | Diblok keputusan g.7–8 |
 | R4 | `/publikasi` dan `/publikasi/[slug]` | Diblok keputusan g.5 |
@@ -164,12 +172,13 @@ Hanya agregat; tidak ada data pribadi:
 
 Bukan untuk dikerjakan OpenCode frontend:
 
-1. `GET /public/settings` dengan whitelist key publik (misalnya `bank_soal_url`, `instagram_url`, `contact_email`, `secretariat_address`, `maps_url`), validasi URL hanya `https://` pada `PUT /admin/settings/{key}`, lalu halaman admin Pengaturan.
+1. `GET /public/settings` **sudah tersedia di branch (API-B1)** dengan registry 45 key. Sisa pekerjaan backend: halaman admin Pengaturan di frontend (batch terpisah) dan pengisian nilai resmi lewat API. `hero_image` masih backlog karena V2 memakai storage sendiri.
 2. Detail program publik per slug; filter periode dan status; `total` di respons list; metadata periode/divisi pada respons program.
 3. Search dan `total` untuk `/public/news`. Pertimbangkan excerpt dan tag.
 4. Verifikasi `media.manage` di DB production.
 5. Pembedaan permission role `admin` dan `editor`.
 6. Pembersihan data uji sebelum rilis.
+7. Migrasi frontend dari hardcode Bank Soal/Instagram ke `GET /public/settings`, lalu tampilkan kontak/peta hanya jika nilainya terisi.
 
 ---
 
@@ -447,6 +456,61 @@ Entri sesi sejak 11 November 2026. Append-only: tambahkan entri baru di bawah; j
   - 404 global memakai `.public-site`, sehingga 404 dari area admin bertipografi publik (dicatat di Current Project State bagian h; perbaikan di batch admin).
 - **Langkah berikutnya:**
   - Pemilik meninjau laporan dan screenshot Fase B, lalu menyetujui commit. **R2 belum dimulai.**
+
+---
+
+### Sesi 2026-11-16 — Batch API-B1: Site Settings API
+
+- **Status:** Selesai untuk API-B1; **berhenti sebelum API-B2**. Tidak commit, push, merge, rebase, reset, clean, deploy, atau menyentuh database production/TiDB.
+- **Branch:** `feat/admin-ui-foundation`; HEAD `cc1d496` (R1 Fase B, sudah di-commit pemilik). Perubahan API-B1 belum di-commit.
+- **Izin scope:** pemilik memberi pengecualian eksplisit untuk `Backend/app/{routers,schemas,services}`, `Backend/tests/`, `Backend/docs/`, `Backend/README.md`, `Backend/routes.txt`, dan `docs/progress.md`. Model ORM, schema/Alembic, auth/CSRF/CORS/cookie/middleware/rate-limit core, storage, environment, production, `frontend/`, dan `Design/` **tidak diubah**.
+- **Tujuan:** mengganti `PUT /admin/settings/{key}` yang menerima key/nilai apa saja dengan registry resmi, endpoint publik, validasi, PATCH atomik, DELETE untuk membersihkan key sampah, audit, dan test.
+- **Yang dilakukan:**
+  - Menambahkan `Backend/app/services/site_settings.py` sebagai satu-satunya registry: **45 key** dalam grup brand (4), links (3), contact data (4), hero (6), about (12), program (3), news (4), structure (5), dan contact copy (4). Semua key `public: true`.
+  - Default key data `""`; default copy netral tanpa nama kabinet/tahun/divisi. `hero_image` tidak dimasukkan (backlog), begitu pula `period_label`, `structure_item_*`, dan `contact_back_label`.
+  - Menulis ulang `Backend/app/routers/settings.py`: `GET` mengembalikan metadata + `unknown_keys`; `PUT` diperketat; `PATCH` atomik; `DELETE` menghapus baris registry (kembali ke default) maupun baris sampah. Semua jalur tulis memakai CSRF + permission dan mencatat `log_activity` tanpa nilai.
+  - Menambahkan `GET /api/v1/public/settings` di `Backend/app/routers/public.py`: hanya key `public`, nilai DB menimpa default, key asing diabaikan.
+  - Menambahkan `SettingsPatchIn` di `Backend/app/schemas/content.py`.
+  - Menambahkan `Backend/tests/test_settings.py` (31 test case) dan membuat `Backend/tests/conftest.py` tidak bergantung pada `COOKIE_SAMESITE` dari `.env` lokal (menambah `COOKIE_SAMESITE=lax`).
+  - Menambahkan `Backend/docs/SITE_SETTINGS.md`, memperbarui `Backend/README.md`, dan meregenerasi `Backend/routes.txt`.
+- **Keputusan teknis:**
+  - **`value_type` klien diabaikan.** Tipe selalu diambil dari registry dan disimpan ke `SiteSetting.value_type`. `SettingIn` tetap menerima field itu agar kompatibel dengan pemanggil lama.
+  - **Cache publik:** `Cache-Control: public, max-age=60`. Middleware keamanan default memberi `no-store` untuk semua `/api/v1/`; header eksplisit ini menimpanya karena isi settings bersifat publik dan tidak sensitif. Tidak ada pola cache lain di `docs/VERCEL.md` yang bertentangan.
+  - **Rate limit:** `app/core/rate_limit.py` di luar scope, sehingga endpoint publik memakai konfigurasi baca yang sudah ada (`GENERAL_READ_LIMIT`/`GENERAL_READ_WINDOW_SECONDS`) dengan bucket `read:public-settings:<ip>`, bukan kelas limit baru.
+  - **Validasi URL:** wajib `https`, tanpa userinfo, tanpa port khusus (default/443), host cocok **exact** dengan whitelist; `maps_embed_url` wajib host `www.google.com` dan path diawali `/maps/embed` (short link `maps.app.goo.gl` ditolak). Backslash, spasi, karakter kontrol, dan newline di luar `multiline` ditolak.
+  - **Email:** regex sederhana, maks. 254, `""` diperbolehkan. **Teks tidak disanitasi HTML**; frontend wajib merender sebagai teks (didokumentasikan).
+  - **Key asing:** `PUT` → 404 `Setting tidak dikenal` tanpa memantulkan key; `PATCH` → 422 per key; `GET` admin → daftar `unknown_keys`; `DELETE` → boleh menghapus baris sampah.
+  - **DELETE key registry tanpa baris:** 200 no-op tanpa audit (nilai memang sudah default); 404 hanya jika key tidak ada di registry **dan** tidak ada di DB.
+  - **`PATCH` atomik:** semua nilai divalidasi lebih dulu; jika ada error, tidak ada yang ditulis dan satu entri audit tidak dibuat.
+- **Contoh respons aktual (SQLite sementara, nilai contoh):**
+  - `GET /public/settings` → `200`, header `Cache-Control: public, max-age=60`, 45 key. Contoh: `{"settings":{"brand_name":"HIMA TEKNOKIMIA NUKLIR","brand_subtitle":"POLITEKNIK TEKNOLOGI NUKLIR","program_title":"Program Kerja","bank_soal_url":""}}`.
+  - `GET /admin/settings` → `200`, 45 item + `unknown_keys`. Contoh item: `{"key":"brand_name","group":"brand","type":"text","label":"Nama brand","value":"HIMA TEKNOKIMIA NUKLIR","default":"HIMA TEKNOKIMIA NUKLIR","max_length":300,"allowed_hosts":[],"updated_by":null,"updated_at":null}`.
+  - `PUT /admin/settings/brand_name` → `200` `{"key":"brand_name","value":"Contoh Brand","type":"text","updated_by":1}`.
+  - `PATCH /admin/settings` → `200` `{"updated":["news_title","hero_primary_label"],"settings":{"news_title":"Kabar Contoh","hero_primary_label":"Lihat Program"}}`.
+  - `PATCH` invalid → `422` `{"detail":"Validasi gagal","errors":{"contact_email":"Format email tidak valid."}}`.
+  - `DELETE /admin/settings/junk_key` → `200` `{"deleted":"junk_key","value":null}`; `DELETE /admin/settings/brand_name` → `200` `{"deleted":"brand_name","value":"HIMA TEKNOKIMIA NUKLIR"}`.
+- **Pemeriksaan yang dijalankan + hasil aktual:**
+  - Baseline sebelum perubahan: `python -m compileall app` lulus; `pytest -q` **71 passed** (perlu `COOKIE_SAMESITE=lax` karena `.env` lokal memakai SameSite=None; setelah conftest diperbaiki, suite berjalan tanpa env tambahan).
+  - Setelah perubahan: `compileall` lulus; `pytest -q` **102 passed, 15 warnings** (0 gagal).
+  - `python -m alembic check` → `No new upgrade operations detected` (tidak ada drift skema).
+  - `python scripts/list_routes.py` hanya mencetak 5 route karena FastAPI 0.141 memakai `_IncludedRouter` lazy; script lama tidak menelusuri router bersarang. `routes.txt` diregenerasi dengan penelusuran `effective_route_contexts()` yang setara: **62 baris**, termasuk `GET/PUT/PATCH/DELETE /api/v1/admin/settings...` dan `GET /api/v1/public/settings`. `scripts/list_routes.py` **tidak diubah** karena di luar scope; perlu diperbaiki di batch lain.
+- **File yang diubah/dibuat:**
+  - Baru: `Backend/app/services/site_settings.py`, `Backend/tests/test_settings.py`, `Backend/docs/SITE_SETTINGS.md`.
+  - Diubah: `Backend/app/routers/settings.py`, `Backend/app/routers/public.py`, `Backend/app/schemas/content.py`, `Backend/tests/conftest.py`, `Backend/README.md`, `Backend/routes.txt`, `docs/progress.md`.
+- **Konfirmasi batas scope:**
+  - Model ORM/schema/Alembic/migrasi berubah: Tidak.
+  - Auth/sesi/JWT/CSRF/CORS/cookie/middleware/rate-limit core/storage berubah: Tidak.
+  - Database production/TiDB/seed/env/deploy: Tidak.
+  - `frontend/`, `Design/`, `.gitignore`, konfigurasi: Tidak.
+  - Isi `.env*` dibaca/dicetak: Tidak.
+  - Commit/push/merge/rebase/reset/clean: Tidak.
+- **Utang teknis/backlog:**
+  - Frontend masih memakai hardcode Bank Soal/Instagram dan belum memakai `GET /public/settings` (batch API-F); kontak/peta belum ditampilkan.
+  - `hero_image` belum masuk registry karena V2 memakai storage sendiri.
+  - Admin settings UI belum ada.
+  - `scripts/list_routes.py` belum menangani router lazy FastAPI 0.141.
+- **Langkah berikutnya:**
+  - Pemilik meninjau API-B1. **API-B2 belum dimulai.**
 
 ---
 

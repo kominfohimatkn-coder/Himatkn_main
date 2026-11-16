@@ -58,7 +58,7 @@ Route utama yang tersedia:
 
 `GET/POST /api/v1/admin/documents`
 
-`GET /api/v1/admin/settings` · `PUT /api/v1/admin/settings/{key}`
+`GET /api/v1/admin/settings` · `PUT/DELETE /api/v1/admin/settings/{key}` · `PATCH /api/v1/admin/settings`
 
 `GET/POST /api/v1/admin/notifications` · `POST /api/v1/admin/notifications/{notification_id}/read`
 
@@ -66,7 +66,13 @@ Route utama yang tersedia:
 
 `GET/POST /api/v1/media/images` · `GET /api/v1/media/images/{filename:path}` · `GET /api/v1/media/documents/{filename:path}`
 
-`GET /api/v1/public/news` · `GET /api/v1/public/news/{slug}` · `GET /api/v1/public/programs` · `GET /api/v1/public/organization` · `POST /api/v1/public/visits`
+`GET /api/v1/public/news` · `GET /api/v1/public/news/{slug}` · `GET /api/v1/public/programs` · `GET /api/v1/public/organization` · `GET /api/v1/public/settings` · `POST /api/v1/public/visits`
+
+## Site Settings
+
+Nilai teks dan tautan publik dikelola lewat registry di
+`app/services/site_settings.py`. Detail registry, validasi, endpoint, dan contoh
+pemakaian ada di [`docs/SITE_SETTINGS.md`](docs/SITE_SETTINGS.md).
 
 ## Security
 

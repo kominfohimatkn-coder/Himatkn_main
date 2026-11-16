@@ -6,6 +6,7 @@ os.environ.update(
         "DATABASE_URL": "sqlite:///./test_himatkn.sqlite3",
         "JWT_SECRET_KEY": "test-secret-" + "x" * 40,
         "COOKIE_SECURE": "false",
+        "COOKIE_SAMESITE": "lax",
         "RATE_LIMIT_BACKEND": "memory",
         "STORAGE_BACKEND": "local",
         "STORAGE_LOCAL_DIR": "storage/test-uploads",
