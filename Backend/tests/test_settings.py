@@ -258,6 +258,10 @@ def test_put_requires_csrf_and_permission(
         ("maps_embed_url", "https://maps.app.goo.gl/abc123"),
         ("maps_embed_url", "https://www.google.com/maps?q=abc"),
         ("maps_embed_url", "https://google.com/maps/embed?pb=x"),
+        ("maps_url", "https://www.google.com/url?q=https://maps.app.goo.gl/x"),
+        ("maps_url", "https://www.google.com/search?q=lokasi"),
+        ("maps_url", "https://google.com/url?q=lokasi"),
+        ("maps_url", "https://maps.google.com/?q=lokasi"),
     ],
 )
 def test_put_rejects_invalid_urls(
@@ -313,6 +317,39 @@ def test_put_accepts_valid_values_and_trims(
     )
 
     assert email.status_code == 200
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "https://www.google.com/maps/place/Contoh+Lokasi",
+        "https://google.com/maps?q=contoh",
+        "https://maps.google.com/maps?q=contoh",
+        "https://maps.app.goo.gl/abc123",
+        "https://maps.app.goo.gl/",
+    ],
+)
+def test_put_accepts_maps_url_paths(
+    client,
+    admin_headers,
+    value,
+):
+    response = client.put(
+        "/api/v1/admin/settings/maps_url",
+        json={"setting_value": value},
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["value"] == value
+
+
+def test_public_settings_hero_defaults_match_prototype(client):
+    settings = client.get("/api/v1/public/settings").json()["settings"]
+
+    assert settings["hero_eyebrow"] == "HIMATKN"
+    assert settings["hero_title"] == "Himpunan Mahasiswa"
+    assert settings["hero_emphasis"] == "Teknokimia Nuklir"
 
 
 def test_put_accepts_empty_value(client, admin_headers):

@@ -55,6 +55,7 @@ GET    /api/v1/media/documents/{filename:path}
 GET    /api/v1/public/news
 GET    /api/v1/public/news/{slug}
 GET    /api/v1/public/programs
+GET    /api/v1/public/programs/{slug}
 GET    /api/v1/public/organization
 GET    /api/v1/public/settings
 POST   /api/v1/public/visits

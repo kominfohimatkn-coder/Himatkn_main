@@ -66,13 +66,27 @@ Route utama yang tersedia:
 
 `GET/POST /api/v1/media/images` · `GET /api/v1/media/images/{filename:path}` · `GET /api/v1/media/documents/{filename:path}`
 
-`GET /api/v1/public/news` · `GET /api/v1/public/news/{slug}` · `GET /api/v1/public/programs` · `GET /api/v1/public/organization` · `GET /api/v1/public/settings` · `POST /api/v1/public/visits`
+`GET /api/v1/public/news` · `GET /api/v1/public/news/{slug}` · `GET /api/v1/public/programs` · `GET /api/v1/public/programs/{slug}` · `GET /api/v1/public/organization` · `GET /api/v1/public/settings` · `POST /api/v1/public/visits`
+
+## Public Content API
+
+Kontrak `GET /public/news`, `GET /public/programs`, dan
+`GET /public/organization` (filter, `total`, `excerpt`, `tags`, `sort_order`,
+normalisasi `photo_url`) beserta contoh respons ada di
+[`docs/PUBLIC_API.md`](docs/PUBLIC_API.md).
 
 ## Site Settings
 
 Nilai teks dan tautan publik dikelola lewat registry di
 `app/services/site_settings.py`. Detail registry, validasi, endpoint, dan contoh
 pemakaian ada di [`docs/SITE_SETTINGS.md`](docs/SITE_SETTINGS.md).
+
+## Seed
+
+`python -m app.seed` bersifat idempoten: role dan permission yang belum ada
+akan dibuat, permission baru diberikan ke `superadmin`, dan admin default hanya
+dibuat bila tabel `admins` masih kosong. Jalankan sekali setelah deploy untuk
+menambahkan permission yang belum ada di DB (misalnya `media.manage`).
 
 ## Security
 

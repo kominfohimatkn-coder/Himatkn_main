@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import html
+import re
 from hashlib import sha256
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import settings
@@ -13,11 +15,14 @@ from app.models import (
     Division,
     Member,
     News,
+    NewsTag,
     Period,
     Position,
     Program,
+    Tag,
     VisitorLog,
 )
+from app.schemas.content import PROGRAM_STATUSES
 from app.services.site_settings import resolve_public_settings
 
 
@@ -27,6 +32,10 @@ router = APIRouter(
 )
 
 PUBLIC_LIMIT = 50
+NEWS_EXCERPT_LENGTH = 160
+
+_TAG_PATTERN = re.compile(r"<[^>]+>")
+_WHITESPACE_PATTERN = re.compile(r"\s+")
 
 
 def _image_url(storage_key: str | None) -> str | None:
@@ -51,13 +60,89 @@ def _image_item(image) -> dict:
     }
 
 
-def news_item(news: News, *, include_content: bool = False) -> dict:
+def _public_photo_url(value: str | None) -> str | None:
+    """Normalize a member photo to the public media contract.
+
+    Storage keys (``images/...``) become media paths, absolute ``https``
+    URLs are kept, and anything else is hidden.
+    """
+
+    if not value:
+        return None
+
+    candidate = value.strip()
+
+    if candidate.startswith("https://"):
+        return candidate
+
+    if candidate.startswith("images/"):
+        return _image_url(candidate)
+
+    return None
+
+
+def _excerpt(content: str | None, limit: int = NEWS_EXCERPT_LENGTH) -> str:
+    if not content:
+        return ""
+
+    text = _TAG_PATTERN.sub(" ", content)
+    text = html.unescape(text)
+    text = _WHITESPACE_PATTERN.sub(" ", text).strip()
+
+    if len(text) <= limit:
+        return text
+
+    cut = text[:limit]
+    boundary = cut.rfind(" ")
+
+    if boundary > 0:
+        cut = cut[:boundary]
+
+    return cut.rstrip(" \t,.;:-") + "…"
+
+
+def _tags_by_news(
+    db: Session,
+    news_ids: list[int],
+) -> dict[int, list[dict]]:
+    if not news_ids:
+        return {}
+
+    rows = db.execute(
+        select(NewsTag.news_id, Tag.id, Tag.name, Tag.slug)
+        .join(Tag, Tag.id == NewsTag.tag_id)
+        .where(NewsTag.news_id.in_(news_ids))
+        .order_by(Tag.name.asc(), Tag.id.asc())
+    ).all()
+
+    grouped: dict[int, list[dict]] = {}
+
+    for row in rows:
+        grouped.setdefault(row.news_id, []).append(
+            {
+                "id": row.id,
+                "name": row.name,
+                "slug": row.slug,
+            }
+        )
+
+    return grouped
+
+
+def news_item(
+    news: News,
+    *,
+    include_content: bool = False,
+    include_excerpt: bool = True,
+    tags: list[dict] | None = None,
+) -> dict:
     item = {
         "id": news.id,
         "title": news.title,
         "slug": news.slug,
         "featured_image": _image_url(news.featured_image),
         "published_at": news.published_at,
+        "tags": tags or [],
         "images": [
             _image_item(image)
             for image in sorted(
@@ -67,22 +152,56 @@ def news_item(news: News, *, include_content: bool = False) -> dict:
         ],
     }
 
+    if include_excerpt:
+        item["excerpt"] = _excerpt(news.content)
+
     if include_content:
         item["content"] = news.content
 
     return item
 
 
+def _escape_like(term: str) -> str:
+    return (
+        term.replace("\\", "\\\\")
+        .replace("%", "\\%")
+        .replace("_", "\\_")
+    )
+
+
 @router.get("/news")
 def public_news(
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=PUBLIC_LIMIT),
+    q: str | None = Query(default=None, max_length=100),
     db: Session = Depends(get_db),
 ):
+    conditions = [News.status == "published"]
+
+    if q is not None:
+        term = q.strip()
+
+        if len(term) < 2:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Kata kunci pencarian minimal 2 karakter",
+            )
+
+        conditions.append(
+            News.title.ilike(
+                f"%{_escape_like(term)}%",
+                escape="\\",
+            )
+        )
+
+    total = db.scalar(
+        select(func.count()).select_from(News).where(*conditions)
+    )
+
     statement = (
         select(News)
         .options(selectinload(News.images))
-        .where(News.status == "published")
+        .where(*conditions)
         .order_by(
             News.published_at.desc(),
             News.created_at.desc(),
@@ -93,9 +212,18 @@ def public_news(
     )
 
     rows = db.scalars(statement).unique().all()
+    tags = _tags_by_news(db, [row.id for row in rows])
 
     return {
-        "items": [news_item(row, include_content=False) for row in rows],
+        "items": [
+            news_item(
+                row,
+                include_content=False,
+                tags=tags.get(row.id, []),
+            )
+            for row in rows
+        ],
+        "total": total or 0,
         "offset": offset,
         "limit": limit,
     }
@@ -123,18 +251,140 @@ def public_news_detail(
             detail="Publikasi tidak ditemukan",
         )
 
-    return news_item(news, include_content=True)
+    tags = _tags_by_news(db, [news.id])
+
+    return news_item(
+        news,
+        include_content=True,
+        include_excerpt=False,
+        tags=tags.get(news.id, []),
+    )
+
+
+def _program_item(
+    program: Program,
+    division: Division | None,
+    period: Period,
+) -> dict:
+    return {
+        "id": program.id,
+        "name": program.name,
+        "slug": program.slug,
+        "description": program.description,
+        "status": program.status,
+        "start_date": program.start_date,
+        "end_date": program.end_date,
+        "division": (
+            {
+                "id": division.id,
+                "name": division.name,
+            }
+            if division is not None
+            else None
+        ),
+        "period": {
+            "id": period.id,
+            "name": period.name,
+        },
+    }
+
+
+def _parse_program_statuses(
+    raw_values: list[str] | None,
+) -> list[str]:
+    if not raw_values:
+        return []
+
+    statuses: list[str] = []
+
+    for raw_value in raw_values:
+        for part in raw_value.split(","):
+            value = part.strip().lower()
+
+            if not value or value not in PROGRAM_STATUSES:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Status program tidak valid",
+                )
+
+            if value not in statuses:
+                statuses.append(value)
+
+    return statuses
+
+
+def _active_period(db: Session) -> Period | None:
+    return db.scalar(
+        select(Period)
+        .where(Period.is_active.is_(True))
+        .order_by(Period.start_date.desc(), Period.id.desc())
+    )
+
+
+def _program_conditions(
+    *,
+    period_id: int,
+    statuses: list[str],
+    division_id: int | None,
+) -> list:
+    conditions = [Program.period_id == period_id]
+
+    if statuses:
+        conditions.append(Program.status.in_(statuses))
+
+    if division_id is not None:
+        conditions.append(Program.division_id == division_id)
+
+    return conditions
 
 
 @router.get("/programs")
 def public_programs(
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=PUBLIC_LIMIT),
+    period_id: int | None = Query(default=None, ge=1),
+    status_filter: list[str] | None = Query(
+        default=None,
+        alias="status",
+    ),
+    division_id: int | None = Query(default=None, ge=1),
     db: Session = Depends(get_db),
 ):
-    rows = db.scalars(
-        select(Program)
+    statuses = _parse_program_statuses(status_filter)
+
+    period = (
+        db.get(Period, period_id)
+        if period_id is not None
+        else _active_period(db)
+    )
+
+    if period is None:
+        return {
+            "items": [],
+            "total": 0,
+            "offset": offset,
+            "limit": limit,
+            "period": None,
+        }
+
+    conditions = _program_conditions(
+        period_id=period.id,
+        statuses=statuses,
+        division_id=division_id,
+    )
+
+    total = db.scalar(
+        select(func.count()).select_from(Program).where(*conditions)
+    )
+
+    rows = db.execute(
+        select(Program, Division, Period)
+        .join(Period, Period.id == Program.period_id)
+        .outerjoin(Division, Division.id == Program.division_id)
+        .where(*conditions)
         .order_by(
+            Program.start_date.is_(None),
+            Program.start_date.desc(),
             Program.created_at.desc(),
             Program.id.desc(),
         )
@@ -144,20 +394,38 @@ def public_programs(
 
     return {
         "items": [
-            {
-                "id": row.id,
-                "name": row.name,
-                "slug": row.slug,
-                "description": row.description,
-                "status": row.status,
-                "start_date": row.start_date,
-                "end_date": row.end_date,
-            }
-            for row in rows
+            _program_item(program, division, row_period)
+            for program, division, row_period in rows
         ],
+        "total": total or 0,
         "offset": offset,
         "limit": limit,
+        "period": {
+            "id": period.id,
+            "name": period.name,
+        },
     }
+
+
+@router.get("/programs/{slug}")
+def public_program_detail(
+    slug: str,
+    db: Session = Depends(get_db),
+):
+    row = db.execute(
+        select(Program, Division, Period)
+        .join(Period, Period.id == Program.period_id)
+        .outerjoin(Division, Division.id == Program.division_id)
+        .where(Program.slug == slug)
+    ).first()
+
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Program kerja tidak ditemukan",
+        )
+
+    return _program_item(*row)
 
 
 @router.get("/organization")
@@ -216,6 +484,7 @@ def public_org(
                 "id": division.id,
                 "name": division.name,
                 "description": division.description,
+                "sort_order": division.sort_order,
             }
             for division in divisions
         ],
@@ -225,7 +494,7 @@ def public_org(
                 "name": member.name,
                 "division_id": member.division_id,
                 "position_id": member.position_id,
-                "photo_url": member.photo_url,
+                "photo_url": _public_photo_url(member.photo_url),
             }
             for member in members
         ],
@@ -233,6 +502,7 @@ def public_org(
             {
                 "id": position.id,
                 "name": position.name,
+                "sort_order": position.sort_order,
             }
             for position in positions
         ],

@@ -56,6 +56,7 @@ class SettingDefinition:
     public: bool = True
     allowed_hosts: tuple[str, ...] = ()
     path_prefix: str | None = None
+    host_path_prefixes: tuple[tuple[str, str], ...] = ()
 
 
 def _text(
@@ -101,6 +102,7 @@ def _url(
     allowed_hosts: tuple[str, ...],
     *,
     path_prefix: str | None = None,
+    host_path_prefixes: dict[str, str] | None = None,
 ) -> SettingDefinition:
     return SettingDefinition(
         key=key,
@@ -110,6 +112,9 @@ def _url(
         max_length=URL_MAX_LENGTH,
         allowed_hosts=allowed_hosts,
         path_prefix=path_prefix,
+        host_path_prefixes=tuple(
+            sorted((host_path_prefixes or {}).items())
+        ),
     )
 
 
@@ -159,6 +164,11 @@ _REGISTRY_ORDER: tuple[SettingDefinition, ...] = (
             "google.com",
             "maps.google.com",
         ),
+        host_path_prefixes={
+            "www.google.com": "/maps",
+            "google.com": "/maps",
+            "maps.google.com": "/maps",
+        },
     ),
     _url(
         "maps_embed_url",
@@ -167,9 +177,9 @@ _REGISTRY_ORDER: tuple[SettingDefinition, ...] = (
         ("www.google.com",),
         path_prefix="/maps/embed",
     ),
-    _text("hero_eyebrow", "hero", "Label kecil hero", "Himpunan Mahasiswa"),
-    _text("hero_title", "hero", "Judul hero", "Teknokimia Nuklir"),
-    _text("hero_emphasis", "hero", "Kata penekanan hero", "Bersama"),
+    _text("hero_eyebrow", "hero", "Label kecil hero", "HIMATKN"),
+    _text("hero_title", "hero", "Judul hero", "Himpunan Mahasiswa"),
+    _text("hero_emphasis", "hero", "Kata penekanan hero", "Teknokimia Nuklir"),
     _text(
         "hero_description",
         "hero",
@@ -357,15 +367,19 @@ def _validate_url(definition: SettingDefinition, value: str) -> None:
     if parts.hostname not in definition.allowed_hosts:
         raise SettingValidationError("Host URL tidak diizinkan.")
 
-    if (
-        definition.path_prefix
-        and not re.match(
-            rf"^{re.escape(definition.path_prefix)}(?:/|$)",
-            parts.path or "",
+    required_prefix = definition.path_prefix
+
+    if required_prefix is None and definition.host_path_prefixes:
+        required_prefix = dict(definition.host_path_prefixes).get(
+            parts.hostname
         )
+
+    if required_prefix and not re.match(
+        rf"^{re.escape(required_prefix)}(?:/|$)",
+        parts.path or "",
     ):
         raise SettingValidationError(
-            f"Path URL harus diawali {definition.path_prefix}."
+            f"Path URL harus diawali {required_prefix}."
         )
 
 

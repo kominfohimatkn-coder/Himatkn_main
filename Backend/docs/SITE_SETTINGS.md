@@ -37,16 +37,16 @@ tidak disimpan di kode.
 |---|---|---|---|
 | `contact_email` | email | maks. 254 | `""` |
 | `secretariat_address` | multiline | maks. 500 | `""` |
-| `maps_url` | url | `maps.app.goo.gl`, `www.google.com`, `google.com`, `maps.google.com` | `""` |
+| `maps_url` | url | `maps.app.goo.gl`, `www.google.com`, `google.com`, `maps.google.com`. Untuk tiga host `google.com` wajib path diawali `/maps`; short link bebas path | `""` |
 | `maps_embed_url` | url | `www.google.com`, path wajib diawali `/maps/embed` | `""` |
 
 ### hero
 
 | Key | Tipe | Default |
 |---|---|---|
-| `hero_eyebrow` | text | `Himpunan Mahasiswa` |
-| `hero_title` | text | `Teknokimia Nuklir` |
-| `hero_emphasis` | text | `Bersama` |
+| `hero_eyebrow` | text | `HIMATKN` |
+| `hero_title` | text | `Himpunan Mahasiswa` |
+| `hero_emphasis` | text | `Teknokimia Nuklir` |
 | `hero_description` | text (maks. 1000) | `Wadah mahasiswa Teknokimia Nuklir untuk belajar, berkarya, dan berkontribusi.` |
 | `hero_primary_label` | text | `Lihat Program Kerja` |
 | `hero_secondary_label` | text | `Kenali Kami` |
@@ -103,7 +103,11 @@ Berlaku untuk `PUT` dan `PATCH`.
 - `url`: kosong (`""`) diperbolehkan. Selain itu wajib `https`, tanpa userinfo,
   tanpa port khusus (hanya default/443), host harus cocok **exact** dengan
   `allowed_hosts`, dan `maps_embed_url` wajib berpath `/maps/embed...`.
-  Short link `maps.app.goo.gl` ditolak untuk embed karena tidak bisa di-iframe.
+  Untuk `maps_url`, host `www.google.com`, `google.com`, dan `maps.google.com`
+  wajib berpath `/maps...` sehingga link redirect seperti
+  `https://www.google.com/url?q=...` ditolak; host `maps.app.goo.gl` tetap
+  menerima path apa pun (short link).
+  Short link `maps.app.goo.gl` juga ditolak untuk embed karena tidak bisa di-iframe.
 - `email`: format sederhana, maksimum 254 karakter; `""` diperbolehkan.
 - `text`: teks polos. Backend tidak melakukan sanitasi HTML; frontend wajib
   merender sebagai teks, bukan HTML.
@@ -120,8 +124,7 @@ key di luar registry diabaikan; nilai DB menimpa default.
 {
   "settings": {
     "brand_name": "HIMA TEKNOKIMIA NUKLIR",
-    "brand_subtitle": "POLITEKNIK TEKNOLOGI NUKLIR",
-    "bank_soal_url": "https://drive.google.com/drive/folders/contoh",
+    "brand_subtitle": "POLITEKNIK TEKNOLOGI NUKLIR",    "bank_soal_url": "https://drive.google.com/drive/folders/contoh",
     "instagram_url": "https://www.instagram.com/himatknuklir"
   }
 }
