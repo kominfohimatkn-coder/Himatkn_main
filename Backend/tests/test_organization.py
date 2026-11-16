@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.database.connection import SessionLocal
 from app.models import ActivityLog, Division, Member, Period, Position
@@ -193,3 +193,103 @@ def test_create_inactive_period_keeps_current_active(client):
     )
     assert response.status_code == 201
     assert _active_period_ids() == before
+
+def _create_period(client, headers, name, is_active=False):
+    response = client.post(
+        "/api/v1/admin/organization/periods",
+        json={"name": name, "start_date": "2040-01-01",
+              "end_date": "2040-12-31", "is_active": is_active},
+        headers=headers,
+    )
+    assert response.status_code == 201
+    return response.json()["id"]
+
+
+def _activate(client, headers, period_id):
+    return client.post(
+        f"/api/v1/admin/organization/periods/{period_id}/activate",
+        headers=headers,
+    )
+
+
+def test_activate_period_deactivates_others(client):
+    headers = _headers(client)
+    a_id = _create_period(client, headers, "TEST-ACT-A", is_active=True)
+    b_id = _create_period(client, headers, "TEST-ACT-B")
+
+    response = _activate(client, headers, b_id)
+    assert response.status_code == 200
+    assert response.json()["period"]["id"] == b_id
+    assert response.json()["period"]["is_active"] is True
+    assert _active_period_ids() == {b_id}
+    assert a_id not in _active_period_ids()
+
+
+def test_activate_period_is_idempotent(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-ACT-IDEMPOTENT")
+
+    assert _activate(client, headers, period_id).status_code == 200
+    assert _activate(client, headers, period_id).status_code == 200
+
+    with SessionLocal() as db:
+        count = db.scalar(
+            select(func.count()).select_from(ActivityLog).where(
+                ActivityLog.action == "period.activate",
+                ActivityLog.entity_id == period_id,
+            )
+        )
+    assert count == 1
+
+
+def test_activate_empty_period_returns_warnings(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-ACT-EMPTY")
+
+    warnings = _activate(client, headers, period_id).json()["warnings"]
+    assert "Periode ini belum memiliki divisi" in warnings
+    assert "Periode ini belum memiliki anggota" in warnings
+
+
+def test_activate_filled_period_has_no_warnings(client):
+    headers = _headers(client)
+    with SessionLocal() as db:
+        period = Period(name="TEST-ACT-FILLED", is_active=False)
+        position = Position(name="TEST-ACT-POS")
+        db.add_all([period, position])
+        db.flush()
+        division = Division(period_id=period.id, name="Div Uji", sort_order=0)
+        db.add(division)
+        db.flush()
+        db.add(Member(period_id=period.id, division_id=division.id,
+                      position_id=position.id, name="Anggota Uji", sort_order=0))
+        db.commit()
+        period_id = period.id
+
+    response = _activate(client, headers, period_id)
+    assert response.status_code == 200
+    assert response.json()["warnings"] == []
+
+
+def test_activate_unknown_period_returns_404(client):
+    headers = _headers(client)
+    assert _activate(client, headers, 999999).status_code == 404
+
+
+def test_activate_requires_csrf(client):
+    login(client)
+    period_id = 1
+    response = client.post(
+        f"/api/v1/admin/organization/periods/{period_id}/activate",
+        headers={"Origin": "http://localhost:3000"},
+    )
+    assert response.status_code == 403
+
+
+def test_public_organization_follows_activated_period(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-ACT-PUBLIC")
+    _activate(client, headers, period_id)
+
+    public = client.get("/api/v1/public/organization").json()
+    assert public["period"]["id"] == period_id

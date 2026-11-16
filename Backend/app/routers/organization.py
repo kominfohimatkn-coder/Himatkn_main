@@ -349,3 +349,60 @@ def delete_member(
     )
     _commit_or_conflict(db)
     return None
+
+@router.post(
+    "/periods/{period_id}/activate",
+    dependencies=[Depends(require_csrf)],
+)
+def activate_period(
+    period_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: Admin = Depends(require_permission(PERMISSION_MANAGE)),
+):
+    period = db.get(Period, period_id)
+    if period is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Periode tidak ditemukan",
+        )
+
+    division_count = db.scalar(
+        select(func.count())
+        .select_from(Division)
+        .where(Division.period_id == period.id)
+    ) or 0
+    member_count = db.scalar(
+        select(func.count())
+        .select_from(Member)
+        .where(Member.period_id == period.id)
+    ) or 0
+
+    warnings: list[str] = []
+    if division_count == 0:
+        warnings.append("Periode ini belum memiliki divisi")
+    if member_count == 0:
+        warnings.append("Periode ini belum memiliki anggota")
+
+    if not period.is_active:
+        db.execute(
+            update(Period)
+            .where(Period.id != period.id, Period.is_active.is_(True))
+            .values(is_active=False)
+        )
+        period.is_active = True
+
+        log_activity(
+            db=db,
+            admin_id=admin.id,
+            action="period.activate",
+            entity_type="period",
+            entity_id=period.id,
+            description=f"Mengaktifkan periode {period.name}",
+            ip_address=get_client_ip(request),
+            user_agent=request.headers.get("user-agent", "")[:500],
+        )
+        _commit_or_conflict(db)
+        db.refresh(period)
+
+    return {"period": _period_item(period), "warnings": warnings}
