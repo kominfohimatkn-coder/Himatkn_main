@@ -97,7 +97,7 @@
         const u = form.username.value.trim();
         if (u === "salah") { states.error(); form.password.value = ""; form.password.focus(); return; }
         if (u === "kunci") { states.locked(); return; }
-        const role = { subahan: "admin", "minfo.editor": "editor" }[u] || "superadmin";
+        const role = { "pengurus.minfo": "admin", "editor.publikasi": "editor" }[u] || "superadmin";
         location.href = `index.html?role=${role}#/dashboard`;
       }, 800);
     });

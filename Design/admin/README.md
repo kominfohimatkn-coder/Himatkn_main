@@ -1,81 +1,123 @@
-# HIMATKN: Panel Admin (prototipe desain)
+# Panel Admin HIMATKN V2 — Prototipe (revisi 2)
 
-Prototipe HTML panel admin V2 dengan gaya yang sama seperti situs publik: Literata untuk judul, Inter untuk isi, label kapital berspasi, hijau tua + mint, garis tipis, dan radius kecil. Halaman, kolom, izin, dan role mengikuti **backend V2 yang sebenarnya** (router `/api/v1/admin/*`, `seed.py`, dan dump `himatkn_v2`). Semua data di dalamnya adalah *fixture*. Simpan dan hapus hanya disimulasikan di memori.
+Prototipe statis (HTML/CSS/JS tanpa build) sebagai acuan desain untuk implementasi Next.js. Semua data fiktif (`assets/data.js`); simpan/hapus hanya disimulasikan di memori dan hilang saat halaman dimuat ulang.
 
-## Cara membuka
-Buka `login.html` (atau langsung `index.html`) lewat server lokal dari folder induk:
+Buka `login.html`, atau langsung `index.html#/dashboard`.
 
-```
-python -m http.server 8000   →   http://localhost:8000/admin/login.html
-```
+| File | Isi |
+|---|---|
+| `login.html` | Halaman masuk + state galat |
+| `index.html` | Shell SPA (hash router) |
+| `assets/admin.css` | Gaya panel, mengikuti situs publik (Literata/Inter, hijau tua + mint) |
+| `assets/admin.js` | Router, tampilan, dialog, validasi |
+| `assets/data.js` | Fixture: role, izin, periode, divisi, anggota, publikasi, pengaturan, log |
 
-Login prototipe:
-- `admin` (atau username apa pun) → Superadmin
-- `subahan` → Admin
-- `minfo.editor` → Editor
-- `salah` → contoh kredensial salah
-- `kunci` → contoh terlalu banyak percobaan
+## Cara review
+
+| Parameter URL | Nilai | Fungsi |
+|---|---|---|
+| `role` | `superadmin` · `admin` · `editor` | Ganti role |
+| `state` | `normal` · `loading` · `empty` · `error` · `expired` | Paksa state halaman |
+| `delay` | ms (bawaan 450) | Lama skeleton |
+| `panel=off` | — | Sembunyikan panel Review |
+
+Akun demo di `login.html`: `pengurus.minfo` → Admin, `editor.publikasi` → Editor, username lain → Superadmin. Username `salah` → kredensial salah, `kunci` → terlalu banyak percobaan.
+
+Demo lain:
+- **Akun saya:** isi password lama `salah` untuk melihat state "password lama salah".
+- **Pengaturan:** isi URL non-Google Drive di Bank Soal, atau tautan `maps/place` di Maps, lalu Simpan untuk melihat ringkasan galat.
+
+> **Panel Review** (pojok kanan bawah) adalah **alat bantu prototipe, bukan bagian produk**. Jangan diimplementasikan.
 
 ## Halaman → endpoint → izin
-| Halaman | Hash | Endpoint backend | Izin lihat / kelola |
-|---|---|---|---|
-| Dashboard | `#/dashboard` | `GET /admin/dashboard` (+ ringkasan modul) | `dashboard.view` |
-| Publikasi (daftar + editor) | `#/news`, `#/news/new`, `#/news/{id}` | `/admin/news`, tags, `/{id}/images` | `news.view` / `news.create`, `news.update`, `news.delete` |
-| Program Kerja | `#/programs` | `/admin/programs` | `programs.view` / `programs.manage` |
-| Agenda | `#/agendas` | `/admin/agendas` | `agendas.view` / `agendas.manage` |
-| Dokumen | `#/documents` | `GET/POST /admin/documents`, `/media/documents/*` | `documents.view` / `documents.manage` |
-| Struktur Organisasi | `#/organization` | `/admin/organization/periods, divisions, positions, members` | `organization.view` / `organization.manage` |
-| Notifikasi | `#/notifications` | `/admin/notifications`, `/{id}/read` | `notifications.view` / `notifications.manage` |
-| Administrator + Role & izin | `#/admins` | `/admin/admins`, `/admin/admins/roles` | `admins.view` / `admins.manage`, tab role: `roles.manage` |
-| Log Aktivitas | `#/activity` | `GET /admin/activity-logs` | `activity_logs.view` |
-| Statistik Pengunjung | `#/visitors` | `GET /admin/visitor-logs` | `visitor_logs.view` |
-| Pengaturan Situs | `#/settings` | `GET /admin/settings`, `PUT /admin/settings/{key}` | `settings.view` / `settings.manage` |
-| Login | `login.html` | `/auth/csrf`, `/auth/login`, `/auth/me`, `/auth/logout` | — |
 
-## Aturan tampilan berdasarkan role
-UI hanya mengikuti izin; backend tetap menjadi penentu akses yang sebenarnya.
+`[segera]` = endpoint belum ada di backend, tapi sudah boleh didesain. Prefix semua endpoint: `/api/v1`.
 
-1. **Menu sidebar** hanya menampilkan modul yang punya izin `*.view`. Grup yang kosong ikut disembunyikan.
-2. **Punya izin lihat tapi tidak punya izin kelola**: halaman tetap terbuka dengan banner "Mode lihat saja". Tombol tambah, edit, dan hapus disembunyikan, sementara form dan pengaturan tampil *read-only*.
-3. **URL dibuka tanpa izin lihat**: muncul state **403** yang menyebut izin yang dibutuhkan.
-4. **Dashboard**: kartu statistik, panel, dan tombol aksi cepat hanya muncul untuk modul yang diizinkan.
-5. **Unggah gambar** (gambar utama publikasi, foto anggota) membutuhkan `media.manage`. Tanpa izin itu, dropzone diganti pemberitahuan.
-6. **Administrator**: role yang izinnya melebihi izin Anda tidak bisa dipilih. Anda juga tidak bisa menghapus, menonaktifkan, atau mengubah role akun sendiri. Ada peringatan bahwa sesi target akan diakhiri.
+| Halaman | Endpoint | Izin |
+|---|---|---|
+| Dashboard | `GET /admin/dashboard` (total saja) | `dashboard.view` |
+| Publikasi — daftar | `GET /admin/news` | `news.view` |
+| Publikasi — tulis/ubah | `POST /admin/news`, `PUT /admin/news/{id}` | `news.create` / `news.update` |
+| Publikasi — hapus | `DELETE /admin/news/{id}` | `news.delete` |
+| Publikasi — galeri | `POST/PUT/DELETE /admin/news/{id}/images` (caption, sort_order) | `news.update` + `media.manage` (unggah) |
+| Unggah gambar | `POST /media/images` (JPG/PNG/WebP, ≤ 4 MB) | `media.manage` |
+| Program kerja | `GET/POST/PUT/DELETE /admin/programs` | `programs.view` / `programs.manage` |
+| Periode — lihat, buat | `GET/POST /admin/periods` | `organization.view` / `organization.manage` |
+| Periode — ubah, aktifkan, hapus | `PUT`, `POST …/activate`, `DELETE` **[segera]** | `organization.manage` |
+| Divisi — lihat | `GET /admin/divisions` | `organization.view` |
+| Divisi — tambah/ubah/hapus/salin | **[segera]** | `organization.manage` |
+| Jabatan | `GET /admin/positions` (baca saja, global) | `organization.view` |
+| Anggota | `GET/POST/PUT/DELETE /admin/members` (+ foto via media) | `organization.view` / `organization.manage` |
+| Administrator | `GET/POST/PUT/DELETE /admin/admins`, `GET /admin/roles` | `admins.view` / `admins.manage` |
+| Akun saya — ganti password | **[segera]** (perlu password lama) | login saja |
+| Log aktivitas | `GET /admin/activity-logs` (berhalaman) | `activity.view` |
+| Statistik pengunjung | `GET /admin/visitor-logs` (log mentah, berhalaman) | `visitors.view` |
+| Pengaturan situs | `GET /admin/settings`, `PATCH` (atomik), `PUT /{key}`, `DELETE /{key}` | `settings.view` / `settings.manage` |
 
-| Role | Yang terlihat |
+## Role (menunggu konfirmasi)
+
+| Role | Izin |
 |---|---|
-| Superadmin | Semua modul (23 izin). |
-| Admin | Sesuai `role_permissions` di database: konten dan struktur bisa dikelola. Dokumen, pengaturan, notifikasi, dan administrator hanya bisa dilihat. Log dan statistik bisa dilihat. Tanpa `media.manage`. |
-| Editor | **Usulan**: Dashboard, Publikasi (tanpa hapus), Struktur Organisasi, Notifikasi, dan unggah gambar. |
+| Superadmin | Semua izin |
+| Admin | Sesuai DB + `media.manage` |
+| Editor | `dashboard.view`, `news.view/create/update` (tanpa hapus), `organization.view/manage`, `media.manage`. `notifications.view` dihapus. |
+
+Perilaku per halaman:
+- Menu tanpa izin `*.view` disembunyikan; membuka URL-nya langsung menampilkan **403**.
+- Punya `view` tanpa `manage` → mode **baca saja** (banner, tombol aksi disembunyikan).
+- Tanpa `media.manage` → galeri dan foto anggota menampilkan pemberitahuan alih-alih area unggah.
 
 ## State yang tersedia
-Panel **Review** ada di kiri bawah. State juga bisa diatur lewat URL `?role=…&state=…`:
-- `state=loading` → skeleton + progress bar
-- `state=empty` → semua daftar kosong
-- `state=error` → gagal memuat + tombol coba lagi
-- `state=expired` → modal "Sesi berakhir"
 
-Ada juga state yang muncul dari interaksi:
-- pencarian/filter tanpa hasil;
-- validasi form (wajib diisi, slug atau username sudah dipakai, tanggal selesai sebelum tanggal mulai, format URL/email, kata sandi < 8 karakter);
-- file salah format atau > 4 MB, plus progress unggah;
-- konfirmasi hapus, tombol sedang menyimpan, toast berhasil/gagal;
-- indikator "ada perubahan belum disimpan" di editor publikasi;
-- 404 di dalam admin.
+- **Global:** loading (skeleton), kosong, galat muat + coba lagi, sesi habis (modal), 403, baca saja, berhasil/gagal (toast), perubahan belum disimpan + konfirmasi saat meninggalkan halaman.
+- **Login:** normal, memproses, kredensial salah, terkunci.
+- **Publikasi:** draft/terbit/arsip, publikasi baru tanpa galeri ("Simpan draft dulu…"), unggah berjalan, file ditolak (tipe/ukuran), Tulis/Pratinjau, tanpa `media.manage`.
+- **Program kerja:** Direncanakan/Berjalan/Selesai/Dibatalkan (redup dan dicoret), filter periode dan status kosong.
+- **Struktur:**
+  - checklist periode baru;
+  - dialog aktivasi (normal dan peringatan periode kosong);
+  - periode tidak bisa dihapus (dengan alasan);
+  - divisi tidak bisa dihapus ("Masih ada N anggota / N program kerja");
+  - hasil salin divisi ("X disalin, Y dilewati");
+  - foto anggota (ada, kosong, ganti, hapus).
+- **Pengaturan:** belum disimpan, ringkasan galat + galat per kolom, kembali ke bawaan (konfirmasi), penanda "Bawaan", meta "Diubah … oleh …", kartu kunci tidak dikenal.
+- **Akun saya:** password lama salah, konfirmasi tidak cocok, terlalu pendek, berhasil (sesi lain diakhiri).
 
-Di `login.html`: `?state=error|locked|expired|logged-out|loading`.
+## Modul ditunda
 
-## Keterbatasan backend yang ditampilkan apa adanya di UI
-- Divisi dan jabatan hanya bisa dilihat (belum ada CRUD).
-- Periode hanya bisa dibuat (belum bisa diubah atau dihapus).
-- Dokumen hanya bisa dilihat dan diunggah (belum bisa diubah atau dihapus) dan bersifat privat (tautan 5 menit).
-- Role hanya bisa dilihat (belum ada API untuk mengubah role atau izin).
-- Agenda belum tampil di situs publik.
+**Agenda, Dokumen, Notifikasi — Ditunda.**
+- Dihapus dari sidebar, dashboard, dan topbar (lonceng dihapus).
+- Kodenya tetap ada dan hanya bisa dibuka lewat URL (`#/agendas`, `#/documents`, `#/notifications`) atau panel Review, dengan banner "Modul ditunda".
+- Tidak ada fitur baru untuk modul-modul ini.
 
-## Perlu keputusan / verifikasi sebelum diimplementasikan
-1. **Izin role Editor.** Di `seed.py`, editor masih mendapat izin yang sama persis dengan admin, padahal deskripsinya "akses terbatas untuk publikasi dan struktur organisasi". Prototipe memakai versi terbatas sebagai usulan.
-2. **`media.manage`.** Izin ini ada di seed (23 izin), tetapi tidak ada di dump database (22 izin). Akibatnya role Admin tidak bisa mengunggah gambar. Pastikan izin ini ada di DB, lalu putuskan role mana yang mendapatkannya.
-3. **Kunci pengaturan situs** (`contact_email`, `instagram_handle`, `secretariat_address`, `bank_soal_url`, `maps_url`, `cabinet_name`, `hero_tagline`, `maintenance_mode`) masih usulan, disamakan dengan pengaturan V1. Situs publik juga masih butuh endpoint publik untuk membacanya.
-4. **Nilai status program kerja** (`planned` / `ongoing` / `completed`): yang terlihat di DB hanya default `planned`. Samakan dengan enum di backend.
-5. **Penanganan 401.** Modal "Sesi berakhir" butuh `ApiError` yang membawa status HTTP di frontend.
-6. **Format isi publikasi** (teks biasa, Markdown, atau HTML) menentukan editor yang dipakai. Toolbar di prototipe masih visual saja.
+## Keputusan tertunda
+
+1. **Format isi publikasi:** prototipe memakai Markdown (toolbar + Pratinjau). Perlu konfirmasi apakah backend/frontend publik merender Markdown.
+2. **Izin Editor:** daftar di atas masih usulan.
+3. **`media.manage` untuk Admin dan Editor:** usulan; tanpa izin ini mereka tidak bisa mengunggah gambar.
+4. **Nama role** dan ringkasan izin di tab Role menunggu konfirmasi.
+
+## Batasan backend terbaru (dicerminkan di desain)
+
+- Dashboard hanya mengembalikan lima total, tanpa rincian. Kartu anggota = semua periode.
+- `featured_image` tidak bisa diatur langsung; sampul = gambar galeri pertama.
+- Statistik pengunjung hanya log mentah; tidak ada agregasi/grafik.
+- Hanya satu periode aktif. Aktivasi periode kosong diizinkan dengan peringatan. Periode hanya bisa dihapus jika tidak aktif dan kosong.
+- Salin divisi tidak menyalin anggota; nama yang sudah ada dilewati.
+- `PATCH /admin/settings` atomik: satu kolom salah → tidak ada yang tersimpan.
+- Validasi URL mengikuti backend:
+  - harus https, tanpa spasi;
+  - host diizinkan per kolom (mis. Bank Soal hanya `drive.google.com`; Maps hanya `google.com/maps/embed…`);
+  - panjang maksimum per kolom.
+- Kunci lama (`instagram_handle`, `cabinet_name`, `hero_tagline`) dan mode pemeliharaan tidak ada lagi. Kunci tidak dikenal ditampilkan di kartu tersendiri untuk dihapus.
+
+## Aksesibilitas & responsif
+
+- Diuji di lebar 390, 768, dan 1280 px. Tabel panjang menjadi kartu di layar sempit.
+- Drawer dan modal:
+  - menutup dengan Esc;
+  - menjebak fokus;
+  - mengembalikan fokus ke pemicu.
+- Urutan galeri bisa diubah dengan seret atau tombol naik/turun (keyboard).
+- Teks kecil minimal 11 px; warna teks redup dinaikkan agar kontras ≥ 4,5:1.
+- Tautan "Lewati ke konten" tersedia.
