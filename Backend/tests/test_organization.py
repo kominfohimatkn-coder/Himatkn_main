@@ -3,7 +3,14 @@ from __future__ import annotations
 from sqlalchemy import func, select
 
 from app.database.connection import SessionLocal
-from app.models import ActivityLog, Division, Member, Period, Position
+from app.models import (
+    ActivityLog,
+    Division,
+    Member,
+    Period,
+    Position,
+    Program,
+)
 
 
 def login(client):
@@ -293,3 +300,258 @@ def test_public_organization_follows_activated_period(client):
 
     public = client.get("/api/v1/public/organization").json()
     assert public["period"]["id"] == period_id
+
+
+def _update_period(client, headers, period_id, payload):
+    return client.put(
+        f"/api/v1/admin/organization/periods/{period_id}",
+        json=payload,
+        headers=headers,
+    )
+
+
+def _delete_period(client, headers, period_id):
+    return client.delete(
+        f"/api/v1/admin/organization/periods/{period_id}",
+        headers=headers,
+    )
+
+
+def test_update_period_success_writes_audit_log(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-B3A-UPD-OK")
+
+    response = _update_period(
+        client,
+        headers,
+        period_id,
+        {
+            "name": "TEST-B3A-UPD-OK-EDIT",
+            "start_date": "2041-02-01",
+            "end_date": "2041-12-31",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["name"] == "TEST-B3A-UPD-OK-EDIT"
+    assert body["start_date"] == "2041-02-01"
+    assert body["end_date"] == "2041-12-31"
+    assert body["is_active"] is False
+
+    with SessionLocal() as db:
+        log = db.scalar(
+            select(ActivityLog).where(
+                ActivityLog.action == "period.update",
+                ActivityLog.entity_id == period_id,
+            )
+        )
+        assert log is not None
+
+
+def test_update_period_duplicate_name_returns_409(client):
+    headers = _headers(client)
+    _create_period(client, headers, "TEST-B3A-UPD-DUP-A")
+    second_id = _create_period(client, headers, "TEST-B3A-UPD-DUP-B")
+
+    response = _update_period(
+        client,
+        headers,
+        second_id,
+        {"name": "test-b3a-upd-dup-a"},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Periode sudah ada"
+
+
+def test_update_period_same_name_case_insensitive_succeeds(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-B3A-UPD-SELF")
+
+    response = _update_period(
+        client,
+        headers,
+        period_id,
+        {"name": "test-b3a-upd-self"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["name"] == "test-b3a-upd-self"
+
+
+def test_update_period_reversed_dates_returns_422(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-B3A-UPD-DATES")
+
+    response = _update_period(
+        client,
+        headers,
+        period_id,
+        {
+            "name": "TEST-B3A-UPD-DATES",
+            "start_date": "2042-12-31",
+            "end_date": "2042-01-01",
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_update_period_ignores_is_active(client):
+    headers = _headers(client)
+    active_id = _create_period(
+        client,
+        headers,
+        "TEST-B3A-UPD-ACT-A",
+        is_active=True,
+    )
+    other_id = _create_period(client, headers, "TEST-B3A-UPD-ACT-B")
+
+    response = _update_period(
+        client,
+        headers,
+        other_id,
+        {"name": "TEST-B3A-UPD-ACT-B", "is_active": True},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["is_active"] is False
+
+    with SessionLocal() as db:
+        assert db.get(Period, other_id).is_active is False
+        assert db.get(Period, active_id).is_active is True
+
+
+def test_update_period_unknown_returns_404(client):
+    headers = _headers(client)
+
+    response = _update_period(
+        client,
+        headers,
+        999999,
+        {"name": "TEST-B3A-UPD-MISSING"},
+    )
+
+    assert response.status_code == 404
+
+
+def test_update_period_requires_csrf(client):
+    login(client)
+
+    response = client.put(
+        "/api/v1/admin/organization/periods/1",
+        json={"name": "TEST-B3A-UPD-NO-CSRF"},
+        headers={"Origin": "http://localhost:3000"},
+    )
+
+    assert response.status_code == 403
+
+
+def test_create_period_reversed_dates_returns_422(client):
+    headers = _headers(client)
+
+    response = client.post(
+        "/api/v1/admin/organization/periods",
+        json={
+            "name": "TEST-B3A-CREATE-DATES",
+            "start_date": "2043-12-31",
+            "end_date": "2043-01-01",
+            "is_active": False,
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 422
+
+
+def test_delete_active_period_returns_409(client):
+    headers = _headers(client)
+    period_id = _create_period(
+        client,
+        headers,
+        "TEST-B3A-DEL-ACTIVE",
+        is_active=True,
+    )
+
+    response = _delete_period(client, headers, period_id)
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "Periode aktif tidak bisa dihapus"
+
+    with SessionLocal() as db:
+        assert db.get(Period, period_id) is not None
+
+
+def test_delete_period_with_contents_returns_409(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-B3A-DEL-FILLED")
+
+    with SessionLocal() as db:
+        position = Position(name="TEST-B3A-DEL-POS")
+        division = Division(
+            period_id=period_id,
+            name="TEST-B3A-DEL-DIV",
+            sort_order=0,
+        )
+        db.add_all([position, division])
+        db.flush()
+
+        db.add(
+            Member(
+                period_id=period_id,
+                division_id=division.id,
+                position_id=position.id,
+                name="Anggota B3A",
+                sort_order=0,
+            )
+        )
+        db.add(
+            Program(
+                period_id=period_id,
+                division_id=division.id,
+                name="Program B3A",
+                slug="test-b3a-del-filled-program",
+                status="planned",
+            )
+        )
+        db.commit()
+
+    response = _delete_period(client, headers, period_id)
+
+    assert response.status_code == 409
+    detail = response.json()["detail"]
+    assert "1 divisi" in detail
+    assert "1 anggota" in detail
+    assert "1 program kerja" in detail
+
+    with SessionLocal() as db:
+        assert db.get(Period, period_id) is not None
+
+
+def test_delete_empty_period_succeeds(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-B3A-DEL-EMPTY")
+
+    response = _delete_period(client, headers, period_id)
+
+    assert response.status_code == 200
+    assert response.json() == {"deleted": period_id}
+
+    with SessionLocal() as db:
+        assert db.get(Period, period_id) is None
+        log = db.scalar(
+            select(ActivityLog).where(
+                ActivityLog.action == "period.delete",
+                ActivityLog.entity_id == period_id,
+            )
+        )
+        assert log is not None
+
+
+def test_delete_period_unknown_returns_404(client):
+    headers = _headers(client)
+
+    response = _delete_period(client, headers, 999999)
+
+    assert response.status_code == 404

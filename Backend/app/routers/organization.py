@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session
 from app.utils.ip import get_client_ip
 from app.database.connection import get_db
 from app.database.dependencies import require_csrf, require_permission
-from app.models import Admin, Division, Member, Period, Position
-from app.schemas.organization import PeriodIn, MemberIn
+from app.models import Admin, Division, Member, Period, Position, Program
+from app.schemas.organization import PeriodIn, PeriodUpdateIn, MemberIn
 from app.services.audit import log_activity
 
 
@@ -406,3 +406,133 @@ def activate_period(
         db.refresh(period)
 
     return {"period": _period_item(period), "warnings": warnings}
+
+
+@router.put(
+    "/periods/{period_id}",
+    dependencies=[Depends(require_csrf)],
+)
+def update_period(
+    period_id: int,
+    payload: PeriodUpdateIn,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: Admin = Depends(require_permission(PERMISSION_MANAGE)),
+):
+    period = db.get(Period, period_id)
+    if period is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Periode tidak ditemukan",
+        )
+
+    name = payload.name.strip()
+    duplicate = db.scalar(
+        select(Period).where(
+            func.lower(Period.name) == name.lower(),
+            Period.id != period.id,
+        )
+    )
+    if duplicate is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Periode sudah ada",
+        )
+
+    previous_name = period.name
+
+    period.name = name
+    period.start_date = payload.start_date
+    period.end_date = payload.end_date
+
+    log_activity(
+        db=db,
+        admin_id=admin.id,
+        action="period.update",
+        entity_type="period",
+        entity_id=period.id,
+        description=(
+            f"Memperbarui periode {previous_name} menjadi {period.name}"
+        ),
+        ip_address=get_client_ip(request),
+        user_agent=request.headers.get("user-agent", "")[:500],
+    )
+    _commit_or_conflict(db)
+    db.refresh(period)
+
+    return _period_item(period)
+
+
+@router.delete(
+    "/periods/{period_id}",
+    dependencies=[Depends(require_csrf)],
+)
+def delete_period(
+    period_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    admin: Admin = Depends(require_permission(PERMISSION_MANAGE)),
+):
+    period = db.get(Period, period_id)
+    if period is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Periode tidak ditemukan",
+        )
+
+    if period.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Periode aktif tidak bisa dihapus",
+        )
+
+    division_count = db.scalar(
+        select(func.count())
+        .select_from(Division)
+        .where(Division.period_id == period.id)
+    ) or 0
+    member_count = db.scalar(
+        select(func.count())
+        .select_from(Member)
+        .where(Member.period_id == period.id)
+    ) or 0
+    program_count = db.scalar(
+        select(func.count())
+        .select_from(Program)
+        .where(Program.period_id == period.id)
+    ) or 0
+
+    blockers: list[str] = []
+    if division_count > 0:
+        blockers.append(f"{division_count} divisi")
+    if member_count > 0:
+        blockers.append(f"{member_count} anggota")
+    if program_count > 0:
+        blockers.append(f"{program_count} program kerja")
+
+    if blockers:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Periode tidak bisa dihapus: masih ada "
+                + ", ".join(blockers)
+            ),
+        )
+
+    name = period.name
+    deleted_id = period.id
+    db.delete(period)
+
+    log_activity(
+        db=db,
+        admin_id=admin.id,
+        action="period.delete",
+        entity_type="period",
+        entity_id=deleted_id,
+        description=f"Menghapus periode {name}",
+        ip_address=get_client_ip(request),
+        user_agent=request.headers.get("user-agent", "")[:500],
+    )
+    _commit_or_conflict(db)
+
+    return {"deleted": deleted_id}

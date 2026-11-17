@@ -14,12 +14,14 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 
 ## 1. Current Project State
 
-> Terakhir diperbarui: 16 November 2026 (Batch API-F — Frontend API Layer). Perbarui bagian ini pada setiap batch.
+> Terakhir diperbarui: 17 November 2026 (Batch API-B3a — Periode: ubah & hapus). Perbarui bagian ini pada setiap batch.
 
 ### a. Snapshot repository
 
 - Branch: `feat/admin-ui-foundation`.
-- HEAD terverifikasi saat Batch API-F: `7b249b6` (`feat(api): public programs filters/detail, news search/tags/excerpt, org sort_order, photo normalization (API-B2)`, sudah di-commit pemilik). Perubahan API-F belum di-commit.
+- HEAD terverifikasi saat Batch API-B3a: `d642419` (`feat(api): activate period endpoint with single-active rule and warnings`, sudah di-commit pemilik). Perubahan B3a belum di-commit.
+- HEAD terverifikasi saat Batch API-F: `7b249b6` (API-B2). API-F kemudian di-commit pemilik sebagai `7a948f8`.
+- Batch B3 langkah 1–2 sudah di-commit pemilik: `61ab3c3` (create periode aktif menonaktifkan periode lain) dan `d642419` (activate atomik + warnings).
 - HEAD terverifikasi saat Batch API-B2: `ac9cd8a` (API-B1). API-B2 kemudian di-commit pemilik sebagai `7b249b6`.
 - HEAD terverifikasi saat Batch API-B1: `cc1d496` (R1 Fase B). API-B1 kemudian di-commit pemilik sebagai `ac9cd8a`.
 - HEAD terverifikasi saat Batch R1 Fase B: `733a561` (Fase A). Fase B kemudian di-commit pemilik sebagai `cc1d496`.
@@ -32,8 +34,9 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 - Batch R1 Fase B (16 Nov) sudah di-commit pemilik sebagai `cc1d496`.
 - Batch API-B1 (16 Nov) sudah di-commit pemilik sebagai `ac9cd8a`.
 - Batch API-B2 (16 Nov) memperluas kontrak publik: filter program (periode/status/divisi), detail program per slug, pencarian judul berita, `total`, `excerpt`, `tags`, `sort_order` organisasi, normalisasi `photo_url`, dan validasi enum status program. Ditambah tindak lanjut review API-B1 (default hero prototype + path `maps_url`). Batch ini sudah di-commit pemilik sebagai `7b249b6`; **belum di-deploy**.
-- Batch API-F (16 Nov) menyinkronkan API layer frontend dengan kontrak API-B1/API-B2: `ApiError` bertipe + helper, tipe publik/admin, service news/program/organization/settings/visits/admin settings, helper status program, dan status program di form admin menjadi `<select>`. Perubahan berada di working tree; **belum di-commit dan belum di-deploy**.
-- Working tree juga memuat perubahan lokal pemilik di `frontend/AGENTS.md` (blok aturan Next.js ditulis ulang `next dev`), `frontend/app/(public)/page.tsx` (konversi arbitrary spacing Tailwind), `frontend/app/not-found.tsx`, dan `frontend/components/public/PublicLabel.tsx`. Keempatnya **bukan bagian API-B1/API-B2/API-F** dan tidak diubah oleh batch ini.
+- Batch API-F (16 Nov) menyinkronkan API layer frontend dengan kontrak API-B1/API-B2: `ApiError` bertipe + helper, tipe publik/admin, service news/program/organization/settings/visits/admin settings, helper status program, dan status program di form admin menjadi `<select>`. Sudah di-commit pemilik sebagai `7a948f8`; **belum di-deploy**.
+- Batch B3a (17 Nov) menambahkan `PUT` dan `DELETE /admin/organization/periods/{id}` serta validasi tanggal pada create/update periode. Perubahan berada di working tree; **belum di-commit dan belum di-deploy**.
+- Working tree juga memuat perubahan lokal pemilik di `frontend/AGENTS.md` (blok aturan Next.js ditulis ulang `next dev`), `frontend/app/(public)/page.tsx`, `frontend/app/not-found.tsx`, `frontend/components/public/PublicLabel.tsx`, dan — muncul selama sesi B3a — `frontend/app/(public)/struktur/loading.tsx` serta `frontend/components/public/OrganizationSection.tsx` (konversi arbitrary value Tailwind). Semuanya **bukan bagian B3a** dan tidak diubah oleh batch ini.
 - URL Instagram `https://www.instagram.com/himatknuklir` **dikonfirmasi pemilik** pada 16 Nov. Konstanta dipertahankan sebagai utang teknis (lihat e.8); parameter share `rpxt` pada URL yang dikirim pemilik dibuang agar tautan stabil.
 
 ### b. Scope fase saat ini
@@ -85,6 +88,7 @@ Entri historis yang masih memuat referensi tersebut tetap utuh di Historical Arc
 9. **Site Settings memakai registry paritas V1 (Batch API-B1).** Daftar key resmi hanya di `Backend/app/services/site_settings.py`; key di luar registry diabaikan publik dan dilaporkan sebagai `unknown_keys` di admin. `hero_image` ditunda (V2 memakai storage sendiri), `period_label`/`structure_item_*`/`contact_back_label` tidak dimasukkan. Key data default `""`; key copy default netral tanpa nama kabinet/tahun/divisi. URL wajib `https` dengan host whitelist exact; `maps_embed_url` wajib path `/maps/embed`. Sejak API-F frontend memiliki `PUBLIC_SETTING_KEYS` (45 key, sinkron) dan service settings; UI publik belum migrasi dan belum menampilkan nilai resmi.
 10. **Kontrak publik API-B2.** Program publik default hanya periode aktif; tanpa periode aktif → `items: []`, `period: null`. Filter `status` menerima 4 nilai (boleh diulang atau dipisah koma). Urutan program: `start_date` DESC (NULL di akhir), lalu `created_at` DESC, `id` DESC. Berita: `q` mencari **judul saja**, `%`/`_` di-escape, `total`, `excerpt` ±160 karakter di batas kata, dan `tags`. Organisasi: `sort_order` dikirim; `photo_url` storage key menjadi path media, `https://` dipertahankan, nilai lain `null`. Detail program memakai field DB tanpa foto.
 11. **API layer frontend sudah sinkron (Batch API-F).** `ApiError` membawa `status` (0 untuk jaringan), `detail`, `errors?`, dan `retryAfter?`; service publik (`news`, `programs`, `organization`, `settings`, `visits`) serta admin settings siap dipakai R2/R3/R4 tanpa dummy data. `PUBLIC_LINKS` di `frontend/lib/public/link.ts` tetap dipakai sebagai **fallback sementara** sampai UI disambungkan ke `bank_soal_url`/`instagram_url`/`instagram_label`.
+12. **Pergantian periode dikerjakan bertahap B3a–B3d (API-B3).** B3a (17 Nov): `PUT /admin/organization/periods/{id}` hanya mengubah nama/tanggal (bukan `is_active`), dan `DELETE` hanya untuk periode nonaktif yang kosong (tanpa divisi/anggota/program). Satu-periode-aktif sudah dijaga oleh create (`61ab3c3`) dan activate (`d642419`) milik pemilik.
 
 ### f. Kondisi aktual V2
 
@@ -106,6 +110,7 @@ Ringkasan dari audit 12 November 2026; detail dan bukti line-by-line ada di `doc
 
 - Admin settings API (Batch API-B1): `GET /admin/settings` (`settings.view`), `PUT`/`DELETE /admin/settings/{key}` dan `PATCH /admin/settings` (`settings.manage` + CSRF), dengan registry 45 key dan validasi. Service admin (`frontend/lib/admin/settings.ts`) siap sejak API-F; **halaman admin Pengaturan belum dibuat**.
 - Public content API (Batch API-B2): `GET /public/programs` (filter periode/status/divisi, `total`, metadata divisi/periode), `GET /public/programs/{slug}`, `GET /public/news` (`q` judul, `total`, `excerpt`, `tags`), `GET /public/news/{slug}` (`tags`), dan `GET /public/organization` (`sort_order`, `photo_url` ternormalisasi). Kontrak lengkap: `Backend/docs/PUBLIC_API.md`.
+- **Admin organisasi (Batch B3a, 17 Nov):** `PUT /admin/organization/periods/{id}` mengubah nama/tanggal dengan nama unik case-insensitive dan validasi `end_date >= start_date`; `DELETE /admin/organization/periods/{id}` menolak periode aktif (409) dan periode yang masih punya divisi/anggota/program (409, pesan menyebut bagian yang menghalangi). Create periode juga memvalidasi urutan tanggal. Belum ada UI admin yang memakai endpoint ini.
 - **API layer frontend (Batch API-F, 16 Nov):**
   - `frontend/lib/api/errors.ts` berisi `ApiError` (`status`, `detail`, `errors?`, `retryAfter?`) dan helper `isApiError`, `isNotFound`, `isUnauthorized`, `isForbidden`, `isRateLimited`. `apiFetch` melempar `ApiError`; `message` lama dipertahankan dan `AbortError` tetap diteruskan.
   - Tipe publik sudah memuat `total`, `excerpt`/`tags`, `division`/`period`, `PROGRAM_STATUSES`/`ProgramStatus`, `sort_order`, serta `AdminProgram.status` tetap `string`. Detail berita backend **tidak** mengirim `excerpt`, jadi `PublicNewsDetail` hanya menambah `tags`.
@@ -113,7 +118,7 @@ Ringkasan dari audit 12 November 2026; detail dan bukti line-by-line ada di `doc
   - `frontend/lib/programs/status.ts` menjadi satu sumber label ("Direncanakan", "Berjalan", "Selesai", "Dibatalkan", "Status lain"); `ProgramPrimitives` dan `ProgramFormDialog` memakainya.
   - **Catatan `AuthContext` (belum diubah, batch berikutnya):** `readCurrentAdmin()` menelan semua error dan mengembalikan `null`. Sebaiknya ia membedakan 401 (`isUnauthorized` → sesi memang habis) dari error jaringan/5xx agar UI tidak salah menyimpulkan "belum login".
   - `frontend/lib/public/link.ts` tetap dipakai sebagai fallback Bank Soal/Instagram; migrasi ke `PublicSettings` belum dilakukan.
-- Baseline: `npm run lint` dan `npx tsc --noEmit` lulus pada audit. `npm run build` pertama kali dijalankan pada R1 Fase A (15 Nov): **gagal** karena `frontend/app/(private)/(admin)/loading.tsx` berukuran 0 byte; setelah file itu dihapus (disetujui pemilik) build lulus 9 route. Batch R1 Fase B (16 Nov) mengulang lint, tsc, dan build: ketiganya lulus 9 route. Batch API-F (16 Nov) mengulang lint dan tsc (lulus) serta `npm run build` (lulus 9 route, `ƒ /` dan `ƒ /struktur`). Baseline backend sebelum API-B1: `compileall` lulus, `pytest -q` **71 passed**; API-B1 (commit `ac9cd8a`): **102 passed**; setelah tindak lanjut review API-B1: **112 passed**; setelah API-B2 (commit `7b249b6`): **124 passed**.
+- Baseline: `npm run lint` dan `npx tsc --noEmit` lulus pada audit. `npm run build` pertama kali dijalankan pada R1 Fase A (15 Nov): **gagal** karena `frontend/app/(private)/(admin)/loading.tsx` berukuran 0 byte; setelah file itu dihapus (disetujui pemilik) build lulus 9 route. Batch R1 Fase B (16 Nov) mengulang lint, tsc, dan build: ketiganya lulus 9 route. Batch API-F (16 Nov) mengulang lint dan tsc (lulus) serta `npm run build` (lulus 9 route, `ƒ /` dan `ƒ /struktur`). Baseline backend sebelum API-B1: `compileall` lulus, `pytest -q` **71 passed**; API-B1 (commit `ac9cd8a`): **102 passed**; setelah tindak lanjut review API-B1: **112 passed**; setelah API-B2 (commit `7b249b6`): **124 passed**; setelah API-F (commit `7a948f8`): **133 passed**; setelah B3a: **145 passed**.
 
 ### g. Keputusan yang masih tertunda (blok batch R1 dan seterusnya)
 
@@ -649,6 +654,28 @@ Entri sesi sejak 11 November 2026. Append-only: tambahkan entri baru di bawah; j
   - Halaman admin Pengaturan, route detail program, dan route detail publikasi belum dibuat (menunggu keputusan route R2/R3/R4).
   - `AuthContext` belum memakai `isUnauthorized`; `recordVisit()` belum dipanggil dari halaman.
 - **Langkah berikutnya:** pemilik meninjau API-F. **Berhenti; R2 belum dimulai.**
+
+---
+
+### Sesi 2026-11-17 — Batch B3a: Ubah & hapus periode
+
+- **Status:** Selesai untuk B3a; **berhenti**. Tidak commit, push, deploy, atau menjalankan seed.
+- **Branch/HEAD:** `feat/admin-ui-foundation`, HEAD `d642419`. Langkah 1–2 B3 (`61ab3c3`, `d642419`) dikerjakan dan di-commit pemilik; B3a belum di-commit.
+- **Perubahan:**
+  - `PeriodUpdateIn` (nama 2–50, tanggal opsional, tanpa `is_active`) + validator tanggal bersama; validator yang sama ditambahkan ke `PeriodIn` (create).
+  - `PUT /api/v1/admin/organization/periods/{period_id}`: 404 bila tidak ada, nama unik case-insensitive mengecualikan diri sendiri (409 "Periode sudah ada"), `name` di-strip, `is_active` tidak berubah, audit `period.update`.
+  - `DELETE /api/v1/admin/organization/periods/{period_id}`: 404, 409 untuk periode aktif, 409 bila masih ada divisi/anggota/program (pesan hanya menyebut yang > 0), sukses `{"deleted": id}` + audit `period.delete`.
+- **Contoh respons aktual (SQLite sementara):**
+  - `PUT` → `200 {"id":1,"name":"Contoh 2030/2031 Revisi","start_date":"2030-02-01","end_date":"2030-11-30","is_active":false}`.
+  - `PUT` tanggal terbalik → `422 {"detail":"Validation error","errors":[{"loc":["body"],"msg":"Value error, Tanggal selesai tidak boleh sebelum tanggal mulai","type":"value_error"}]}`.
+  - `DELETE` kosong → `200 {"deleted":1}`; `DELETE` ID sama lagi → `404 {"detail":"Periode tidak ditemukan"}`.
+- **Keputusan teknis:** validasi tanggal ditolak sebagai 422 oleh Pydantic sebelum handler; `is_active` pada body PUT diabaikan karena tidak ada di schema; pengecekan nama memakai `func.lower()` agar konsisten dengan create dan tidak bergantung pada collation DB; DELETE menghitung relasi lebih dulu agar pesan 409 informatif (FK program `SET NULL`/`RESTRICT` tidak diandalkan).
+- **Verifikasi:** `python -m compileall app` lulus; `pytest -q` **133 passed → 145 passed** (24 test di `test_organization.py`); `alembic check` → `No new upgrade operations detected`.
+- **Catatan/utang teknis:**
+  - Ditemukan bug lama di luar scope: `create_member`, `update_member`, dan `delete_member` memanggil `log_activity(..., request=request)`, padahal signature `log_activity` tidak menerima `request`; endpoint anggota akan gagal 500 bila mencapai audit. Belum diperbaiki karena anggota di luar scope B3a — perlu keputusan pemilik.
+  - `Backend/docs/ORGANIZATION_API.md` dan regenerasi `routes.txt` ditunda ke B3d agar memuat seluruh endpoint B3.
+  - Selama sesi, muncul perubahan lokal pemilik pada `frontend/app/(public)/struktur/loading.tsx` dan `frontend/components/public/OrganizationSection.tsx` (konversi arbitrary value Tailwind); tidak disentuh.
+- **Langkah berikutnya:** B3b (divisi: create/update/delete + salin divisi) setelah pemilik meng-commit B3a.
 
 ---
 
