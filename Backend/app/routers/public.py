@@ -23,7 +23,10 @@ from app.models import (
     VisitorLog,
 )
 from app.schemas.content import PROGRAM_STATUSES
-from app.services.site_settings import resolve_public_settings
+from app.services.site_settings import (
+    media_image_path,
+    resolve_public_settings,
+)
 
 
 router = APIRouter(
@@ -42,10 +45,7 @@ def _image_url(storage_key: str | None) -> str | None:
     if not storage_key:
         return None
 
-    if storage_key.startswith("images/"):
-        return f"/api/v1/media/{storage_key}"
-
-    return f"/api/v1/media/images/{storage_key}"
+    return media_image_path(storage_key)
 
 
 def _image_item(image) -> dict:
@@ -535,7 +535,10 @@ async def public_settings(
 
     response.headers["Cache-Control"] = "public, max-age=60"
 
-    return {"settings": resolve_public_settings(db)}
+    values = resolve_public_settings(db)
+    values["hero_image"] = _image_url(values.get("hero_image")) or ""
+
+    return {"settings": values}
 
 
 @router.post("/visits", status_code=status.HTTP_201_CREATED)

@@ -367,6 +367,156 @@ def test_put_accepts_empty_value(client, admin_headers):
     assert settings["brand_name"] == ""
 
 
+B3D_IMAGE_KEY = "images/0123456789abcdef0123456789abcdef.jpg"
+B3D_IMAGE_PATH = (
+    "/api/v1/media/images/0123456789abcdef0123456789abcdef.jpg"
+)
+
+
+def test_registry_has_47_keys_and_hero_image_metadata():
+    assert len(SETTINGS_REGISTRY) == 47
+    assert len(PUBLIC_SETTING_KEYS) == 47
+
+    image = SETTINGS_REGISTRY["hero_image"]
+
+    assert image.type == "image"
+    assert image.group == "hero"
+    assert image.label == "Foto hero"
+    assert image.default == ""
+    assert image.max_length == 500
+
+    alt = SETTINGS_REGISTRY["hero_image_alt"]
+
+    assert alt.type == "text"
+    assert alt.group == "hero"
+    assert alt.max_length == 200
+
+
+def test_put_accepts_image_key_and_public_returns_media_path(
+    client,
+    admin_headers,
+):
+    response = client.put(
+        "/api/v1/admin/settings/hero_image",
+        json={"setting_value": B3D_IMAGE_KEY},
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["value"] == B3D_IMAGE_KEY
+
+    settings = client.get("/api/v1/public/settings").json()["settings"]
+
+    assert settings["hero_image"] == B3D_IMAGE_PATH
+
+    items = {
+        item["key"]: item
+        for item in client.get("/api/v1/admin/settings").json()["items"]
+    }
+
+    assert items["hero_image"]["preview_url"] == B3D_IMAGE_PATH
+
+
+def test_put_normalizes_full_media_path_to_storage_key(
+    client,
+    admin_headers,
+):
+    response = client.put(
+        "/api/v1/admin/settings/hero_image",
+        json={"setting_value": B3D_IMAGE_PATH},
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["value"] == B3D_IMAGE_KEY
+
+    settings = client.get("/api/v1/public/settings").json()["settings"]
+
+    assert settings["hero_image"] == B3D_IMAGE_PATH
+
+
+def test_put_accepts_empty_image_value(client, admin_headers):
+    client.put(
+        "/api/v1/admin/settings/hero_image",
+        json={"setting_value": B3D_IMAGE_KEY},
+        headers=admin_headers,
+    )
+
+    response = client.put(
+        "/api/v1/admin/settings/hero_image",
+        json={"setting_value": ""},
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["value"] == ""
+
+    settings = client.get("/api/v1/public/settings").json()["settings"]
+
+    assert settings["hero_image"] == ""
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "https://example.com/foto.jpg",
+        "https://contoh.vercel-storage.com/foto.jpg",
+        "../foto.jpg",
+        "images/../foto.jpg",
+        "/etc/passwd",
+        "/images/foto.jpg",
+        "images\\foto.jpg",
+        "images/foto.svg",
+        "images/foto.txt",
+        "images/foto.jpg.php",
+        "images/foto",
+        "images//foto.jpg",
+        "/api/v1/media/images/../foto.jpg",
+    ],
+)
+def test_put_rejects_invalid_image_values(
+    client,
+    admin_headers,
+    value,
+):
+    response = client.put(
+        "/api/v1/admin/settings/hero_image",
+        json={"setting_value": value},
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 422
+    assert stored_setting("hero_image") is None
+
+
+def test_admin_settings_preview_url_only_for_image_type(
+    client,
+    admin_headers,
+):
+    items = {
+        item["key"]: item
+        for item in client.get("/api/v1/admin/settings").json()["items"]
+    }
+
+    assert items["hero_image"]["preview_url"] == ""
+    assert "preview_url" not in items["hero_image_alt"]
+    assert "preview_url" not in items["brand_name"]
+
+
+def test_put_hero_image_alt_accepts_text(client, admin_headers):
+    response = client.put(
+        "/api/v1/admin/settings/hero_image_alt",
+        json={"setting_value": "Mahasiswa berfoto bersama"},
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 200
+
+    settings = client.get("/api/v1/public/settings").json()["settings"]
+
+    assert settings["hero_image_alt"] == "Mahasiswa berfoto bersama"
+
+
 def test_put_rejects_long_value_and_control_characters(
     client,
     admin_headers,

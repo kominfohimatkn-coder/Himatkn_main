@@ -24,17 +24,26 @@ TEXT = "text"
 MULTILINE = "multiline"
 URL = "url"
 EMAIL = "email"
+IMAGE = "image"
 
 TEXT_MAX_LENGTH = 300
 DESCRIPTION_MAX_LENGTH = 1000
 URL_MAX_LENGTH = 2048
 EMAIL_MAX_LENGTH = 254
 ADDRESS_MAX_LENGTH = 500
+IMAGE_MAX_LENGTH = 500
+
+MEDIA_IMAGE_PREFIX = "/api/v1/media/images/"
 
 _EMAIL_PATTERN = re.compile(
     r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+"
     r"@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
     r"(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$"
+)
+
+# Storage keys produced by POST /media/images: images/<name>.<image ext>.
+_IMAGE_KEY_PATTERN = re.compile(
+    r"^images/[A-Za-z0-9][A-Za-z0-9_-]*\.(?:jpg|jpeg|png|webp)$"
 )
 
 # C0 controls except newline (tab is rejected too).
@@ -118,6 +127,22 @@ def _url(
     )
 
 
+def _image(
+    key: str,
+    group: str,
+    label: str,
+    *,
+    max_length: int = IMAGE_MAX_LENGTH,
+) -> SettingDefinition:
+    return SettingDefinition(
+        key=key,
+        group=group,
+        type=IMAGE,
+        label=label,
+        max_length=max_length,
+    )
+
+
 _REGISTRY_ORDER: tuple[SettingDefinition, ...] = (
     _text("brand_name", "brand", "Nama brand", "HIMA TEKNOKIMIA NUKLIR"),
     _text(
@@ -187,6 +212,13 @@ _REGISTRY_ORDER: tuple[SettingDefinition, ...] = (
         "Wadah mahasiswa Teknokimia Nuklir untuk belajar, berkarya, "
         "dan berkontribusi.",
         max_length=DESCRIPTION_MAX_LENGTH,
+    ),
+    _image("hero_image", "hero", "Foto hero"),
+    _text(
+        "hero_image_alt",
+        "hero",
+        "Deskripsi foto hero (untuk pembaca layar)",
+        max_length=200,
     ),
     _text("hero_primary_label", "hero", "Label tombol utama hero", "Lihat Program Kerja"),
     _text("hero_secondary_label", "hero", "Label tombol kedua hero", "Kenali Kami"),
@@ -335,6 +367,29 @@ def normalize_value(
         _validate_url(definition, value)
     elif definition.type == EMAIL:
         _validate_email(value)
+    elif definition.type == IMAGE:
+        value = _normalize_image(value)
+
+    return value
+
+
+def media_image_path(storage_key: str) -> str:
+    """Return the public media path for an image storage key."""
+
+    if storage_key.startswith("images/"):
+        return f"/api/v1/media/{storage_key}"
+
+    return f"{MEDIA_IMAGE_PREFIX}{storage_key}"
+
+
+def _normalize_image(value: str) -> str:
+    if value.startswith(MEDIA_IMAGE_PREFIX):
+        value = f"images/{value[len(MEDIA_IMAGE_PREFIX):]}"
+
+    if not _IMAGE_KEY_PATTERN.fullmatch(value):
+        raise SettingValidationError(
+            "Nilai harus berupa storage key gambar yang valid."
+        )
 
     return value
 
@@ -425,24 +480,29 @@ def admin_settings_payload(
     for definition in _REGISTRY_ORDER:
         row = rows.get(definition.key)
 
-        items.append(
-            {
-                "key": definition.key,
-                "group": definition.group,
-                "type": definition.type,
-                "label": definition.label,
-                "value": (
-                    row.setting_value
-                    if row is not None and row.setting_value is not None
-                    else definition.default
-                ),
-                "default": definition.default,
-                "max_length": definition.max_length,
-                "allowed_hosts": list(definition.allowed_hosts),
-                "updated_by": row.updated_by if row is not None else None,
-                "updated_at": row.updated_at if row is not None else None,
-            }
+        value = (
+            row.setting_value
+            if row is not None and row.setting_value is not None
+            else definition.default
         )
+
+        item = {
+            "key": definition.key,
+            "group": definition.group,
+            "type": definition.type,
+            "label": definition.label,
+            "value": value,
+            "default": definition.default,
+            "max_length": definition.max_length,
+            "allowed_hosts": list(definition.allowed_hosts),
+            "updated_by": row.updated_by if row is not None else None,
+            "updated_at": row.updated_at if row is not None else None,
+        }
+
+        if definition.type == IMAGE:
+            item["preview_url"] = media_image_path(value) if value else ""
+
+        items.append(item)
 
     unknown_keys = sorted(
         key for key in rows if key not in SETTINGS_REGISTRY

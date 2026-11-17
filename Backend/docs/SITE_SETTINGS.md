@@ -11,7 +11,7 @@ Batch ini **tidak mengubah skema**. Tabel `site_settings` yang sudah ada
 
 ## Registry
 
-45 key, semuanya publik. Nilai default adalah teks netral; data organisasi asli
+47 key, semuanya publik. Nilai default adalah teks netral; data organisasi asli
 tidak disimpan di kode.
 
 ### brand
@@ -48,6 +48,8 @@ tidak disimpan di kode.
 | `hero_title` | text | `Himpunan Mahasiswa` |
 | `hero_emphasis` | text | `Teknokimia Nuklir` |
 | `hero_description` | text (maks. 1000) | `Wadah mahasiswa Teknokimia Nuklir untuk belajar, berkarya, dan berkontribusi.` |
+| `hero_image` | image (maks. 500) | `""` |
+| `hero_image_alt` | text (maks. 200) | `""` |
 | `hero_primary_label` | text | `Lihat Program Kerja` |
 | `hero_secondary_label` | text | `Kenali Kami` |
 
@@ -83,8 +85,26 @@ tidak disimpan di kode.
 | `contact_description` | text (maks. 1000) | `Sampaikan pertanyaan atau kolaborasi melalui kanal resmi.` |
 | `contact_button_label` | text | `Kirim Email` |
 
-`hero_image` **belum** masuk registry. V1 menyimpan URL Vercel Blob eksternal,
-sedangkan V2 memakai storage sendiri; ini backlog terpisah.
+### Foto hero
+
+`hero_image` menyimpan **storage key** gambar V2, bukan URL. Alur unggah:
+
+1. `POST /api/v1/media/images` (permission `media.manage` + CSRF, multipart
+   `file`) mengembalikan `storage_key`, misalnya
+   `images/0123456789abcdef0123456789abcdef.jpg`.
+2. Kirim `storage_key` itu ke `PUT /api/v1/admin/settings/hero_image`
+   (permission `settings.manage` + CSRF).
+3. Isi `hero_image_alt` dengan deskripsi singkat untuk pembaca layar.
+
+Validator juga menerima path media lengkap
+`/api/v1/media/images/0123456789abcdef0123456789abcdef.jpg` dan
+menormalkannya menjadi storage key. `GET /public/settings` mengubah storage key
+menjadi path media memakai helper yang sama dengan gambar berita. Backend tidak
+memeriksa keberadaan file; unggah gambar terlebih dahulu.
+
+Foto hero V1 disimpan sebagai URL Vercel Blob eksternal dan **tidak** kompatibel
+dengan V2. Saat go-live, foto tersebut harus diunggah ulang lewat
+`POST /media/images`, lalu `hero_image` diisi dengan storage key baru.
 
 `period_label`, `structure_item_*`, dan `contact_back_label` tidak dimasukkan
 karena berasal dari API organisasi atau bukan setting.
@@ -99,7 +119,8 @@ Berlaku untuk `PUT` dan `PATCH`.
   tidak pernah disimpan; `PUT` tetap menerima field itu agar kompatibel.
 - Semua nilai di-trim. Null byte dan karakter kontrol ditolak; newline hanya
   diizinkan untuk tipe `multiline` (CRLF dinormalisasi menjadi LF).
-- Panjang maksimum: text 300, deskripsi 1000, URL 2048, email 254, alamat 500.
+- Panjang maksimum: text 300, deskripsi 1000, URL 2048, email 254, alamat 500,
+  gambar 500.
 - `url`: kosong (`""`) diperbolehkan. Selain itu wajib `https`, tanpa userinfo,
   tanpa port khusus (hanya default/443), host harus cocok **exact** dengan
   `allowed_hosts`, dan `maps_embed_url` wajib berpath `/maps/embed...`.
@@ -109,6 +130,12 @@ Berlaku untuk `PUT` dan `PATCH`.
   menerima path apa pun (short link).
   Short link `maps.app.goo.gl` juga ditolak untuk embed karena tidak bisa di-iframe.
 - `email`: format sederhana, maksimum 254 karakter; `""` diperbolehkan.
+- `image`: kosong (`""`) diperbolehkan. Selain itu wajib storage key gambar V2
+  berbentuk `images/<nama>.<jpg|jpeg|png|webp>` (nama hanya huruf/angka/`_`/`-`,
+  tanpa subfolder). Path media lengkap `/api/v1/media/images/<nama>.<ext>`
+  diterima dan dinormalisasi menjadi storage key. URL apa pun (termasuk
+  `vercel-storage.com`), path absolut, `..`, backslash, karakter kontrol, dan
+  ekstensi di luar daftar gambar ditolak `422`. Keberadaan file tidak diperiksa.
 - `text`: teks polos. Backend tidak melakukan sanitasi HTML; frontend wajib
   merender sebagai teks, bukan HTML.
 - Pesan error berbahasa Indonesia dan tidak memuat detail internal.
@@ -125,7 +152,9 @@ key di luar registry diabaikan; nilai DB menimpa default.
   "settings": {
     "brand_name": "HIMA TEKNOKIMIA NUKLIR",
     "brand_subtitle": "POLITEKNIK TEKNOLOGI NUKLIR",    "bank_soal_url": "https://drive.google.com/drive/folders/contoh",
-    "instagram_url": "https://www.instagram.com/himatknuklir"
+    "instagram_url": "https://www.instagram.com/himatknuklir",
+    "hero_image": "/api/v1/media/images/0123456789abcdef0123456789abcdef.jpg",
+    "hero_image_alt": "Mahasiswa berfoto bersama"
   }
 }
 ```
@@ -154,11 +183,27 @@ nilai efektif, dan key sampah di DB.
       "allowed_hosts": ["drive.google.com"],
       "updated_by": null,
       "updated_at": null
+    },
+    {
+      "key": "hero_image",
+      "group": "hero",
+      "type": "image",
+      "label": "Foto hero",
+      "value": "images/0123456789abcdef0123456789abcdef.jpg",
+      "default": "",
+      "max_length": 500,
+      "allowed_hosts": [],
+      "preview_url": "/api/v1/media/images/0123456789abcdef0123456789abcdef.jpg",
+      "updated_by": null,
+      "updated_at": null
     }
   ],
   "unknown_keys": ["key-sampah"]
 }
 ```
+
+`preview_url` hanya ada pada item bertipe `image`; nilainya `""` bila belum ada
+gambar. Item tipe lain tidak memiliki field ini.
 
 ### `PUT /api/v1/admin/settings/{key}`
 
