@@ -555,3 +555,730 @@ def test_delete_period_unknown_returns_404(client):
     response = _delete_period(client, headers, 999999)
 
     assert response.status_code == 404
+
+
+def _login_limited(client):
+    client.get("/api/v1/auth/csrf")
+    response = client.post(
+        "/api/v1/auth/login",
+        json={
+            "username": "limited",
+            "password": "limited-password-1234",
+        },
+        headers={"Origin": "http://localhost:3000"},
+    )
+    assert response.status_code == 200
+    return {
+        "X-CSRF-Token": client.cookies.get("himatkn_csrf"),
+        "Origin": "http://localhost:3000",
+    }
+
+
+def _create_division(
+    client,
+    headers,
+    period_id,
+    name,
+    *,
+    sort_order=0,
+    description=None,
+):
+    return client.post(
+        "/api/v1/admin/organization/divisions",
+        json={
+            "period_id": period_id,
+            "name": name,
+            "description": description,
+            "sort_order": sort_order,
+        },
+        headers=headers,
+    )
+
+
+def _update_division(client, headers, division_id, payload):
+    return client.put(
+        f"/api/v1/admin/organization/divisions/{division_id}",
+        json=payload,
+        headers=headers,
+    )
+
+
+def _delete_division(client, headers, division_id):
+    return client.delete(
+        f"/api/v1/admin/organization/divisions/{division_id}",
+        headers=headers,
+    )
+
+
+def _copy_divisions(client, headers, target_period_id, source_period_id):
+    return client.post(
+        f"/api/v1/admin/organization/periods/{target_period_id}"
+        "/divisions/copy",
+        json={"source_period_id": source_period_id},
+        headers=headers,
+    )
+
+
+def _create_position(name):
+    with SessionLocal() as db:
+        row = Position(name=name)
+        db.add(row)
+        db.commit()
+        return row.id
+
+
+def _seed_member(period_id, division_id, position_id, name):
+    with SessionLocal() as db:
+        row = Member(
+            period_id=period_id,
+            division_id=division_id,
+            position_id=position_id,
+            name=name,
+            sort_order=0,
+        )
+        db.add(row)
+        db.commit()
+        return row.id
+
+
+def _seed_program(period_id, division_id, name, slug):
+    with SessionLocal() as db:
+        row = Program(
+            period_id=period_id,
+            division_id=division_id,
+            name=name,
+            slug=slug,
+            status="planned",
+        )
+        db.add(row)
+        db.commit()
+        return row.id
+
+
+def test_create_division_success_writes_audit_log(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-B3B-DIV-CREATE")
+
+    response = _create_division(
+        client,
+        headers,
+        period_id,
+        "TEST-B3B-DIV-CREATE-BPH",
+        sort_order=3,
+        description="Badan Pengurus Harian",
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["period_id"] == period_id
+    assert body["name"] == "TEST-B3B-DIV-CREATE-BPH"
+    assert body["description"] == "Badan Pengurus Harian"
+    assert body["sort_order"] == 3
+
+    with SessionLocal() as db:
+        row = db.get(Division, body["id"])
+        assert row is not None
+        assert row.name == "TEST-B3B-DIV-CREATE-BPH"
+
+        log = db.scalar(
+            select(ActivityLog).where(
+                ActivityLog.action == "division.create",
+                ActivityLog.entity_id == body["id"],
+            )
+        )
+        assert log is not None
+
+
+def test_create_division_duplicate_case_insensitive_returns_409(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-B3B-DIV-DUP")
+    assert (
+        _create_division(
+            client,
+            headers,
+            period_id,
+            "TEST-B3B-DIV-DUP-MEDIA",
+        ).status_code
+        == 201
+    )
+
+    response = _create_division(
+        client,
+        headers,
+        period_id,
+        "test-b3b-div-dup-media",
+    )
+
+    assert response.status_code == 409
+    assert (
+        response.json()["detail"]
+        == "Divisi dengan nama ini sudah ada di periode tersebut"
+    )
+
+
+def test_create_division_same_name_other_period_succeeds(client):
+    headers = _headers(client)
+    first_period = _create_period(client, headers, "TEST-B3B-DIV-OTHER-A")
+    second_period = _create_period(client, headers, "TEST-B3B-DIV-OTHER-B")
+
+    assert (
+        _create_division(
+            client,
+            headers,
+            first_period,
+            "TEST-B3B-DIV-OTHER-SAMA",
+        ).status_code
+        == 201
+    )
+    response = _create_division(
+        client,
+        headers,
+        second_period,
+        "TEST-B3B-DIV-OTHER-SAMA",
+    )
+
+    assert response.status_code == 201
+    assert response.json()["period_id"] == second_period
+
+
+def test_create_division_unknown_period_returns_400(client):
+    headers = _headers(client)
+
+    response = _create_division(
+        client,
+        headers,
+        999999,
+        "TEST-B3B-DIV-NO-PERIOD",
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Periode tidak ditemukan"
+
+
+def test_update_division_success_writes_audit_log(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-B3B-DIV-UPD")
+    other_period = _create_period(client, headers, "TEST-B3B-DIV-UPD-OTHER")
+    division_id = _create_division(
+        client,
+        headers,
+        period_id,
+        "TEST-B3B-DIV-UPD-OLD",
+    ).json()["id"]
+
+    response = _update_division(
+        client,
+        headers,
+        division_id,
+        {
+            "name": "TEST-B3B-DIV-UPD-NEW",
+            "description": "Deskripsi baru",
+            "sort_order": 7,
+            "period_id": other_period,
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["name"] == "TEST-B3B-DIV-UPD-NEW"
+    assert body["description"] == "Deskripsi baru"
+    assert body["sort_order"] == 7
+    assert body["period_id"] == period_id
+
+    with SessionLocal() as db:
+        row = db.get(Division, division_id)
+        assert row.name == "TEST-B3B-DIV-UPD-NEW"
+        assert row.description == "Deskripsi baru"
+        assert row.sort_order == 7
+        assert row.period_id == period_id
+
+        log = db.scalar(
+            select(ActivityLog).where(
+                ActivityLog.action == "division.update",
+                ActivityLog.entity_id == division_id,
+            )
+        )
+        assert log is not None
+
+
+def test_update_division_duplicate_name_returns_409(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-B3B-DIV-UPD-DUP")
+    _create_division(
+        client,
+        headers,
+        period_id,
+        "TEST-B3B-DIV-UPD-DUP-A",
+    )
+    second_id = _create_division(
+        client,
+        headers,
+        period_id,
+        "TEST-B3B-DIV-UPD-DUP-B",
+    ).json()["id"]
+
+    response = _update_division(
+        client,
+        headers,
+        second_id,
+        {"name": "test-b3b-div-upd-dup-a"},
+    )
+
+    assert response.status_code == 409
+    assert (
+        response.json()["detail"]
+        == "Divisi dengan nama ini sudah ada di periode tersebut"
+    )
+
+
+def test_update_division_unknown_returns_404(client):
+    headers = _headers(client)
+
+    response = _update_division(
+        client,
+        headers,
+        999999,
+        {"name": "TEST-B3B-DIV-UPD-MISSING"},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Divisi tidak ditemukan"
+
+
+def test_delete_division_with_members_returns_409(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-B3B-DIV-DEL-MEMBER")
+    division_id = _create_division(
+        client,
+        headers,
+        period_id,
+        "TEST-B3B-DIV-DEL-MEMBER-DIV",
+    ).json()["id"]
+    position_id = _create_position("TEST-B3B-DIV-DEL-MEMBER-POS")
+    _seed_member(
+        period_id,
+        division_id,
+        position_id,
+        "Anggota B3B Divisi",
+    )
+
+    response = _delete_division(client, headers, division_id)
+
+    assert response.status_code == 409
+    assert "masih ada 1 anggota" in response.json()["detail"]
+
+    with SessionLocal() as db:
+        assert db.get(Division, division_id) is not None
+
+
+def test_delete_division_with_programs_returns_409(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-B3B-DIV-DEL-PROGRAM")
+    division_id = _create_division(
+        client,
+        headers,
+        period_id,
+        "TEST-B3B-DIV-DEL-PROGRAM-DIV",
+    ).json()["id"]
+    _seed_program(
+        period_id,
+        division_id,
+        "Program B3B Divisi",
+        "test-b3b-div-del-program",
+    )
+
+    response = _delete_division(client, headers, division_id)
+
+    assert response.status_code == 409
+    assert "masih dipakai 1 program kerja" in response.json()["detail"]
+
+
+def test_delete_division_with_members_and_programs_returns_409(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-B3B-DIV-DEL-BOTH")
+    division_id = _create_division(
+        client,
+        headers,
+        period_id,
+        "TEST-B3B-DIV-DEL-BOTH-DIV",
+    ).json()["id"]
+    position_id = _create_position("TEST-B3B-DIV-DEL-BOTH-POS")
+    _seed_member(
+        period_id,
+        division_id,
+        position_id,
+        "Anggota B3B Keduanya",
+    )
+    _seed_program(
+        period_id,
+        division_id,
+        "Program B3B Keduanya",
+        "test-b3b-div-del-both",
+    )
+
+    response = _delete_division(client, headers, division_id)
+
+    assert response.status_code == 409
+    detail = response.json()["detail"]
+    assert "masih ada 1 anggota" in detail
+    assert "masih dipakai 1 program kerja" in detail
+
+
+def test_delete_empty_division_succeeds(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-B3B-DIV-DEL-EMPTY")
+    division_id = _create_division(
+        client,
+        headers,
+        period_id,
+        "TEST-B3B-DIV-DEL-EMPTY-DIV",
+    ).json()["id"]
+
+    response = _delete_division(client, headers, division_id)
+
+    assert response.status_code == 200
+    assert response.json() == {"deleted": division_id}
+
+    with SessionLocal() as db:
+        assert db.get(Division, division_id) is None
+        log = db.scalar(
+            select(ActivityLog).where(
+                ActivityLog.action == "division.delete",
+                ActivityLog.entity_id == division_id,
+            )
+        )
+        assert log is not None
+
+
+def test_delete_division_unknown_returns_404(client):
+    headers = _headers(client)
+
+    response = _delete_division(client, headers, 999999)
+
+    assert response.status_code == 404
+
+
+def test_limited_account_cannot_manage_divisions(client):
+    admin_headers = _headers(client)
+    period_id = _create_period(
+        client,
+        admin_headers,
+        "TEST-B3B-DIV-LIMITED",
+    )
+    division_id = _create_division(
+        client,
+        admin_headers,
+        period_id,
+        "TEST-B3B-DIV-LIMITED-DIV",
+    ).json()["id"]
+
+    limited_headers = _login_limited(client)
+
+    assert (
+        _create_division(
+            client,
+            limited_headers,
+            period_id,
+            "TEST-B3B-DIV-LIMITED-NEW",
+        ).status_code
+        == 403
+    )
+    assert (
+        _update_division(
+            client,
+            limited_headers,
+            division_id,
+            {"name": "TEST-B3B-DIV-LIMITED-EDIT"},
+        ).status_code
+        == 403
+    )
+    assert (
+        _delete_division(client, limited_headers, division_id).status_code
+        == 403
+    )
+
+
+def test_copy_divisions_success_orders_skips_and_audits(client):
+    headers = _headers(client)
+    source_id = _create_period(client, headers, "TEST-B3B-COPY-SRC")
+    target_id = _create_period(client, headers, "TEST-B3B-COPY-DST")
+
+    alpha_id = _create_division(
+        client,
+        headers,
+        source_id,
+        "TEST-B3B-COPY-ALPHA",
+        sort_order=20,
+        description="Alpha",
+    ).json()["id"]
+    _create_division(
+        client,
+        headers,
+        source_id,
+        "TEST-B3B-COPY-BETA",
+        sort_order=10,
+    )
+    _create_division(
+        client,
+        headers,
+        source_id,
+        "TEST-B3B-COPY-GAMMA",
+        sort_order=30,
+    )
+    _create_division(
+        client,
+        headers,
+        target_id,
+        "test-b3b-copy-beta",
+        sort_order=99,
+    )
+
+    position_id = _create_position("TEST-B3B-COPY-POS")
+    _seed_member(
+        source_id,
+        alpha_id,
+        position_id,
+        "Anggota B3B Copy",
+    )
+
+    response = _copy_divisions(client, headers, target_id, source_id)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert [item["name"] for item in body["created"]] == [
+        "TEST-B3B-COPY-ALPHA",
+        "TEST-B3B-COPY-GAMMA",
+    ]
+    assert body["skipped"] == ["TEST-B3B-COPY-BETA"]
+    assert all(item["period_id"] == target_id for item in body["created"])
+    assert body["created"][0]["sort_order"] == 20
+    assert body["created"][0]["description"] == "Alpha"
+    assert body["created"][1]["sort_order"] == 30
+
+    with SessionLocal() as db:
+        target_member_count = db.scalar(
+            select(func.count())
+            .select_from(Member)
+            .where(Member.period_id == target_id)
+        )
+        assert target_member_count == 0
+
+        logs = db.scalars(
+            select(ActivityLog).where(
+                ActivityLog.action == "division.copy",
+                ActivityLog.entity_id == target_id,
+            )
+        ).all()
+        assert len(logs) == 1
+        assert "TEST-B3B-COPY-SRC" in logs[0].description
+        assert "2 divisi" in logs[0].description
+        assert "1 dilewati" in logs[0].description
+
+
+def test_copy_divisions_same_period_returns_400(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-B3B-COPY-SAME")
+
+    response = _copy_divisions(client, headers, period_id, period_id)
+
+    assert response.status_code == 400
+    assert (
+        response.json()["detail"]
+        == "Periode sumber dan tujuan tidak boleh sama"
+    )
+
+
+def test_copy_divisions_unknown_period_returns_404(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-B3B-COPY-MISSING")
+
+    target_missing = _copy_divisions(client, headers, 999999, period_id)
+    assert target_missing.status_code == 404
+    assert (
+        target_missing.json()["detail"]
+        == "Periode tujuan tidak ditemukan"
+    )
+
+    source_missing = _copy_divisions(client, headers, period_id, 999999)
+    assert source_missing.status_code == 404
+    assert (
+        source_missing.json()["detail"]
+        == "Periode sumber tidak ditemukan"
+    )
+
+
+def test_get_divisions_ordered_by_sort_order_then_id(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-B3B-DIV-ORDER")
+
+    last_id = _create_division(
+        client,
+        headers,
+        period_id,
+        "TEST-B3B-DIV-ORDER-LAST",
+        sort_order=5,
+    ).json()["id"]
+    first_id = _create_division(
+        client,
+        headers,
+        period_id,
+        "TEST-B3B-DIV-ORDER-FIRST",
+        sort_order=1,
+    ).json()["id"]
+    second_id = _create_division(
+        client,
+        headers,
+        period_id,
+        "TEST-B3B-DIV-ORDER-SECOND",
+        sort_order=1,
+    ).json()["id"]
+
+    response = client.get(
+        f"/api/v1/admin/organization/divisions?period_id={period_id}",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    items = response.json()["items"]
+    assert [item["id"] for item in items] == [
+        first_id,
+        second_id,
+        last_id,
+    ]
+    assert all("sort_order" in item for item in items)
+
+
+def _member_payload(period_id, position_id, name, division_id=None):
+    return {
+        "period_id": period_id,
+        "division_id": division_id,
+        "position_id": position_id,
+        "name": name,
+        "photo_url": None,
+        "sort_order": 0,
+    }
+
+
+def test_create_member_success_writes_audit_log(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-B3B-MEM-CREATE")
+    division_id = _create_division(
+        client,
+        headers,
+        period_id,
+        "TEST-B3B-MEM-CREATE-DIV",
+    ).json()["id"]
+    position_id = _create_position("TEST-B3B-MEM-CREATE-POS")
+
+    response = client.post(
+        "/api/v1/admin/organization/members",
+        json=_member_payload(
+            period_id,
+            position_id,
+            "TEST-B3B-MEM-CREATE-NAME",
+            division_id,
+        ),
+        headers=headers,
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["name"] == "TEST-B3B-MEM-CREATE-NAME"
+
+    with SessionLocal() as db:
+        row = db.get(Member, body["id"])
+        assert row is not None
+        assert row.name == "TEST-B3B-MEM-CREATE-NAME"
+        assert row.division_id == division_id
+
+        log = db.scalar(
+            select(ActivityLog).where(
+                ActivityLog.action == "member.create",
+                ActivityLog.entity_id == body["id"],
+            )
+        )
+        assert log is not None
+
+
+def test_update_member_success_writes_audit_log(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-B3B-MEM-UPDATE")
+    division_id = _create_division(
+        client,
+        headers,
+        period_id,
+        "TEST-B3B-MEM-UPDATE-DIV",
+    ).json()["id"]
+    position_id = _create_position("TEST-B3B-MEM-UPDATE-POS")
+    member_id = _seed_member(
+        period_id,
+        division_id,
+        position_id,
+        "TEST-B3B-MEM-UPDATE-OLD",
+    )
+
+    payload = _member_payload(
+        period_id,
+        position_id,
+        "TEST-B3B-MEM-UPDATE-NEW",
+        division_id,
+    )
+    payload["sort_order"] = 4
+
+    response = client.put(
+        f"/api/v1/admin/organization/members/{member_id}",
+        json=payload,
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["name"] == "TEST-B3B-MEM-UPDATE-NEW"
+
+    with SessionLocal() as db:
+        row = db.get(Member, member_id)
+        assert row.name == "TEST-B3B-MEM-UPDATE-NEW"
+        assert row.sort_order == 4
+
+        log = db.scalar(
+            select(ActivityLog).where(
+                ActivityLog.action == "member.update",
+                ActivityLog.entity_id == member_id,
+            )
+        )
+        assert log is not None
+
+
+def test_delete_member_success_writes_audit_log(client):
+    headers = _headers(client)
+    period_id = _create_period(client, headers, "TEST-B3B-MEM-DELETE")
+    division_id = _create_division(
+        client,
+        headers,
+        period_id,
+        "TEST-B3B-MEM-DELETE-DIV",
+    ).json()["id"]
+    position_id = _create_position("TEST-B3B-MEM-DELETE-POS")
+    member_id = _seed_member(
+        period_id,
+        division_id,
+        position_id,
+        "TEST-B3B-MEM-DELETE-NAME",
+    )
+
+    response = client.delete(
+        f"/api/v1/admin/organization/members/{member_id}",
+        headers=headers,
+    )
+
+    assert response.status_code == 204
+
+    with SessionLocal() as db:
+        assert db.get(Member, member_id) is None
+
+        log = db.scalar(
+            select(ActivityLog).where(
+                ActivityLog.action == "member.delete",
+                ActivityLog.entity_id == member_id,
+            )
+        )
+        assert log is not None

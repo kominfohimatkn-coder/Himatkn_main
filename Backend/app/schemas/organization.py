@@ -47,6 +47,16 @@ class DivisionIn(BaseModel):
     sort_order: int = 0
 
 
+class DivisionUpdateIn(BaseModel):
+    name: str = Field(min_length=2, max_length=100)
+    description: str | None = None
+    sort_order: int = 0
+
+
+class DivisionCopyIn(BaseModel):
+    source_period_id: int
+
+
 class PositionIn(BaseModel):
     name: str = Field(min_length=2, max_length=100)
     description: str | None = None
