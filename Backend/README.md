@@ -42,7 +42,7 @@ Route utama yang tersedia:
 
 `GET /api/v1/health`
 
-`GET /api/v1/auth/csrf` · `POST /api/v1/auth/login` · `GET /api/v1/auth/me` · `POST /api/v1/auth/logout`
+`GET /api/v1/auth/csrf` · `POST /api/v1/auth/login` · `GET /api/v1/auth/me` · `POST /api/v1/auth/change-password` · `POST /api/v1/auth/logout`
 
 `GET/POST /api/v1/admin/admins` · `GET /api/v1/admin/admins/roles` · `PUT/DELETE /api/v1/admin/admins/{admin_id}`
 
@@ -91,6 +91,8 @@ menambahkan permission yang belum ada di DB (misalnya `media.manage`).
 ## Security
 
 Authentication menggunakan JWT HttpOnly cookie + server-side session record. Mutation pada endpoint authenticated membutuhkan CSRF token. RBAC ditegakkan di backend. Login throttling menggunakan per-IP dan per-account bucket. Production wajib Redis. Error 500 tidak mengekspos detail internal. Upload image memakai Pillow dan disimpan dengan random storage key; dokumen tidak punya route publik.
+
+`POST /api/v1/auth/change-password` (login + CSRF, tanpa permission tambahan) memverifikasi kata sandi lama, menyimpan hash baru (12–128 karakter), menulis audit `admin.password_change` tanpa menyimpan kata sandi, dan mencabut semua sesi lain milik admin yang sama. Sesi yang dipakai untuk request tersebut **dipertahankan** (cookie sesi dan CSRF tidak dihapus atau diganti) dengan mengecualikan `jti` token saat ini. Respons `200 {"ok": true, "sessions_revoked": n}`. Rate limit memakai grup tulis `auth` bawaan middleware.
 
 ## Testing
 

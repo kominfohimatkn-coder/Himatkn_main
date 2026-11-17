@@ -14,12 +14,13 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 
 ## 1. Current Project State
 
-> Terakhir diperbarui: 17 November 2026 (Batch API-B3b — Divisi: CRUD & salin divisi). Perbarui bagian ini pada setiap batch.
+> Terakhir diperbarui: 17 November 2026 (Batch API-B3c — Ubah kata sandi sendiri). Perbarui bagian ini pada setiap batch.
 
 ### a. Snapshot repository
 
 - Branch: `feat/admin-ui-foundation`.
-- HEAD terverifikasi saat Batch API-B3b: `f80ecfb` (`feat(api): update and delete period with validation (B3a)`, sudah di-commit pemilik). Perubahan B3b belum di-commit.
+- HEAD terverifikasi saat Batch API-B3c: `4deb3f4` (`style(frontend): canonical tailwind classes`, sudah di-commit pemilik). Perubahan B3c belum di-commit.
+- HEAD terverifikasi saat Batch API-B3b: `f80ecfb` (B3a). B3b kemudian di-commit pemilik sebagai `35188af`.
 - HEAD terverifikasi saat Batch API-B3a: `d642419` (activate period). B3a kemudian di-commit pemilik sebagai `f80ecfb`.
 - HEAD terverifikasi saat Batch API-F: `7b249b6` (API-B2). API-F kemudian di-commit pemilik sebagai `7a948f8`.
 - Batch B3 langkah 1–2 sudah di-commit pemilik: `61ab3c3` (create periode aktif menonaktifkan periode lain) dan `d642419` (activate atomik + warnings).
@@ -37,8 +38,8 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 - Batch API-B2 (16 Nov) memperluas kontrak publik: filter program (periode/status/divisi), detail program per slug, pencarian judul berita, `total`, `excerpt`, `tags`, `sort_order` organisasi, normalisasi `photo_url`, dan validasi enum status program. Ditambah tindak lanjut review API-B1 (default hero prototype + path `maps_url`). Batch ini sudah di-commit pemilik sebagai `7b249b6`; **belum di-deploy**.
 - Batch API-F (16 Nov) menyinkronkan API layer frontend dengan kontrak API-B1/API-B2: `ApiError` bertipe + helper, tipe publik/admin, service news/program/organization/settings/visits/admin settings, helper status program, dan status program di form admin menjadi `<select>`. Sudah di-commit pemilik sebagai `7a948f8`; **belum di-deploy**.
 - Batch B3a (17 Nov) menambahkan `PUT` dan `DELETE /admin/organization/periods/{id}` serta validasi tanggal pada create/update periode. Sudah di-commit pemilik sebagai `f80ecfb`; **belum di-deploy**.
-- Batch B3b (17 Nov) menambahkan CRUD divisi (`POST`/`PUT`/`DELETE /admin/organization/divisions`), salin divisi antarperiode (`POST /admin/organization/periods/{id}/divisions/copy`), perbaikan bug audit CRUD anggota (`request=request` → `ip_address`/`user_agent`), dan pengurutan `GET /divisions` berdasarkan `sort_order` lalu `id`. Perubahan berada di working tree; **belum di-commit dan belum di-deploy**.
-- Working tree saat ini juga memuat perubahan lokal pemilik di `frontend/app/(public)/struktur/loading.tsx`, `frontend/components/public/OrganizationSection.tsx`, dan — muncul selama sesi B3b — `frontend/components/public/PublicationsSection.tsx` (konversi arbitrary value Tailwind). Semuanya **bukan bagian B3b** dan tidak diubah oleh batch ini.
+- Batch B3b (17 Nov) menambahkan CRUD divisi (`POST`/`PUT`/`DELETE /admin/organization/divisions`), salin divisi antarperiode (`POST /admin/organization/periods/{id}/divisions/copy`), perbaikan bug audit CRUD anggota (`request=request` → `ip_address`/`user_agent`), dan pengurutan `GET /divisions` berdasarkan `sort_order` lalu `id`. Sudah di-commit pemilik sebagai `35188af`; **belum di-deploy**.
+- Batch B3c (17 Nov) menambahkan `POST /api/v1/auth/change-password` (login + CSRF, tanpa permission tambahan) yang memverifikasi kata sandi lama, menyimpan hash baru, mencabut semua sesi lain milik admin yang sama, mempertahankan sesi saat ini, dan menulis audit `admin.password_change` tanpa menyimpan kata sandi. Perubahan berada di working tree; **belum di-commit dan belum di-deploy**.
 - URL Instagram `https://www.instagram.com/himatknuklir` **dikonfirmasi pemilik** pada 16 Nov. Konstanta dipertahankan sebagai utang teknis (lihat e.8); parameter share `rpxt` pada URL yang dikirim pemilik dibuang agar tautan stabil.
 
 ### b. Scope fase saat ini
@@ -91,6 +92,7 @@ Entri historis yang masih memuat referensi tersebut tetap utuh di Historical Arc
 10. **Kontrak publik API-B2.** Program publik default hanya periode aktif; tanpa periode aktif → `items: []`, `period: null`. Filter `status` menerima 4 nilai (boleh diulang atau dipisah koma). Urutan program: `start_date` DESC (NULL di akhir), lalu `created_at` DESC, `id` DESC. Berita: `q` mencari **judul saja**, `%`/`_` di-escape, `total`, `excerpt` ±160 karakter di batas kata, dan `tags`. Organisasi: `sort_order` dikirim; `photo_url` storage key menjadi path media, `https://` dipertahankan, nilai lain `null`. Detail program memakai field DB tanpa foto.
 11. **API layer frontend sudah sinkron (Batch API-F).** `ApiError` membawa `status` (0 untuk jaringan), `detail`, `errors?`, dan `retryAfter?`; service publik (`news`, `programs`, `organization`, `settings`, `visits`) serta admin settings siap dipakai R2/R3/R4 tanpa dummy data. `PUBLIC_LINKS` di `frontend/lib/public/link.ts` tetap dipakai sebagai **fallback sementara** sampai UI disambungkan ke `bank_soal_url`/`instagram_url`/`instagram_label`.
 12. **Pergantian periode dikerjakan bertahap B3a–B3d (API-B3).** B3a (17 Nov): `PUT /admin/organization/periods/{id}` hanya mengubah nama/tanggal (bukan `is_active`), dan `DELETE` hanya untuk periode nonaktif yang kosong (tanpa divisi/anggota/program). Satu-periode-aktif sudah dijaga oleh create (`61ab3c3`) dan activate (`d642419`) milik pemilik. B3b (17 Nov): CRUD divisi dengan nama unik per periode (case-insensitive), `DELETE` divisi ditolak selama masih ada anggota atau program kerja, dan salin divisi antarperiode menyalin nama/deskripsi/`sort_order` tanpa anggota, melewati nama yang sudah ada, dengan satu audit `division.copy`. Akun tanpa `organization.manage` → 403.
+13. **Ubah kata sandi sendiri (Batch B3c, 17 Nov).** `POST /api/v1/auth/change-password` wajib login + CSRF, tanpa permission tambahan. Kata sandi lama salah → **400** (bukan 401). Kata sandi baru 12–128 karakter dan tidak boleh sama dengan yang lama (422). Sesi yang dipakai untuk request tersebut **dipertahankan** (cookie sesi/CSRF tidak berubah); semua sesi lain milik admin yang sama dicabut dan dilaporkan sebagai `sessions_revoked`. Audit `admin.password_change` tidak menyimpan kata sandi. **Prototipe admin menulis minimal 8 karakter, backend mewajibkan 12** — frontend harus menyesuaikan validasi saat UI dibuat.
 
 ### f. Kondisi aktual V2
 
@@ -114,6 +116,7 @@ Ringkasan dari audit 12 November 2026; detail dan bukti line-by-line ada di `doc
 - Public content API (Batch API-B2): `GET /public/programs` (filter periode/status/divisi, `total`, metadata divisi/periode), `GET /public/programs/{slug}`, `GET /public/news` (`q` judul, `total`, `excerpt`, `tags`), `GET /public/news/{slug}` (`tags`), dan `GET /public/organization` (`sort_order`, `photo_url` ternormalisasi). Kontrak lengkap: `Backend/docs/PUBLIC_API.md`.
 - **Admin organisasi (Batch B3a, 17 Nov):** `PUT /admin/organization/periods/{id}` mengubah nama/tanggal dengan nama unik case-insensitive dan validasi `end_date >= start_date`; `DELETE /admin/organization/periods/{id}` menolak periode aktif (409) dan periode yang masih punya divisi/anggota/program (409, pesan menyebut bagian yang menghalangi). Create periode juga memvalidasi urutan tanggal. Belum ada UI admin yang memakai endpoint ini.
 - **Admin divisi (Batch B3b, 17 Nov):** `POST`/`PUT`/`DELETE /admin/organization/divisions` (201/200/200) dengan nama unik per periode case-insensitive; `DELETE` menolak divisi yang masih punya anggota dan/atau dipakai program kerja (409). `POST /admin/organization/periods/{id}/divisions/copy` menyalin divisi antarperiode secara atomik, melewati nama yang sudah ada, tidak menyalin anggota, dan menulis satu audit `division.copy`. `GET /divisions` mengirim `sort_order` dan diurutkan `sort_order` lalu `id`. Perbaikan bug: audit `member.create`/`member.update`/`member.delete` kini memakai `ip_address`/`user_agent` (sebelumnya `request=request` yang membuat endpoint 500). Belum ada UI admin yang memakai endpoint ini.
+- **Ubah kata sandi sendiri (Batch B3c, 17 Nov):** `POST /api/v1/auth/change-password` (login + CSRF) memverifikasi kata sandi lama (salah → 400), mewajibkan kata sandi baru 12–128 karakter dan berbeda dari yang lama (422), menyimpan hash baru, mencabut semua sesi lain admin tersebut, mempertahankan sesi saat ini, dan menulis audit `admin.password_change` tanpa kata sandi. Respons `{"ok": true, "sessions_revoked": n}`. Dokumentasi: `Backend/README.md` bagian API/Security. UI admin belum memakai endpoint ini; prototipe menulis minimal 8 karakter sedangkan backend 12.
 - **API layer frontend (Batch API-F, 16 Nov):**
   - `frontend/lib/api/errors.ts` berisi `ApiError` (`status`, `detail`, `errors?`, `retryAfter?`) dan helper `isApiError`, `isNotFound`, `isUnauthorized`, `isForbidden`, `isRateLimited`. `apiFetch` melempar `ApiError`; `message` lama dipertahankan dan `AbortError` tetap diteruskan.
   - Tipe publik sudah memuat `total`, `excerpt`/`tags`, `division`/`period`, `PROGRAM_STATUSES`/`ProgramStatus`, `sort_order`, serta `AdminProgram.status` tetap `string`. Detail berita backend **tidak** mengirim `excerpt`, jadi `PublicNewsDetail` hanya menambah `tags`.
@@ -121,7 +124,7 @@ Ringkasan dari audit 12 November 2026; detail dan bukti line-by-line ada di `doc
   - `frontend/lib/programs/status.ts` menjadi satu sumber label ("Direncanakan", "Berjalan", "Selesai", "Dibatalkan", "Status lain"); `ProgramPrimitives` dan `ProgramFormDialog` memakainya.
   - **Catatan `AuthContext` (belum diubah, batch berikutnya):** `readCurrentAdmin()` menelan semua error dan mengembalikan `null`. Sebaiknya ia membedakan 401 (`isUnauthorized` → sesi memang habis) dari error jaringan/5xx agar UI tidak salah menyimpulkan "belum login".
   - `frontend/lib/public/link.ts` tetap dipakai sebagai fallback Bank Soal/Instagram; migrasi ke `PublicSettings` belum dilakukan.
-- Baseline: `npm run lint` dan `npx tsc --noEmit` lulus pada audit. `npm run build` pertama kali dijalankan pada R1 Fase A (15 Nov): **gagal** karena `frontend/app/(private)/(admin)/loading.tsx` berukuran 0 byte; setelah file itu dihapus (disetujui pemilik) build lulus 9 route. Batch R1 Fase B (16 Nov) mengulang lint, tsc, dan build: ketiganya lulus 9 route. Batch API-F (16 Nov) mengulang lint dan tsc (lulus) serta `npm run build` (lulus 9 route, `ƒ /` dan `ƒ /struktur`). Baseline backend sebelum API-B1: `compileall` lulus, `pytest -q` **71 passed**; API-B1 (commit `ac9cd8a`): **102 passed**; setelah tindak lanjut review API-B1: **112 passed**; setelah API-B2 (commit `7b249b6`): **124 passed**; setelah API-F (commit `7a948f8`): **133 passed**; setelah B3a (commit `f80ecfb`): **145 passed**; setelah B3b: **165 passed**.
+- Baseline: `npm run lint` dan `npx tsc --noEmit` lulus pada audit. `npm run build` pertama kali dijalankan pada R1 Fase A (15 Nov): **gagal** karena `frontend/app/(private)/(admin)/loading.tsx` berukuran 0 byte; setelah file itu dihapus (disetujui pemilik) build lulus 9 route. Batch R1 Fase B (16 Nov) mengulang lint, tsc, dan build: ketiganya lulus 9 route. Batch API-F (16 Nov) mengulang lint dan tsc (lulus) serta `npm run build` (lulus 9 route, `ƒ /` dan `ƒ /struktur`). Baseline backend sebelum API-B1: `compileall` lulus, `pytest -q` **71 passed**; API-B1 (commit `ac9cd8a`): **102 passed**; setelah tindak lanjut review API-B1: **112 passed**; setelah API-B2 (commit `7b249b6`): **124 passed**; setelah API-F (commit `7a948f8`): **133 passed**; setelah B3a (commit `f80ecfb`): **145 passed**; setelah B3b (commit `35188af`): **165 passed**; setelah B3c: **172 passed**.
 
 ### g. Keputusan yang masih tertunda (blok batch R1 dan seterusnya)
 
@@ -657,6 +660,29 @@ Entri sesi sejak 11 November 2026. Append-only: tambahkan entri baru di bawah; j
   - Halaman admin Pengaturan, route detail program, dan route detail publikasi belum dibuat (menunggu keputusan route R2/R3/R4).
   - `AuthContext` belum memakai `isUnauthorized`; `recordVisit()` belum dipanggil dari halaman.
 - **Langkah berikutnya:** pemilik meninjau API-F. **Berhenti; R2 belum dimulai.**
+
+---
+
+### Sesi 2026-11-17 — Batch B3c: Ubah kata sandi sendiri
+
+- **Status:** Selesai untuk B3c; **berhenti**. Tidak commit, push, deploy, atau menjalankan seed.
+- **Branch/HEAD:** `feat/admin-ui-foundation`, HEAD `4deb3f4`. B3b sudah di-commit pemilik sebagai `35188af`; B3c belum di-commit.
+- **Perubahan:**
+  - Schema `ChangePasswordIn`: `current_password` (1–255), `new_password` (12–128), validator `new_password == current_password` → 422.
+  - `POST /api/v1/auth/change-password` (login via `current_admin` + `require_csrf`, tanpa permission): kata sandi lama salah → **400** `"Kata sandi lama salah"`; sukses menyimpan `hash_password(new_password)`, mencabut sesi lain (`AuthSession.jti != jti` request ini, `revoked_at IS NULL`), menulis audit `admin.password_change`, lalu satu commit.
+  - Sesi saat ini dipertahankan dengan men-decode cookie token request ini dan mengecualikan `jti`-nya; cookie sesi dan CSRF tidak dihapus/diganti. Respons `200 {"ok": true, "sessions_revoked": n}`.
+  - Rate limit memakai grup tulis `auth` bawaan middleware (tidak ada perubahan `rate_limit.py`).
+  - Dokumentasi endpoint + perilaku sesi ditambahkan di `Backend/README.md` (API dan Security).
+- **Contoh respons aktual (SQLite sementara):**
+  - `POST /auth/change-password` (dua klien login) → `200 {"ok": true, "sessions_revoked": 1}`; `/auth/me` klien A → `200`, klien B → `401 {"detail":"Sesi tidak valid"}`.
+  - Kata sandi lama salah → `400 {"detail":"Kata sandi lama salah"}`.
+  - Kata sandi baru 11 karakter → `422` (`string_too_short`).
+  - Kata sandi baru sama dengan lama → `422` (`Kata sandi baru tidak boleh sama dengan kata sandi lama`).
+- **Keputusan teknis:** request ini memakai cookie token yang sudah divalidasi `current_admin`; `jti` diambil dari token tersebut sehingga hanya sesi lain yang dicabut. `sessions_revoked` dihitung dari `AuthSession` aktif sebelum `UPDATE`, sehingga akurat untuk respons. Tidak ada perubahan pada `database/dependencies.py`, `services/auth.py`, atau helper login/logout yang sudah ada.
+- **Risiko rate limit:** endpoint mengandalkan grup tulis `auth` (60 permintaan/jendela global per IP) dan tidak punya bucket per-akun khusus seperti login. Untuk mencegah brute-force kata sandi lama, pertimbangkan limiter per-admin pada batch lanjutan.
+- **Verifikasi:** `python -m compileall app` lulus; `pytest -q` **165 passed → 172 passed** (14 test di `test_auth.py`, +7); `alembic check` → `No new upgrade operations detected`.
+- **Catatan:** prototipe admin menulis minimal 8 karakter, backend mewajibkan 12; frontend harus menyesuaikan validasi saat UI ubah kata sandi dibuat. Test memakai akun admin khusus (`B3C-*`) sehingga kata sandi akun `admin` bersama tidak berubah.
+- **Langkah berikutnya:** B3d setelah pemilik meng-commit B3c.
 
 ---
 

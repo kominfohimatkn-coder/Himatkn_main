@@ -11,7 +11,7 @@ from fastapi import (
     Response,
     status,
 )
-from sqlalchemy import select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -25,9 +25,11 @@ from app.core.security import (
 )
 from app.database.connection import get_db
 from app.database.dependencies import current_admin, require_csrf
-from app.models import Admin
-from app.schemas.auth import AuthResponse, LoginRequest
+from app.models import Admin, AuthSession
+from app.schemas.auth import AuthResponse, ChangePasswordIn, LoginRequest
+from app.services.audit import log_activity
 from app.services.auth import admin_payload, create_session, revoke_token
+from app.utils.ip import get_client_ip
 
 
 router = APIRouter(
@@ -210,6 +212,84 @@ def me(
             admin,
         )
     }
+
+
+@router.post(
+    "/change-password",
+    dependencies=[Depends(require_csrf)],
+)
+def change_password(
+    payload: ChangePasswordIn,
+    request: Request,
+    token: str | None = Cookie(
+        default=None,
+        alias=settings.cookie_name,
+    ),
+    db: Session = Depends(get_db),
+    admin: Admin = Depends(current_admin),
+) -> dict:
+    valid, _ = verify_password(
+        payload.current_password,
+        admin.password_hash,
+    )
+
+    if not valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Kata sandi lama salah",
+        )
+
+    # current_admin already validated this token, so it is safe to decode.
+    current_jti = str(decode_access_token(token)["jti"])
+
+    admin.password_hash = hash_password(payload.new_password)
+
+    other_sessions = (
+        AuthSession.admin_id == admin.id,
+        AuthSession.jti != current_jti,
+        AuthSession.revoked_at.is_(None),
+    )
+
+    sessions_revoked = db.scalar(
+        select(func.count())
+        .select_from(AuthSession)
+        .where(*other_sessions)
+    ) or 0
+
+    if sessions_revoked:
+        db.execute(
+            update(AuthSession)
+            .where(*other_sessions)
+            .values(
+                revoked_at=datetime.now(timezone.utc).replace(tzinfo=None)
+            )
+        )
+
+    log_activity(
+        db=db,
+        admin_id=admin.id,
+        action="admin.password_change",
+        entity_type="admin",
+        entity_id=admin.id,
+        description=f"Mengganti kata sandi akun {admin.username}",
+        ip_address=get_client_ip(request),
+        user_agent=request.headers.get("user-agent", "")[:500],
+    )
+
+    try:
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Kata sandi belum berhasil diubah. "
+                "Silakan coba lagi."
+            ),
+        ) from exc
+
+    return {"ok": True, "sessions_revoked": sessions_revoked}
 
 
 
