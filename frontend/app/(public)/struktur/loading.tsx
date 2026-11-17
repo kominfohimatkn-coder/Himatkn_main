@@ -29,7 +29,7 @@ export default function StrukturLoading() {
             {[0, 1, 2, 3, 4, 5].map((item) => (
               <div
                 key={item}
-                className="aspect-[4/5] animate-pulse border border-gold/20 bg-on-dark/10"
+                className="aspect-4/5 animate-pulse border border-gold/20 bg-on-dark/10"
               />
             ))}
           </div>

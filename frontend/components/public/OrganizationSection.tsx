@@ -21,19 +21,19 @@ export function OrganizationSection({
   return (
     <section
       id="struktur"
-      className="bg-green-950 py-24 text-white max-[640px]:py-[72px]"
+      className="bg-green-950 py-24 text-white max-[640px]:py-18"
       aria-labelledby="structure-title"
     >
       <div className="site-container">
-        <div className="max-w-[560px]">
+        <div className="max-w-140">
           <PublicLabel tone="dark">Susunan kepengurusan</PublicLabel>
           <h2
             id="structure-title"
-            className="mt-3.5 font-serif text-[clamp(26px,2.6vw,34px)] leading-[1.25] font-bold text-white"
+            className="mt-3.5 font-serif text-[clamp(26px,2.6vw,34px)] leading-tight font-bold text-white"
           >
             Satu kepengurusan, banyak peran.
           </h2>
-          <p className="mt-[18px] text-base text-on-dark-soft">
+          <p className="mt-4.5 text-base text-on-dark-soft">
             Kenali susunan pengurus, divisi, dan peran yang menjalankan HIMATKN
             pada periode aktif.
           </p>
@@ -42,7 +42,7 @@ export function OrganizationSection({
         {hasError ? (
           <PublicStateBox
             tone="dark"
-            icon={<Users className="size-[22px]" />}
+            icon={<Users className="size-5.5" />}
             label="Gagal memuat"
             title="Struktur belum dapat dimuat"
             action={<RefreshButton tone="outlineWhite" />}
@@ -53,7 +53,7 @@ export function OrganizationSection({
         ) : !period ? (
           <PublicStateBox
             tone="dark"
-            icon={<Users className="size-[22px]" />}
+            icon={<Users className="size-5.5" />}
             label="Kepengurusan"
             title="Belum ada periode kepengurusan aktif"
           >
@@ -61,17 +61,17 @@ export function OrganizationSection({
           </PublicStateBox>
         ) : (
           <>
-            <dl className="mt-11 grid grid-cols-2 rounded-[4px] border border-line-on-dark">
-              <div className="px-3 py-[22px] text-center">
-                <dt className="text-[10px] font-medium tracking-[0.1em] text-on-dark-soft uppercase">
+            <dl className="mt-11 grid grid-cols-2 rounded-sm border border-line-on-dark">
+              <div className="px-3 py-5.5 text-center">
+                <dt className="text-[10px] font-medium tracking-widest text-on-dark-soft uppercase">
                   Periode
                 </dt>
                 <dd className="mt-1.5 font-serif text-[22px] leading-tight font-bold text-white">
                   {period.name}
                 </dd>
               </div>
-              <div className="border-l border-line-on-dark px-3 py-[22px] text-center">
-                <dt className="text-[10px] font-medium tracking-[0.1em] text-on-dark-soft uppercase">
+              <div className="border-l border-line-on-dark px-3 py-5.5 text-center">
+                <dt className="text-[10px] font-medium tracking-widest text-on-dark-soft uppercase">
                   Anggota
                 </dt>
                 <dd className="mt-1.5 font-serif text-[22px] leading-tight font-bold text-white">
@@ -80,7 +80,7 @@ export function OrganizationSection({
               </div>
             </dl>
 
-            <div className="mt-[34px] flex flex-wrap items-center justify-between gap-5 text-[13px] text-on-dark-soft">
+            <div className="mt-8.5 flex flex-wrap items-center justify-between gap-5 text-[13px] text-on-dark-soft">
               <p>
                 Struktur diperbarui tiap pergantian periode kepengurusan.
               </p>

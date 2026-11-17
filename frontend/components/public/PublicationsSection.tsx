@@ -43,15 +43,15 @@ export function PublicationsSection({
   return (
     <section
       id="publikasi"
-      className="border-t border-line bg-paper py-24 max-[640px]:py-[72px]"
+      className="border-t border-line bg-paper py-24 max-[640px]:py-18"
       aria-labelledby="publications-title"
     >
       <div className="site-container">
-        <div className="max-w-[560px]">
+        <div className="max-w-140">
           <PublicLabel>Publikasi terkini</PublicLabel>
           <h2
             id="publications-title"
-            className="mt-3.5 font-serif text-[clamp(26px,2.6vw,34px)] leading-[1.25] font-bold text-green-900"
+            className="mt-3.5 font-serif text-[clamp(26px,2.6vw,34px)] leading-tight font-bold text-green-900"
           >
             Kabar dan dokumentasi kami
           </h2>
@@ -60,7 +60,7 @@ export function PublicationsSection({
         {hasError ? (
           <PublicStateBox
             tone="error"
-            icon={<FileText className="size-[22px]" />}
+            icon={<FileText className="size-5.5" />}
             label="Gagal memuat"
             title="Publikasi tidak dapat ditampilkan"
             action={<RefreshButton />}
@@ -70,7 +70,7 @@ export function PublicationsSection({
           </PublicStateBox>
         ) : items.length === 0 ? (
           <PublicStateBox
-            icon={<FileText className="size-[22px]" />}
+            icon={<FileText className="size-5.5" />}
             label="Publikasi"
             title="Belum ada publikasi"
             action={
@@ -96,12 +96,12 @@ export function PublicationsSection({
             {items.map((item) => (
               <article
                 key={item.id}
-                className="grid gap-4 border-b border-line py-[30px] min-[901px]:grid-cols-[180px_1fr] min-[901px]:gap-6"
+                className="grid gap-4 border-b border-line py-7.5 min-[901px]:grid-cols-[180px_1fr] min-[901px]:gap-6"
               >
                 <PublicImage
                   src={getImage(item)}
                   alt={item.title}
-                  className="aspect-[3/2] w-[180px] max-w-full rounded-[4px] grayscale"
+                  className="aspect-3/2 w-45 max-w-full rounded-sm grayscale"
                 />
 
                 <div>
