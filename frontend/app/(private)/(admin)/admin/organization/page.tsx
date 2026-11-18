@@ -22,7 +22,7 @@ import {
   updateAdminMember,
   updateAdminPeriod,
 } from "@/features/organization/admin-api";
-import { getOrganizationErrorMessage } from "@/features/organization/errors";
+import { getApiErrorMessage } from "@/lib/api/errors";
 
 import DivisionCopyDialog from "@/features/organization/components/admin/DivisionCopyDialog";
 import DivisionDeleteDialog from "@/features/organization/components/admin/DivisionDeleteDialog";
@@ -155,7 +155,7 @@ export default function OrganizationPage() {
         if (controller.signal.aborted) return;
 
         setPeriodsError(
-          getOrganizationErrorMessage(
+          getApiErrorMessage(
             err,
             "Daftar periode gagal dimuat.",
           ),
@@ -190,7 +190,7 @@ export default function OrganizationPage() {
 
         setDivisions([]);
         setDivisionsError(
-          getOrganizationErrorMessage(
+          getApiErrorMessage(
             err,
             "Daftar divisi gagal dimuat.",
           ),
@@ -225,7 +225,7 @@ export default function OrganizationPage() {
 
         setPositions([]);
         setPositionsError(
-          getOrganizationErrorMessage(
+          getApiErrorMessage(
             err,
             "Daftar jabatan gagal dimuat.",
           ),
@@ -261,7 +261,7 @@ export default function OrganizationPage() {
 
         setMembers([]);
         setMembersError(
-          getOrganizationErrorMessage(
+          getApiErrorMessage(
             err,
             "Daftar anggota gagal dimuat.",
           ),

@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import ConfirmDialog from "@/components/admin/shared/ConfirmDialog";
 
-import { getOrganizationErrorMessage } from "../../errors";
+import { getApiErrorMessage } from "@/lib/api/errors";
 
 import type { AdminMember } from "../../types";
 
@@ -35,7 +35,7 @@ export default function MemberDeleteDialog({
       onClose();
     } catch (err) {
       setError(
-        getOrganizationErrorMessage(err, "Anggota gagal dihapus."),
+        getApiErrorMessage(err, "Anggota gagal dihapus."),
       );
     } finally {
       setIsDeleting(false);

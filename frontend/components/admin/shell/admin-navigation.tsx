@@ -128,7 +128,7 @@ export const managementNavItems: NavItem[] = [
     ),
   },
   {
-    href: "/admin/admins",
+    href: "/admin/accounts",
     label: "Administrator",
     permission: PERMISSIONS.ADMINS_VIEW,
     icon: (
@@ -200,4 +200,6 @@ export const implementedAdminRoutes = new Set([
   "/admin/news",
   "/admin/programs",
   "/admin/organization",
+  "/admin/accounts",
+  "/admin/account",
 ]);

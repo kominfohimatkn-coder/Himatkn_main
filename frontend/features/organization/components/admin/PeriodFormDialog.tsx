@@ -6,7 +6,7 @@ import FormDialog from "@/components/admin/shared/FormDialog";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
 
-import { getOrganizationErrorMessage } from "../../errors";
+import { getApiErrorMessage } from "@/lib/api/errors";
 
 import { OrganizationNotice } from "./OrganizationPrimitives";
 
@@ -83,7 +83,7 @@ export default function PeriodFormDialog({
       onClose();
     } catch (err) {
       setError(
-        getOrganizationErrorMessage(err, "Periode gagal disimpan."),
+        getApiErrorMessage(err, "Periode gagal disimpan."),
       );
     } finally {
       setIsSaving(false);

@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import ConfirmDialog from "@/components/admin/shared/ConfirmDialog";
 
-import { getOrganizationErrorMessage } from "../../errors";
+import { getApiErrorMessage } from "@/lib/api/errors";
 
 import type { AdminDivision } from "../../types";
 
@@ -33,7 +33,7 @@ export default function DivisionDeleteDialog({
       onClose();
     } catch (err) {
       setError(
-        getOrganizationErrorMessage(err, "Divisi gagal dihapus."),
+        getApiErrorMessage(err, "Divisi gagal dihapus."),
       );
     } finally {
       setIsDeleting(false);

@@ -7,7 +7,7 @@ import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 
-import { getOrganizationErrorMessage } from "../../errors";
+import { getApiErrorMessage } from "@/lib/api/errors";
 
 import MemberPhotoField from "./MemberPhotoField";
 import {
@@ -148,7 +148,7 @@ export default function MemberFormDialog({
       onClose();
     } catch (err) {
       setError(
-        getOrganizationErrorMessage(err, "Anggota gagal disimpan."),
+        getApiErrorMessage(err, "Anggota gagal disimpan."),
       );
     } finally {
       setIsSaving(false);

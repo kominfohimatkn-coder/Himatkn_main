@@ -7,7 +7,7 @@ import { FormField } from "@/components/ui/FormField";
 import { Select } from "@/components/ui/Select";
 import { getAdminDivisions } from "@/features/organization/admin-api";
 
-import { getOrganizationErrorMessage } from "../../errors";
+import { getApiErrorMessage } from "@/lib/api/errors";
 
 import {
   organizationActionClass,
@@ -80,7 +80,7 @@ export default function DivisionCopyDialog({
         setCountState({
           status: "error",
           counts: {},
-          error: getOrganizationErrorMessage(
+          error: getApiErrorMessage(
             err,
             "Jumlah divisi periode lain gagal dimuat.",
           ),
@@ -123,7 +123,7 @@ export default function DivisionCopyDialog({
       setResult(response);
     } catch (err) {
       setError(
-        getOrganizationErrorMessage(err, "Divisi gagal disalin."),
+        getApiErrorMessage(err, "Divisi gagal disalin."),
       );
     } finally {
       setIsSaving(false);

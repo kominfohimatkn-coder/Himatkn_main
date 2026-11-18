@@ -31,12 +31,19 @@ frontend/
 ├── features/
 │   ├── accounts/
 │   │   ├── api.ts
-│   │   └── types.ts
+│   │   ├── format.ts
+│   │   ├── permissions.ts
+│   │   ├── types.ts
+│   │   └── components/
+│   │       └── admin/            # AccountsList, AccountFormDialog, PermissionChecklist,
+│   │                             # AccountPasswordResetDialog, AccountDeleteDialog,
+│   │                             # AccountsPrimitives
 │   ├── auth/
 │   │   ├── api.ts
 │   │   ├── types.ts
 │   │   ├── permissions.ts
-│   │   └── AuthContext.tsx
+│   │   ├── AuthContext.tsx
+│   │   └── components/           # ChangePasswordForm
 │   ├── dashboard/
 │   │   └── admin-api.ts
 │   ├── news/
@@ -48,7 +55,6 @@ frontend/
 │   │       └── public/           # PublicationsSection
 │   ├── organization/
 │   │   ├── admin-api.ts
-│   │   ├── errors.ts
 │   │   ├── public-api.ts
 │   │   ├── types.ts
 │   │   └── components/
@@ -104,7 +110,14 @@ Halaman admin struktur organisasi merangkai komponen di
 `features/organization/components/admin/` (periode, divisi, salin divisi,
 anggota, foto anggota) dan memakai `features/organization/admin-api.ts` sebagai
 satu-satunya jalur pemanggilan API. Pesan error API diambil dari `ApiError` lewat
-`features/organization/errors.ts`.
+`getApiErrorMessage` di `lib/api/errors.ts`.
+
+Halaman `/admin/accounts` (khusus superadmin) merangkai komponen di
+`features/accounts/components/admin/` dan memakai `features/accounts/api.ts`
+sebagai satu-satunya jalur API akun. Halaman `/admin/account` (semua akun yang
+login) menampilkan profil dari `useAuth()` dan form ganti kata sandi di
+`features/auth/components/ChangePasswordForm.tsx`. Halaman ini tidak memanggil
+katalog izin karena katalog hanya tersedia untuk superadmin.
 
 Foto anggota disimpan sebagai `storage_key` hasil `uploadImage()`
 (`POST /media/images`) di `photo_url`. Pratinjau menormalkan storage key dengan
@@ -115,7 +128,9 @@ sisi klien dan tidak menambah parameter API.
 ## Yang tetap di `lib/` dan `components/` (shared)
 
 - `lib/api/client.ts` dan `lib/api/errors.ts`: infrastruktur HTTP/error yang
-  dipakai semua fitur.
+  dipakai semua fitur. `getApiErrorMessage(error, fallback)` adalah helper
+  standar untuk mengambil pesan aman dari `ApiError` (memprioritaskan
+  `detail` backend) dan dipakai lintas fitur.
 - `lib/media/`: utilitas media bersama (`api.ts`, `compress.ts`, `types.ts`).
 - `components/ui/`: primitif UI umum (`Button`, `Input`, `Textarea`,
   `Select`, `Checkbox`, `FormField`).

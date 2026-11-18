@@ -6,7 +6,7 @@ import { PERMISSIONS } from "@/features/auth/permissions";
 import { useAuth } from "@/features/auth/AuthContext";
 import { uploadImage } from "@/lib/media/api";
 
-import { getOrganizationErrorMessage } from "../../errors";
+import { getApiErrorMessage } from "@/lib/api/errors";
 
 import MemberAvatar from "./MemberAvatar";
 import {
@@ -77,7 +77,7 @@ export default function MemberPhotoField({
       onPhotoChange(response.storage_key);
     } catch (err) {
       setError(
-        getOrganizationErrorMessage(
+        getApiErrorMessage(
           err,
           "Foto gagal diunggah. Coba lagi.",
         ),

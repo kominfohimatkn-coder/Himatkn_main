@@ -57,3 +57,25 @@ export function isForbidden(error: unknown): boolean {
 export function isRateLimited(error: unknown): boolean {
   return isApiError(error) && error.status === 429;
 }
+
+/**
+ * Mengambil pesan yang aman ditampilkan dari error API.
+ *
+ * Backend mengirim pesan yang spesifik (termasuk konflik `409` seperti
+ * "Jumlah superadmin maksimal 2 akun"), jadi `detail` selalu diprioritaskan
+ * di atas pesan generik.
+ */
+export function getApiErrorMessage(
+  error: unknown,
+  fallback: string,
+): string {
+  if (error instanceof ApiError && error.detail.trim()) {
+    return error.detail;
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  return fallback;
+}

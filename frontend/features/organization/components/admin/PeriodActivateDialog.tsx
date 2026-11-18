@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import FormDialog from "@/components/admin/shared/FormDialog";
 
-import { getOrganizationErrorMessage } from "../../errors";
+import { getApiErrorMessage } from "@/lib/api/errors";
 
 import { OrganizationNotice } from "./OrganizationPrimitives";
 
@@ -44,7 +44,7 @@ export default function PeriodActivateDialog({
       setWarnings(nextWarnings);
     } catch (err) {
       setError(
-        getOrganizationErrorMessage(err, "Periode gagal diaktifkan."),
+        getApiErrorMessage(err, "Periode gagal diaktifkan."),
       );
     } finally {
       setIsSaving(false);

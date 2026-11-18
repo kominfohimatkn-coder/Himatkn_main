@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import ConfirmDialog from "@/components/admin/shared/ConfirmDialog";
 
-import { getOrganizationErrorMessage } from "../../errors";
+import { getApiErrorMessage } from "@/lib/api/errors";
 
 import type { AdminPeriod } from "../../types";
 
@@ -33,7 +33,7 @@ export default function PeriodDeleteDialog({
       onClose();
     } catch (err) {
       setError(
-        getOrganizationErrorMessage(err, "Periode gagal dihapus."),
+        getApiErrorMessage(err, "Periode gagal dihapus."),
       );
     } finally {
       setIsDeleting(false);

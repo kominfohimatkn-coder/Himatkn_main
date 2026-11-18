@@ -7,7 +7,7 @@ import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 
-import { getOrganizationErrorMessage } from "../../errors";
+import { getApiErrorMessage } from "@/lib/api/errors";
 
 import { OrganizationNotice } from "./OrganizationPrimitives";
 
@@ -85,7 +85,7 @@ export default function DivisionFormDialog({
       onClose();
     } catch (err) {
       setError(
-        getOrganizationErrorMessage(err, "Divisi gagal disimpan."),
+        getApiErrorMessage(err, "Divisi gagal disimpan."),
       );
     } finally {
       setIsSaving(false);
