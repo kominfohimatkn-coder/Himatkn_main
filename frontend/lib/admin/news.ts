@@ -1,4 +1,5 @@
 import { apiFetch } from "../api/client";
+import { compressImageForUpload } from "../media/compress";
 
 import type {
   AdminNews,
@@ -96,9 +97,10 @@ export async function uploadAdminNewsImage(
     sort_order?: number;
   } = {},
 ): Promise<NewsImage> {
+  const prepared = await compressImageForUpload(file);
   const formData = new FormData();
 
-  formData.append("file", file);
+  formData.append("file", prepared);
 
   if (options.caption !== undefined) {
     formData.append("caption", options.caption);

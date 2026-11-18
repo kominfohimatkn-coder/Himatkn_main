@@ -15,6 +15,7 @@ import {
   login as loginRequest,
   logout as logoutRequest,
 } from "@/lib/api/auth";
+import { hasPermission } from "@/lib/auth/permissions";
 
 import type { Admin, LoginRequest } from "@/types/auth";
 
@@ -22,6 +23,8 @@ interface AuthContextValue {
   admin: Admin | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isSuperadmin: boolean;
+  can: (name: string) => boolean;
   login: (data: LoginRequest) => Promise<Admin>;
   logout: () => Promise<void>;
   refreshAuth: () => Promise<Admin | null>;
@@ -85,6 +88,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   /**
+   * Pemeriksa izin berbasis daftar izin efektif dari backend.
+   */
+  const can = useCallback(
+    (name: string): boolean => hasPermission(admin, name),
+    [admin],
+  );
+
+  /** `roles` dipakai sebagai cadangan bila respons tidak memuat flag. */
+  const isSuperadmin =
+    admin?.is_superadmin === true ||
+    admin?.roles.includes("superadmin") === true;
+
+  /**
    * Inisialisasi autentikasi saat provider dipasang.
    */
   useEffect(() => {
@@ -113,11 +129,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       admin,
       isLoading,
       isAuthenticated: admin !== null,
+      isSuperadmin,
+      can,
       login,
       logout,
       refreshAuth,
     }),
-    [admin, isLoading, login, logout, refreshAuth],
+    [admin, isLoading, isSuperadmin, can, login, logout, refreshAuth],
   );
 
   return (

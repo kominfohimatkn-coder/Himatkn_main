@@ -21,6 +21,8 @@ export const PUBLIC_SETTING_KEYS = [
   "hero_title",
   "hero_emphasis",
   "hero_description",
+  "hero_image",
+  "hero_image_alt",
   "hero_primary_label",
   "hero_secondary_label",
   "about_eyebrow",
@@ -61,7 +63,12 @@ export interface PublicSettingsResponse {
   settings: PublicSettings;
 }
 
-export type AdminSettingType = "text" | "multiline" | "url" | "email";
+export type AdminSettingType =
+  | "text"
+  | "multiline"
+  | "url"
+  | "email"
+  | "image";
 
 export type AdminSettingGroup =
   | "brand"
@@ -84,6 +91,8 @@ export interface AdminSettingItem {
   allowed_hosts: string[];
   updated_by: number | null;
   updated_at: string | null;
+  /** Hanya ada pada item bertipe `image`; `""` bila belum ada gambar. */
+  preview_url?: string;
 }
 
 export interface AdminSettingsResponse {

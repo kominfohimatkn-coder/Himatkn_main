@@ -1,7 +1,12 @@
 
 import { apiFetch, resetCsrfToken } from "./client";
 
-import type { AuthResponse, LoginRequest } from "@/types/auth";
+import type {
+  AuthResponse,
+  ChangePasswordRequest,
+  ChangePasswordResponse,
+  LoginRequest,
+} from "@/types/auth";
 
 /**
  * Login administrator.
@@ -28,6 +33,19 @@ export async function login(
 export function getCurrentAdmin(): Promise<AuthResponse> {
   return apiFetch<AuthResponse>("/auth/me", {
     method: "GET",
+  });
+}
+
+/**
+ * Mengganti kata sandi akun sendiri.
+ * Backend mencabut sesi lain dan mempertahankan sesi saat ini.
+ */
+export function changePassword(
+  data: ChangePasswordRequest,
+): Promise<ChangePasswordResponse> {
+  return apiFetch<ChangePasswordResponse>("/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify(data),
   });
 }
 

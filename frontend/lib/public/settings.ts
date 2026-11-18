@@ -86,6 +86,8 @@ export const PUBLIC_SETTINGS_FALLBACK: PublicSettings = {
   hero_emphasis: "Teknokimia Nuklir",
   hero_description:
     "Wadah mahasiswa Teknokimia Nuklir untuk belajar, berkarya, dan berkontribusi.",
+  hero_image: "",
+  hero_image_alt: "",
   hero_primary_label: "Lihat Program Kerja",
   hero_secondary_label: "Kenali Kami",
   about_eyebrow: "",
