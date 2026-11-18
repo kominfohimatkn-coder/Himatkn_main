@@ -7,6 +7,24 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+ALLOWED_APP_ENVS = {"development", "test", "production"}
+APP_ENV_ALIASES = {
+    "dev": "development",
+    "prod": "production",
+}
+
+WEAK_ADMIN_PASSWORDS = {
+    "admin123",
+    "admin",
+    "password",
+    "changeme",
+    "change_me",
+    "12345678",
+    "123456789012",
+    "himatkn",
+}
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -90,6 +108,20 @@ class Settings(BaseSettings):
     admin_default_password: str
     admin_default_role: str = "superadmin"
 
+    @field_validator("app_env", mode="before")
+    @classmethod
+    def normalize_app_env(cls, value: str) -> str:
+        normalized = str(value).strip().lower()
+        normalized = APP_ENV_ALIASES.get(normalized, normalized)
+
+        if normalized not in ALLOWED_APP_ENVS:
+            raise ValueError(
+                "APP_ENV harus salah satu dari development, test, "
+                "atau production (alias: dev, prod)."
+            )
+
+        return normalized
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(
@@ -130,7 +162,7 @@ class Settings(BaseSettings):
 
     @property
     def production(self) -> bool:
-        return self.app_env.lower() in {"production", "prod"}
+        return self.app_env == "production"
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -149,6 +181,18 @@ class Settings(BaseSettings):
             if len(self.jwt_secret_key) < 32:
                 raise RuntimeError(
                     "JWT_SECRET_KEY minimal 32 karakter pada production."
+                )
+
+            if "change_me" in self.jwt_secret_key.lower():
+                raise RuntimeError(
+                    "JWT_SECRET_KEY tidak boleh memakai placeholder "
+                    "CHANGE_ME pada production."
+                )
+
+            if len(set(self.jwt_secret_key)) < 10:
+                raise RuntimeError(
+                    "JWT_SECRET_KEY terlalu lemah: minimal 10 karakter "
+                    "unik pada production."
                 )
 
             if not self.cookie_secure:
@@ -184,12 +228,22 @@ class Settings(BaseSettings):
                     "ADMIN_DEFAULT_PASSWORD wajib diisi di production."
                 )
 
-            if self.admin_default_password in {
-                "CHANGE_ME",
-                "password",
-            }:
+            normalized_password = self.admin_default_password.strip().lower()
+
+            if len(self.admin_default_password) < 12:
                 raise RuntimeError(
-                    "ADMIN_DEFAULT_PASSWORD harus diganti di production."
+                    "ADMIN_DEFAULT_PASSWORD minimal 12 karakter "
+                    "pada production."
+                )
+
+            if (
+                normalized_password in WEAK_ADMIN_PASSWORDS
+                or "change_me" in normalized_password
+            ):
+                raise RuntimeError(
+                    "ADMIN_DEFAULT_PASSWORD tidak boleh memakai nilai "
+                    "contoh atau placeholder pada production. Gunakan "
+                    "password acak minimal 12 karakter."
                 )
 
             if (

@@ -14,7 +14,7 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 
 ## 1. Current Project State
 
-> Terakhir diperbarui: 17 November 2026 (Batch API-B3d — Foto hero & dokumentasi organisasi; API-B3 selesai). Perbarui bagian ini pada setiap batch.
+> Terakhir diperbarui: 18 November 2026 (Batch SEC-1 — Konfigurasi produksi dan guard superadmin; SEC-T1 ditunda). Perbarui bagian ini pada setiap batch.
 
 ### a. Snapshot repository
 
@@ -767,6 +767,46 @@ Entri sesi sejak 11 November 2026. Append-only: tambahkan entri baru di bawah; j
   - `Backend/docs/ORGANIZATION_API.md` dan regenerasi `routes.txt` ditunda ke B3d agar memuat seluruh endpoint B3.
   - Selama sesi, muncul perubahan lokal pemilik pada `frontend/app/(public)/struktur/loading.tsx` dan `frontend/components/public/OrganizationSection.tsx` (konversi arbitrary value Tailwind); tidak disentuh.
 - **Langkah berikutnya:** B3b (divisi: create/update/delete + salin divisi) setelah pemilik meng-commit B3a.
+
+---
+
+### Sesi 2026-11-18 — Batch SEC-1: Konfigurasi produksi & guard superadmin
+
+- **Status:** Selesai; **berhenti**. Tidak commit, push, deploy, atau menjalankan seed ke database sungguhan.
+- **Branch:** `feat/admin-ui-foundation`; working tree bersih sebelum batch dimulai.
+- **Tujuan batch:** menutup temuan audit SEC-T2, SEC-S3, SEC-S5, dan SEC-S6. **SEC-T1 (matriks permission role) ditunda** menunggu keputusan himpunan soal akun per kadiv; `app/seed.py`, `ROLE_SEEDS`, dan `PERMS` tidak diubah.
+- **Yang selesai:**
+  - **SEC-T2:** `validate_runtime()` production mewajibkan `ADMIN_DEFAULT_PASSWORD` minimal 12 karakter dan menolak nilai contoh (`admin123`, `admin`, `password`, `changeme`, `change_me`, `12345678`, `123456789012`, `himatkn`) serta nilai yang mengandung `CHANGE_ME` (case-insensitive). Pesan error tidak mencetak password. `Backend/.env.example` mengosongkan `ADMIN_DEFAULT_PASSWORD=` dengan komentar kewajiban password acak ≥ 12 karakter dan penggantian via `POST /api/v1/auth/change-password`.
+  - **SEC-S3:** production menolak `JWT_SECRET_KEY` yang mengandung `CHANGE_ME` atau memiliki < 10 karakter unik, selain tetap mewajibkan ≥ 32 karakter. `Backend/.env.example` menambahkan cara membuat secret dengan `python -c "import secrets; print(secrets.token_urlsafe(48))"`.
+  - **SEC-S6:** `APP_ENV` dinormalisasi `strip().lower()`, alias `prod` → `production` dan `dev` → `development`; hanya `development`, `test`, `production` yang diterima, nilai lain (mis. `staging`) gagal saat startup lewat validator Pydantic. Properti `production` memakai nilai ternormalisasi.
+  - **SEC-S5:** `PUT /api/v1/admin/admins/{id}` menolak perubahan role akun sendiri → **400** `Anda tidak dapat mengganti role akun sendiri`. Operasi ganti role, nonaktifkan, atau hapus yang membuat jumlah admin **aktif** pemegang `admins.manage` menjadi 0 → **409** (pesan menyebut `admins.manage`).
+- **File yang diubah:**
+  - `Backend/app/core/config.py`
+  - `Backend/app/routers/admins.py`
+  - `Backend/.env.example`
+  - `Backend/tests/test_config.py`
+  - `Backend/tests/test_admins.py`
+  - `docs/progress.md`
+- **Test yang ditambahkan:**
+  - Config: menolak `admin123`, password 11 karakter, JWT berisi `CHANGE_ME`, JWT `"a"*40`, dan `APP_ENV=staging`; menerima konfigurasi produksi valid; normalisasi alias `APP_ENV`.
+  - Admins: self role change → 400; menonaktifkan, menurunkan, dan menghapus satu-satunya pemegang `admins.manage` → 409.
+- **Pemeriksaan yang dijalankan + hasil:**
+  - `python -m compileall app` → lulus.
+  - `pytest -q` → **213 passed** (baseline 191; +22 test baru), 34 warning deprecation dari dependency.
+  - `alembic check` → `No new upgrade operations detected`.
+- **Risiko/regresi yang diperiksa:**
+  - `conftest.py` memakai `APP_ENV=test`, sesuai nilai yang diizinkan; test lama tetap lulus.
+  - Test guard 409 memakai aktor nonaktif dengan izin `admins.manage` agar target benar-benar menjadi satu-satunya admin aktif pemegang izin; state admin lain dipulihkan setelah test.
+  - Tidak ada perubahan model, migration, `app/seed.py`, `ROLE_SEEDS`, `PERMS`, atau `frontend/`.
+- **Blocker/keputusan yang diperlukan:**
+  - **SEC-T1 ditunda** menunggu keputusan pemilik tentang himpunan soal akun per kadiv.
+  - Tidak ada blocker teknis lain.
+- **Konfirmasi batas scope:**
+  - Backend berubah: Ya — hanya `app/core/config.py`, `app/routers/admins.py`, `.env.example`, dan test terkait.
+  - Database/schema/migration berubah: Tidak.
+  - Secret/kredensial diekspos: Tidak.
+  - Dokumentasi berubah: Ya — `docs/progress.md`.
+- **Langkah berikutnya:** menunggu keputusan SEC-T1, lalu review dan commit oleh pemilik.
 
 ---
 

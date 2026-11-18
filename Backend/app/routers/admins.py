@@ -91,6 +91,59 @@ def _assert_not_self_deactivate(actor: Admin, target: Admin, is_active: bool | N
         )
 
 
+def _assert_not_self_role_change(actor: Admin, target: Admin, role: str | None) -> None:
+    if actor.id == target.id and role is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Anda tidak dapat mengganti role akun sendiri",
+        )
+
+
+def _active_admins_with_permission(db: Session, permission_name: str) -> set[int]:
+    statement = (
+        select(Admin.id)
+        .join(AdminRole, AdminRole.admin_id == Admin.id)
+        .join(RolePermission, RolePermission.role_id == AdminRole.role_id)
+        .join(Permission, Permission.id == RolePermission.permission_id)
+        .where(
+            Admin.is_active.is_(True),
+            Permission.name == permission_name,
+        )
+        .distinct()
+    )
+    return set(db.scalars(statement).all())
+
+
+def _assert_active_manage_admin_remains(
+    db: Session,
+    target: Admin,
+    *,
+    target_stays_active: bool,
+    replacement_role: Role | None = None,
+) -> None:
+    manager_ids = _active_admins_with_permission(db, P_ADMINS_MANAGE)
+
+    if target.id not in manager_ids:
+        return
+
+    remaining = manager_ids - {target.id}
+
+    if target_stays_active:
+        if replacement_role is not None:
+            target_permissions = _permissions_for_role(db, replacement_role.id)
+        else:
+            target_permissions = permissions_for_admin(db, target.id)
+
+        if P_ADMINS_MANAGE in target_permissions:
+            remaining.add(target.id)
+
+    if not remaining:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Operasi ditolak: harus tersisa minimal satu administrator aktif dengan izin admins.manage",
+        )
+
+
 @router.get("")
 def list_admins(
     db: Session = Depends(get_db),
@@ -205,6 +258,8 @@ def update_admin(
     if payload.role is not None:
         replacement_role = _get_role(db, payload.role)
 
+    _assert_not_self_role_change(actor, item, payload.role)
+
     _can_manage_target(
         db,
         actor,
@@ -212,6 +267,17 @@ def update_admin(
         replacement_role=replacement_role,
     )
     _assert_not_self_deactivate(actor, item, payload.is_active)
+
+    _assert_active_manage_admin_remains(
+        db,
+        item,
+        target_stays_active=(
+            payload.is_active
+            if payload.is_active is not None
+            else item.is_active
+        ),
+        replacement_role=replacement_role,
+    )
 
     password_changed = payload.password is not None
     active_changed = payload.is_active is not None
@@ -304,6 +370,12 @@ def delete_admin(
         )
 
     _can_manage_target(db, actor, item)
+
+    _assert_active_manage_admin_remains(
+        db,
+        item,
+        target_stays_active=False,
+    )
 
     try:
         log_activity(
