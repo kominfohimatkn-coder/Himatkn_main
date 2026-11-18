@@ -1,3 +1,9 @@
+import { apiFetch } from "./client";
+import { compressImageForUpload } from "../media/compress";
+import type { UploadImageResponse } from "@/types/media";
+
+export type { UploadImageResponse };
+
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/+$/, "") ?? "";
 
@@ -10,6 +16,31 @@ const API_ORIGIN = (() => {
     return "";
   }
 })();
+
+const MEDIA_IMAGE_PREFIX = "/api/v1/media/images/";
+
+/**
+ * Mengubah storage key gambar V2 (mis. `images/abc.jpg`) menjadi path media
+ * (`/api/v1/media/images/abc.jpg`), selaras dengan `media_image_path` backend.
+ */
+export function mediaPathFromStorageKey(
+  storageKey: string | null | undefined,
+): string | null {
+  if (!storageKey) return null;
+
+  const key = storageKey.trim().replace(/^\/+/, "");
+  if (!key) return null;
+
+  if (key.startsWith("api/v1/media/")) {
+    return `/${key}`;
+  }
+
+  if (key.startsWith("images/")) {
+    return `/api/v1/media/${key}`;
+  }
+
+  return `${MEDIA_IMAGE_PREFIX}${key}`;
+}
 
 /**
  * Backend mengembalikan URL media relatif (mis. `/api/v1/media/...`).
@@ -37,4 +68,18 @@ export function resolveMediaUrl(
   }
 
   return API_URL ? `${API_URL}/${url.replace(/^\/+/, "")}` : null;
+}
+
+/**
+ * Mengunggah gambar ke `POST /media/images` (otomatis mengompres jika perlu).
+ */
+export async function uploadImage(file: File): Promise<UploadImageResponse> {
+  const prepared = await compressImageForUpload(file);
+  const formData = new FormData();
+  formData.append("file", prepared);
+
+  return apiFetch<UploadImageResponse>("/media/images", {
+    method: "POST",
+    body: formData,
+  });
 }

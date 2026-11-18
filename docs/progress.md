@@ -14,7 +14,7 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 
 ## 1. Current Project State
 
-> Terakhir diperbarui: 18 November 2026 (Batch B4b — endpoint kelola akun, guard superadmin, katalog izin, dan dokumentasi `ADMIN_API.md`). Perbarui bagian ini pada setiap batch.
+> Terakhir diperbarui: 18 November 2026 (Batch F2a — service & type admin organisasi lengkap serta upload/kompresi gambar). Perbarui bagian ini pada setiap batch.
 
 ### a. Snapshot repository
 
@@ -44,7 +44,8 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 - Batch B3d (17 Nov) menambahkan setting `hero_image` (tipe `image`) dan `hero_image_alt` (text 200) sehingga registry menjadi **47 key**; validasi storage key gambar V2 + normalisasi path media, `preview_url` di admin settings hanya untuk tipe image, `GET /public/settings` mengirim `hero_image` sebagai path media, dokumentasi `Backend/docs/ORGANIZATION_API.md`, dan regenerasi `Backend/routes.txt` (71 baris). Perubahan berada di working tree; **belum di-commit dan belum di-deploy**.
 - **API-B3 selesai** (B3a–B3d). Frontend **belum sinkron**: API-F2 wajib menambahkan `hero_image` dan `hero_image_alt` ke `PUBLIC_SETTING_KEYS` + `PUBLIC_SETTINGS_FALLBACK`; hero homepage tetap memakai aset statis sampai R3.
 - **Batch B4a** (18 Nov) mengganti model izin menjadi izin langsung per akun: tabel `admin_permissions`, role `admin`/`editor` dihapus, katalog izin + implikasi, dan migrasi `20261118_0002`. Sudah di-commit pemilik sebagai `8ea1771`.
-- **Batch B4b** (18 Nov) menambahkan endpoint kelola akun berbasis superadmin (`GET /admin/admins/permissions`, `POST`/`PUT`/`DELETE /admin/admins`), guard maksimal 2 superadmin dan minimal 1 superadmin aktif, audit spesifik, dokumentasi `Backend/docs/ADMIN_API.md`, serta regenerasi `Backend/routes.txt` (71 baris). Perubahan berada di working tree; **belum di-commit dan belum di-deploy**.
+- **Batch B4b** (18 Nov) menambahkan endpoint kelola akun berbasis superadmin (`GET /admin/admins/permissions`, `POST`/`PUT`/`DELETE /admin/admins`), guard maksimal 2 superadmin dan minimal 1 superadmin aktif, audit spesifik, dokumentasi `Backend/docs/ADMIN_API.md`, serta regenerasi `Backend/routes.txt` (71 baris). Sudah di-commit pemilik sebagai `2af22db`; **belum di-deploy**.
+- **Batch F2a** (18 Nov) melengkapi service & type admin organisasi (`frontend/types/organization.ts`, `frontend/lib/admin/organization.ts`) untuk seluruh endpoint `ORGANIZATION_API.md` (periode, divisi + copy, posisi, anggota) serta upload & kompresi gambar (`frontend/lib/media/compress.ts`, `frontend/lib/api/media.ts`, `frontend/types/media.ts`). Perubahan berada di working tree; **belum di-commit**. Sinkronisasi setting `hero_image`/`hero_image_alt` (47 key), akun/izin (`ADMIN_API.md`), dan `AuthContext` tetap di F2b.
 - URL Instagram `https://www.instagram.com/himatknuklir` **dikonfirmasi pemilik** pada 16 Nov. Konstanta dipertahankan sebagai utang teknis (lihat e.8); parameter share `rpxt` pada URL yang dikirim pemilik dibuang agar tautan stabil.
 
 ### b. Scope fase saat ini
@@ -906,6 +907,33 @@ Entri sesi sejak 11 November 2026. Append-only: tambahkan entri baru di bawah; j
   - Tidak menjalankan migrasi/seed/query tulis ke TiDB/MySQL sungguhan.
   - Tidak membaca/mencetak `.env*`; tidak commit/push/deploy.
 - **Langkah berikutnya:** pemilik meninjau dan meng-commit B4b; API-F2 membangun form centang izin dari `GET /admin/admins/permissions`. **Berhenti.**
+
+---
+
+### Sesi 2026-11-18 — Batch F2a: Service & type admin organisasi lengkap + upload/kompresi gambar
+
+- **Status:** Selesai; berhenti untuk tinjauan. Tidak commit, push, atau deploy.
+- **Branch/HEAD:** `feat/admin-ui-foundation`, HEAD `2af22db` (B4b sudah di-commit pemilik). Working tree bersih sebelum F2a dimulai.
+- **Yang dikerjakan:**
+  - `frontend/types/organization.ts`: mempertahankan seluruh type publik yang sudah ada dan melengkapi type admin sesuai `Backend/docs/ORGANIZATION_API.md` & `Backend/app/schemas/organization.py`: `OrganizationListFilter`, `PeriodCreatePayload`, `PeriodUpdatePayload` (tanpa `is_active`), `PeriodActivateResponse`, `PeriodDeleteResponse`, `DivisionCreatePayload`, `DivisionUpdatePayload` (tanpa `period_id`), `DivisionCopyPayload`, `DivisionCopyResponse`, `DivisionDeleteResponse`, `AdminPosition`, `AdminMember`, `MemberCreatePayload`, dan `MemberUpdatePayload`.
+  - `frontend/lib/admin/organization.ts`: melengkapi seluruh endpoint organisasi admin memakai `apiFetch` dan `{ signal }` untuk semua GET: `getAdminPeriods`, `createAdminPeriod`, `updateAdminPeriod`, `deleteAdminPeriod`, `activateAdminPeriod`, `getAdminDivisions` (tetap kompatibel dengan parameter `periodId?: number`), `createAdminDivision`, `updateAdminDivision`, `deleteAdminDivision`, `copyAdminDivisions`, `getAdminPositions`, `getAdminMembers` (filter `OrganizationListFilter`), `createAdminMember`, `updateAdminMember`, `deleteAdminMember` (HTTP 204 → `void`).
+  - `frontend/types/media.ts` (baru): mendefinisikan `UploadImageResponse` (`storage_key`, `original_size_bytes`, `compressed_size_bytes`).
+  - `frontend/lib/media/compress.ts` (baru): implementasi `compressImageForUpload(file)` tanpa dependency tambahan memakai `createImageBitmap` + `<canvas>`, validasi MIME (`image/jpeg`, `image/png`, `image/webp`) dengan pesan error berbahasa Indonesia, resize maks 2400px atau trigger ukuran > 3,5 MB, re-encode JPEG kualitas `0.85` → `0.75` → `0.65` dengan batas hasil ≤ 3,8 MB, atau mengembalikan file asli bila tidak perlu dikompres.
+  - `frontend/lib/api/media.ts`: mempertahankan `resolveMediaUrl`, menambahkan `mediaPathFromStorageKey(key)` (selaras dengan `media_image_path` di `Backend/app/services/site_settings.py`), dan menambahkan `uploadImage(file)` (`POST /media/images`, memanggil `compressImageForUpload` sebelum upload multipart field `file`).
+- **Pemeriksaan yang dijalankan + hasil:**
+  - `npx tsc --noEmit` (di `frontend/`) — lulus tanpa error atau output.
+  - `npm run lint` (di `frontend/`) — lulus tanpa error atau warning.
+- **File yang diubah/dibuat:**
+  - `frontend/types/organization.ts` (diubah)
+  - `frontend/lib/admin/organization.ts` (diubah)
+  - `frontend/types/media.ts` (baru)
+  - `frontend/lib/media/compress.ts` (baru)
+  - `frontend/lib/api/media.ts` (diubah)
+  - `docs/progress.md` (diubah)
+- **Konfirmasi batas scope:**
+  - Hanya `frontend/lib/`, `frontend/types/`, dan `docs/progress.md` yang diubah (`app/`, `components/`, styling, `Backend/`, `package.json`, `.env*` tidak disentuh).
+  - Tidak install/upgrade paket npm; tidak commit/push/deploy.
+- **Langkah berikutnya:** lanjutkan Batch F2b (settings 47 key, admin akun/izin, `AuthContext`). **Berhenti.**
 
 ---
 
