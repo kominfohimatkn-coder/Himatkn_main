@@ -1,22 +1,14 @@
 import type { ReactNode } from "react";
 
-export type Permission =
-  | "dashboard.view"
-  | "news.view"
-  | "programs.view"
-  | "agendas.view"
-  | "organization.view"
-  | "documents.view"
-  | "notifications.view"
-  | "settings.view"
-  | "admins.view"
-  | "activity_logs.view"
-  | "visitor_logs.view";
+import {
+  PERMISSIONS,
+  type PermissionName,
+} from "@/features/auth/permissions";
 
 export interface NavItem {
   href: string;
   label: string;
-  permission: Permission;
+  permission: PermissionName;
   icon: ReactNode;
   exact?: boolean;
 }
@@ -40,7 +32,7 @@ export const primaryNavItems: NavItem[] = [
   {
     href: "/admin/dashboard",
     label: "Dashboard",
-    permission: "dashboard.view",
+    permission: PERMISSIONS.DASHBOARD_VIEW,
     exact: true,
     icon: (
       <NavIcon>
@@ -56,7 +48,7 @@ export const primaryNavItems: NavItem[] = [
   {
     href: "/admin/news",
     label: "News",
-    permission: "news.view",
+    permission: PERMISSIONS.NEWS_VIEW,
     icon: (
       <NavIcon>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -69,7 +61,7 @@ export const primaryNavItems: NavItem[] = [
   {
     href: "/admin/programs",
     label: "Program Kerja",
-    permission: "programs.view",
+    permission: PERMISSIONS.PROGRAMS_VIEW,
     icon: (
       <NavIcon>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -82,7 +74,7 @@ export const primaryNavItems: NavItem[] = [
   {
     href: "/admin/agendas",
     label: "Agenda",
-    permission: "agendas.view",
+    permission: PERMISSIONS.AGENDAS_VIEW,
     icon: (
       <NavIcon>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -95,7 +87,7 @@ export const primaryNavItems: NavItem[] = [
   {
     href: "/admin/organization",
     label: "Organisasi",
-    permission: "organization.view",
+    permission: PERMISSIONS.ORGANIZATION_VIEW,
     icon: (
       <NavIcon>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -109,7 +101,7 @@ export const primaryNavItems: NavItem[] = [
   {
     href: "/admin/documents",
     label: "Dokumen",
-    permission: "documents.view",
+    permission: PERMISSIONS.DOCUMENTS_VIEW,
     icon: (
       <NavIcon>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -125,7 +117,7 @@ export const managementNavItems: NavItem[] = [
   {
     href: "/admin/notifications",
     label: "Notifikasi",
-    permission: "notifications.view",
+    permission: PERMISSIONS.NOTIFICATIONS_VIEW,
     icon: (
       <NavIcon>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -138,7 +130,7 @@ export const managementNavItems: NavItem[] = [
   {
     href: "/admin/admins",
     label: "Administrator",
-    permission: "admins.view",
+    permission: PERMISSIONS.ADMINS_VIEW,
     icon: (
       <NavIcon>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -152,7 +144,7 @@ export const managementNavItems: NavItem[] = [
   {
     href: "/admin/activity-logs",
     label: "Activity Logs",
-    permission: "activity_logs.view",
+    permission: PERMISSIONS.ACTIVITY_LOGS_VIEW,
     icon: (
       <NavIcon>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -165,7 +157,7 @@ export const managementNavItems: NavItem[] = [
   {
     href: "/admin/visitor-logs",
     label: "Visitor Logs",
-    permission: "visitor_logs.view",
+    permission: PERMISSIONS.VISITOR_LOGS_VIEW,
     icon: (
       <NavIcon>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -178,7 +170,7 @@ export const managementNavItems: NavItem[] = [
   {
     href: "/admin/settings",
     label: "Pengaturan",
-    permission: "settings.view",
+    permission: PERMISSIONS.SETTINGS_VIEW,
     icon: (
       <NavIcon>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">

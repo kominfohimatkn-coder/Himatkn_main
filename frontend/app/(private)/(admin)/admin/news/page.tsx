@@ -3,7 +3,9 @@
 
 import { useEffect, useState } from "react";
 
+import { RequirePermission } from "@/components/admin/shared/RequirePermission";
 import { useAuth } from "@/features/auth/AuthContext";
+import { PERMISSIONS } from "@/features/auth/permissions";
 import { getAdminNews } from "@/features/news/admin-api";
 
 import type { AdminNews } from "@/features/news/types";
@@ -14,9 +16,10 @@ const REQUEST_SIZE = PAGE_SIZE + 1;
 
 
 export default function NewsPage() {
-  const { admin } = useAuth();
+  const { admin, can } = useAuth();
 
-  const canView = admin?.permissions.includes("news.view") ?? false;
+  const canView = can(PERMISSIONS.NEWS_VIEW);
+  const canCreate = can(PERMISSIONS.NEWS_CREATE);
 
   const [items, setItems] = useState<AdminNews[]>([]);
   const [offset, setOffset] = useState(0);
@@ -92,53 +95,39 @@ export default function NewsPage() {
 
   if (!admin) return null;
 
-  if (!canView) {
-    return (
-      <main className="min-h-screen bg-bg-light px-4 py-8 text-ink">
-        <section className="mx-auto max-w-5xl border border-paper-line p-6">
-          <h1 className="font-serif text-2xl font-semibold text-bg-dark">
-            Akses tidak tersedia
-          </h1>
-
-          <p className="mt-2 text-sm leading-6 text-ink-soft">
-            Akun ini belum memiliki izin news.view untuk melihat berita.
-          </p>
-        </section>
-      </main>
-    );
-  }
-
   return (
-    <main className="min-h-screen bg-bg-light text-ink">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-        <header className="border-b border-paper-line pb-5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-gold">
-            Konten / Publikasi
-          </p>
+    <RequirePermission permission={PERMISSIONS.NEWS_VIEW}>
+      <main className="min-h-screen bg-bg-light text-ink">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+          <header className="border-b border-paper-line pb-5">
+            <p className="text-xs font-semibold uppercase tracking-widest text-gold">
+              Konten / Publikasi
+            </p>
 
-          <h1 className="mt-3 font-serif text-3xl font-semibold text-bg-dark sm:text-4xl">
-            Manajemen Berita
-          </h1>
+            <h1 className="mt-3 font-serif text-3xl font-semibold text-bg-dark sm:text-4xl">
+              Manajemen Berita
+            </h1>
 
-          <p className="mt-2 max-w-xl text-sm leading-6 text-ink-soft">
-            Kelola dan pantau berita yang tersimpan dalam sistem.
-          </p>
-        </header>
-        <NewsList
-          items={items}
-          isLoading={isLoading}
-          listError={error}
-          statusFilter={statusFilter}
-          offset={offset}
-          hasNextPage={hasNext}
-          canCreate={false}
-          onStatusChange={changeStatus}
-          onReload={reloadNews}
-          onCreate={() => {}}
-          onPageChange={changePage}
-          renderActions={() => null}
-        />
-      </div>
-    </main>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-ink-soft">
+              Kelola dan pantau berita yang tersimpan dalam sistem.
+            </p>
+          </header>
+          <NewsList
+            items={items}
+            isLoading={isLoading}
+            listError={error}
+            statusFilter={statusFilter}
+            offset={offset}
+            hasNextPage={hasNext}
+            canCreate={canCreate}
+            onStatusChange={changeStatus}
+            onReload={reloadNews}
+            onCreate={() => {}}
+            onPageChange={changePage}
+            renderActions={() => null}
+          />
+        </div>
+      </main>
+    </RequirePermission>
   );
 }

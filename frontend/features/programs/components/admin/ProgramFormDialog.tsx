@@ -4,6 +4,10 @@
 import { useEffect, useState, type FormEvent } from "react";
 
 import FormDialog from "@/components/admin/shared/FormDialog";
+import { FormField } from "@/components/ui/FormField";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
 import { getAdminDivisions } from "@/features/organization/admin-api";
 import {
   normalizeProgramStatus,
@@ -41,11 +45,6 @@ interface DivisionLoadState {
   items: AdminDivision[];
   error: string;
 }
-
-const inputStyle =
-  "min-h-11 w-full border border-paper-line bg-bg-light px-3 py-2 text-sm text-ink outline-none focus:border-gold focus:ring-2 focus:ring-gold/20 disabled:cursor-not-allowed disabled:opacity-60";
-
-const labelStyle = "mb-1.5 block text-sm font-medium text-ink";
 
 export default function ProgramFormDialog({
   program,
@@ -229,12 +228,8 @@ export default function ProgramFormDialog({
           </div>
         )}
 
-        <div>
-          <label htmlFor="program-name" className={labelStyle}>
-            Nama program
-          </label>
-
-          <input
+        <FormField label="Nama program" required>
+          <Input
             id="program-name"
             name="name"
             value={form.name}
@@ -244,17 +239,16 @@ export default function ProgramFormDialog({
             minLength={2}
             maxLength={255}
             required
-            className={inputStyle}
             placeholder="Contoh: Seminar Nasional"
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label htmlFor="program-slug" className={labelStyle}>
-            Slug
-          </label>
-
-          <input
+        <FormField
+          label="Slug"
+          hint="Gunakan format singkat tanpa spasi, misalnya seminar-nasional."
+          required
+        >
+          <Input
             id="program-slug"
             name="slug"
             value={form.slug}
@@ -264,22 +258,12 @@ export default function ProgramFormDialog({
             minLength={2}
             maxLength={255}
             required
-            className={inputStyle}
             placeholder="seminar-nasional"
           />
+        </FormField>
 
-          <p className="mt-1 text-xs leading-5 text-ink-soft">
-            Gunakan format singkat tanpa spasi, misalnya
-            seminar-nasional.
-          </p>
-        </div>
-
-        <div>
-          <label htmlFor="program-period" className={labelStyle}>
-            Periode organisasi
-          </label>
-
-          <select
+        <FormField label="Periode organisasi" required>
+          <Select
             id="program-period"
             name="period_id"
             value={form.period_id}
@@ -290,13 +274,9 @@ export default function ProgramFormDialog({
                 division_id: "",
               }));
             }}
+            placeholder="Pilih periode"
             required
-            className={inputStyle}
           >
-            {!form.period_id && (
-              <option value="">Pilih periode</option>
-            )}
-
             {program &&
               !periods.some(
                 (period) => period.id === program.period_id,
@@ -312,15 +292,18 @@ export default function ProgramFormDialog({
                 {period.is_active ? " (aktif)" : ""}
               </option>
             ))}
-          </select>
-        </div>
+          </Select>
+        </FormField>
 
-        <div>
-          <label htmlFor="program-division" className={labelStyle}>
-            Divisi
-          </label>
-
-          <select
+        <FormField
+          label="Divisi"
+          error={
+            divisionError
+              ? `Daftar divisi gagal dimuat: ${divisionError}`
+              : undefined
+          }
+        >
+          <Select
             id="program-division"
             name="division_id"
             value={form.division_id}
@@ -328,7 +311,6 @@ export default function ProgramFormDialog({
               updateField("division_id", event.target.value)
             }
             disabled={!form.period_id || Boolean(divisionError)}
-            className={inputStyle}
           >
             <option value="">Tidak terkait divisi tertentu</option>
 
@@ -350,24 +332,11 @@ export default function ProgramFormDialog({
                 {division.name}
               </option>
             ))}
-          </select>
+          </Select>
+        </FormField>
 
-          {divisionError && (
-            <p role="alert" className="mt-1 text-xs text-red-700">
-              Daftar divisi gagal dimuat: {divisionError}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label
-            htmlFor="program-description"
-            className={labelStyle}
-          >
-            Deskripsi
-          </label>
-
-          <textarea
+        <FormField label="Deskripsi">
+          <Textarea
             id="program-description"
             name="description"
             value={form.description}
@@ -375,17 +344,12 @@ export default function ProgramFormDialog({
               updateField("description", event.target.value)
             }
             rows={4}
-            className={inputStyle}
             placeholder="Jelaskan tujuan program kerja..."
           />
-        </div>
+        </FormField>
 
-        <div>
-          <label htmlFor="program-status" className={labelStyle}>
-            Status
-          </label>
-
-          <select
+        <FormField label="Status" required>
+          <Select
             id="program-status"
             name="status"
             value={selectedStatus ?? ""}
@@ -393,7 +357,6 @@ export default function ProgramFormDialog({
               updateField("status", event.target.value)
             }
             required
-            className={inputStyle}
           >
             <option value="" disabled>
               {hasLegacyStatus
@@ -406,19 +369,12 @@ export default function ProgramFormDialog({
                 {programStatusLabel(status)}
               </option>
             ))}
-          </select>
-        </div>
+          </Select>
+        </FormField>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label
-              htmlFor="program-start-date"
-              className={labelStyle}
-            >
-              Tanggal mulai
-            </label>
-
-            <input
+          <FormField label="Tanggal mulai">
+            <Input
               id="program-start-date"
               name="start_date"
               type="date"
@@ -426,19 +382,11 @@ export default function ProgramFormDialog({
               onChange={(event) =>
                 updateField("start_date", event.target.value)
               }
-              className={inputStyle}
             />
-          </div>
+          </FormField>
 
-          <div>
-            <label
-              htmlFor="program-end-date"
-              className={labelStyle}
-            >
-              Tanggal selesai
-            </label>
-
-            <input
+          <FormField label="Tanggal selesai">
+            <Input
               id="program-end-date"
               name="end_date"
               type="date"
@@ -446,9 +394,8 @@ export default function ProgramFormDialog({
               onChange={(event) =>
                 updateField("end_date", event.target.value)
               }
-              className={inputStyle}
             />
-          </div>
+          </FormField>
         </div>
 
         {error && (

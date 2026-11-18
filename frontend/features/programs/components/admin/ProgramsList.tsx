@@ -1,6 +1,9 @@
 import type { AdminProgram } from "../../types";
 import type { AdminPeriod } from "@/features/organization/types";
 
+import { Can } from "@/components/admin/shared/Can";
+import { PERMISSIONS } from "@/features/auth/permissions";
+
 import {
   formatProgramDate,
   ProgramStatusBadge,
@@ -13,7 +16,6 @@ interface ProgramsListProps {
   error: string;
   offset: number;
   hasNextPage: boolean;
-  canManage: boolean;
   onReload: () => void;
   onPageChange: (offset: number) => void;
   onCreate: () => void;
@@ -33,7 +35,6 @@ export default function ProgramsList({
   error,
   offset,
   hasNextPage,
-  canManage,
   onReload,
   onPageChange,
   onCreate,
@@ -77,7 +78,7 @@ export default function ProgramsList({
             Muat ulang
           </button>
 
-          {canManage && (
+          <Can permission={PERMISSIONS.PROGRAMS_MANAGE}>
             <button
               type="button"
               onClick={onCreate}
@@ -86,7 +87,7 @@ export default function ProgramsList({
             >
               Tambah program
             </button>
-          )}
+          </Can>
         </div>
       </div>
 
@@ -135,7 +136,7 @@ export default function ProgramsList({
               Program yang tersedia akan muncul di bagian ini.
             </p>
 
-            {canManage && (
+            <Can permission={PERMISSIONS.PROGRAMS_MANAGE}>
               <button
                 type="button"
                 onClick={onCreate}
@@ -143,7 +144,7 @@ export default function ProgramsList({
               >
                 Tambah program pertama
               </button>
-            )}
+            </Can>
           </div>
         ) : (
           <>
@@ -163,11 +164,11 @@ export default function ProgramsList({
                     <th scope="col" className="px-5 py-3">
                       Jadwal
                     </th>
-                    {canManage && (
+                    <Can permission={PERMISSIONS.PROGRAMS_MANAGE}>
                       <th scope="col" className="px-5 py-3">
                         Aksi
                       </th>
-                    )}
+                    </Can>
                   </tr>
                 </thead>
 
@@ -211,7 +212,7 @@ export default function ProgramsList({
                         </p>
                       </td>
 
-                      {canManage && (
+                      <Can permission={PERMISSIONS.PROGRAMS_MANAGE}>
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-2">
                             <button
@@ -231,7 +232,7 @@ export default function ProgramsList({
                             </button>
                           </div>
                         </td>
-                      )}
+                      </Can>
                     </tr>
                   ))}
                 </tbody>

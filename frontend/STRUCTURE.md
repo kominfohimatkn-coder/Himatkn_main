@@ -12,7 +12,7 @@ frontend/
 ├── components/
 │   ├── admin/
 │   │   ├── shell/                # AdminShell, AdminSidebar, admin-navigation
-│   │   └── shared/               # ConfirmDialog, FormDialog
+│   │   └── shared/               # Can, RequirePermission, ConfirmDialog, FormDialog
 │   ├── public/                   # Komponen publik lintas fitur
 │   │   ├── PublicButton.tsx
 │   │   ├── PublicImage.tsx
@@ -22,7 +22,12 @@ frontend/
 │   │   ├── SiteFooter.tsx
 │   │   └── SiteHeader.tsx
 │   └── ui/
-│       └── Button.tsx
+│       ├── Button.tsx
+│       ├── Checkbox.tsx
+│       ├── FormField.tsx
+│       ├── Input.tsx
+│       ├── Select.tsx
+│       └── Textarea.tsx
 ├── features/
 │   ├── accounts/
 │   │   ├── api.ts
@@ -91,9 +96,10 @@ misalnya `features/auth/permissions.ts`, `features/auth/AuthContext.tsx`,
 - `lib/api/client.ts` dan `lib/api/errors.ts`: infrastruktur HTTP/error yang
   dipakai semua fitur.
 - `lib/media/`: utilitas media bersama (`api.ts`, `compress.ts`, `types.ts`).
-- `components/ui/`: primitif UI umum (saat ini `Button.tsx`).
-- `components/admin/shell/` dan `components/admin/shared/`: kerangka admin dan
-  dialog bersama.
+- `components/ui/`: primitif UI umum (`Button`, `Input`, `Textarea`,
+  `Select`, `Checkbox`, `FormField`).
+- `components/admin/shell/` dan `components/admin/shared/`: kerangka admin,
+  dialog bersama, dan gerbang izin (`Can`, `RequirePermission`).
 - `components/public/`: komponen publik yang dipakai lebih dari satu fitur.
 - `app/`: route Next.js. Route hanya merangkai fitur; logika domain berada di
   `features/`.
@@ -113,6 +119,62 @@ bukan di `components/`.
    - `@/features/organization/admin-api`
 3. Jangan membuat file barrel `index.ts` dan jangan mengubah urutan ekspor hanya
    demi pemindahan file.
+
+## Komponen form dan gerbang izin
+
+Primitif form di `components/ui/` meneruskan `ref` (React 19: `ref` sebagai
+prop biasa) dan seluruh props native elemennya:
+
+| Komponen | Props tambahan | Catatan |
+|---|---|---|
+| `Input` | `invalid?: boolean` | Border `danger` + `aria-invalid`. |
+| `Textarea` | `invalid?: boolean` | `rows` default 4, resize vertikal. |
+| `Select` | `invalid?: boolean`, `placeholder?: string` | `<select>` native; placeholder dirender sebagai `<option value="" disabled>`. Panah memakai SVG inline. |
+| `Checkbox` | `label`, `description?` | Label membungkus input sehingga seluruh area teks dapat diklik. |
+| `FormField` | `label`, `hint?`, `error?`, `required?`, `id?` | Membungkus satu kontrol form. |
+
+`FormField` memakai `useId` bila `id` tidak diberikan, lalu menghubungkan
+`htmlFor`/`id`, `aria-describedby` ke hint/error, menandai wajib, dan
+menampilkan error dengan `role="alert"`. Pola penghubungnya adalah
+`cloneElement`: anak harus satu elemen kontrol form (`Input`, `Textarea`,
+`Select`, atau `Checkbox`). `FormField` menyuntikkan `id`, `required`,
+`aria-describedby`, dan `aria-invalid` ke anak tersebut.
+
+```tsx
+<FormField label="Nama program" hint="Slug dibuat terpisah." required
+  error={errors.name}>
+  <Input
+    name="name"
+    value={name}
+    onChange={(event) => setName(event.target.value)}
+    invalid={Boolean(errors.name)}
+  />
+</FormField>
+```
+
+Gerbang izin memakai `useAuth()` dan konstanta `PERMISSIONS` dari
+`features/auth/permissions.ts`; jangan menulis string izin manual:
+
+- `components/admin/shared/Can.tsx` — menyembunyikan elemen (misalnya tombol)
+  bila izin tidak ada. Props: `permission`, `anyOf`, `fallback`, `children`.
+- `components/admin/shared/RequirePermission.tsx` — membungkus halaman. Props:
+  `permission`, `anyOf`, `superadminOnly`, `children`. Saat auth masih memuat
+  tampil state loading admin; bila tidak diizinkan tampil panel "Anda tidak
+  memiliki akses ke halaman ini" dan tombol kembali ke Dashboard (tanpa
+  redirect otomatis).
+
+```tsx
+<RequirePermission permission={PERMISSIONS.PROGRAMS_VIEW}>
+  <ProgramsPageContent />
+</RequirePermission>
+
+<Can permission={PERMISSIONS.PROGRAMS_MANAGE}>
+  <button type="button">Tambah program</button>
+</Can>
+```
+
+Gerbang ini hanya untuk tampilan. Backend tetap penentu akhir dan dapat
+mengembalikan 403.
 
 ## Catatan batch wiring
 

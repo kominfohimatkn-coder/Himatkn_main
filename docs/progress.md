@@ -14,7 +14,7 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 
 ## 1. Current Project State
 
-> Terakhir diperbarui: 18 November 2026 (Batch F2b — auth/akun admin/pengaturan 47 key selesai; frontend siap untuk halaman admin). Perbarui bagian ini pada setiap batch.
+> Terakhir diperbarui: 18 November 2026 (Batch UI-0 — primitif form admin & gerbang izin selesai di working tree). Perbarui bagian ini pada setiap batch.
 
 ### a. Snapshot repository
 
@@ -47,6 +47,7 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 - **Batch B4b** (18 Nov) menambahkan endpoint kelola akun berbasis superadmin (`GET /admin/admins/permissions`, `POST`/`PUT`/`DELETE /admin/admins`), guard maksimal 2 superadmin dan minimal 1 superadmin aktif, audit spesifik, dokumentasi `Backend/docs/ADMIN_API.md`, serta regenerasi `Backend/routes.txt` (71 baris). Sudah di-commit pemilik sebagai `2af22db`; **belum di-deploy**.
 - **Batch F2a** (18 Nov) melengkapi service & type admin organisasi (`frontend/types/organization.ts`, `frontend/lib/admin/organization.ts`) untuk seluruh endpoint `ORGANIZATION_API.md` (periode, divisi + copy, posisi, anggota) serta upload & kompresi gambar (`frontend/lib/media/compress.ts`, `frontend/lib/api/media.ts`, `frontend/types/media.ts`). Sudah di-commit pemilik sebagai `fd60056`.
 - **Batch F2b** (18 Nov) menyelesaikan API-F2 di frontend: `Admin.is_superadmin` + `changePassword()`, helper izin `frontend/lib/auth/permissions.ts`, `can()`/`isSuperadmin` di `AuthContext`, service/type akun admin + katalog izin + `applyPermissionImplications`, sinkronisasi settings **47 key** (`hero_image`, `hero_image_alt`, tipe `image`, `preview_url`), dan kompresi `uploadAdminNewsImage`. Perubahan berada di working tree; **belum di-commit**. Frontend siap untuk halaman admin, tetapi UI-nya belum dibuat.
+- **Batch UI-0** (18 Nov) menambahkan primitif form `components/ui/` (`Input`, `Textarea`, `Select`, `Checkbox`, `FormField`) dan gerbang izin `components/admin/shared/` (`Can`, `RequirePermission`); form program, filter berita, serta halaman dashboard/news/programs sudah memakainya, dan navigasi memakai `PERMISSIONS`. Perubahan berada di working tree; **belum di-commit**.
 - URL Instagram `https://www.instagram.com/himatknuklir` **dikonfirmasi pemilik** pada 16 Nov. Konstanta dipertahankan sebagai utang teknis (lihat e.8); parameter share `rpxt` pada URL yang dikirim pemilik dibuang agar tautan stabil.
 
 ### b. Scope fase saat ini
@@ -982,6 +983,107 @@ Entri sesi sejak 11 November 2026. Append-only: tambahkan entri baru di bawah; j
   - Hanya `frontend/lib/`, `frontend/types/`, `frontend/context/AuthContext.tsx`, dan `docs/progress.md` yang diubah. `app/`, `components/`, styling, `Backend/`, `package.json`, dan `.env*` tidak disentuh.
   - Tidak install/upgrade paket npm; tidak commit/push/deploy.
 - **Langkah berikutnya:** bangun halaman/form admin (kelola akun + centang izin, pengaturan termasuk unggah foto hero, ganti kata sandi) memakai service F2b. Backend perlu menambahkan `is_superadmin` ke `AdminOut`. **Berhenti.**
+
+---
+
+### Sesi 2026-11-18 — Batch UI-0: Komponen form dasar + gerbang izin admin
+
+- **Status:** Selesai; tidak commit, push, merge, rebase, atau deploy.
+- **Branch:** `feat/admin-ui-foundation`. Working tree bersih sebelum batch dimulai.
+- **Tujuan batch:** menambah primitif form admin (`Input`, `Textarea`, `Select`,
+  `Checkbox`, `FormField`) dan gerbang izin (`Can`, `RequirePermission`),
+  memakainya pada form/filter yang sudah ada, serta mengganti nama izin manual
+  di navigasi admin dengan konstanta `PERMISSIONS`. Tanpa perubahan backend,
+  dependency, halaman publik, atau alur submit.
+- **Yang selesai:**
+  - `frontend/components/ui/Input.tsx` (baru): `<input>` dengan `invalid?`,
+    `aria-invalid`, border/ring `gold` saat fokus, state `disabled`, dan
+    penerusan `ref`/props native React 19.
+  - `frontend/components/ui/Textarea.tsx` (baru): sama seperti `Input`,
+    `rows` default 4, `resize-y`.
+  - `frontend/components/ui/Select.tsx` (baru): `<select>` native, panah SVG
+    inline, `invalid?`, dan `placeholder?` yang dirender sebagai
+    `<option value="" disabled>`.
+  - `frontend/components/ui/Checkbox.tsx` (baru): input checkbox + label dan
+    `description?`; seluruh area label dapat diklik.
+  - `frontend/components/ui/FormField.tsx` (baru): label, `hint?`, `error?`,
+    `required?`; memakai `useId` bila `id` tidak diberikan, menghubungkan
+    `htmlFor`/`id` dan `aria-describedby`, menampilkan tanda wajib, serta error
+    `role="alert"` berwarna `danger`. Pola penghubung: `cloneElement` ke satu
+    kontrol anak (menyuntikkan `id`, `required`, `aria-describedby`,
+    `aria-invalid`).
+  - `frontend/components/admin/shared/Can.tsx` (baru): `permission`/`anyOf` +
+    `fallback?`, memakai `useAuth()` (`can`, `isSuperadmin`).
+  - `frontend/components/admin/shared/RequirePermission.tsx` (baru):
+    `permission`/`anyOf`/`superadminOnly`, state loading sama dengan layout
+    admin, panel "Anda tidak memiliki akses ke halaman ini" + tombol kembali
+    ke Dashboard tanpa redirect otomatis.
+  - `frontend/components/admin/shell/admin-navigation.tsx`: type `Permission`
+    lokal dihapus; `NavItem.permission` memakai `PermissionName`, seluruh isi
+    navigasi memakai `PERMISSIONS.*`. Item menu dan perilaku filter tidak
+    berubah.
+  - `frontend/features/programs/components/admin/ProgramFormDialog.tsx`:
+    seluruh `<input>`, `<select>`, `<textarea>` diganti `FormField` +
+    `Input`/`Select`/`Textarea`. Nama field, nilai, validasi, dan alur submit
+    tidak diubah.
+  - `frontend/features/news/components/admin/NewsList.tsx`: filter status
+    diganti `FormField` + `Select`; class input/label lokal dihapus. Kontrol
+    lain tidak diubah.
+  - `frontend/features/programs/components/admin/ProgramsList.tsx`: tombol
+    tambah/edit/hapus dan kolom aksi digerbang `Can permission=
+    {PERMISSIONS.PROGRAMS_MANAGE}`; prop `canManage` dihapus dari komponen
+    karena gerbang kini memakai konteks auth.
+  - Halaman admin:
+    - `dashboard` dibungkus `RequirePermission` `dashboard.view`; blok akses
+      ditolak lokal dihapus karena sudah ditangani pembungkus.
+    - `news` dibungkus `RequirePermission` `news.view`; `canCreate` memakai
+      `news.create`.
+    - `programs` dibungkus `RequirePermission` `programs.view`; tambah/ubah/
+      hapus memakai `programs.manage`.
+  - `frontend/STRUCTURE.md`: daftar komponen `components/ui/`, API props, pola
+    `FormField`, dan contoh pemakaian `Can`/`RequirePermission`.
+- **File yang dibuat:** `frontend/components/ui/{Input,Textarea,Select,Checkbox,FormField}.tsx`,
+  `frontend/components/admin/shared/{Can,RequirePermission}.tsx`.
+- **File yang diubah:** `frontend/app/(private)/(admin)/admin/{dashboard,news,programs}/page.tsx`,
+  `frontend/components/admin/shell/admin-navigation.tsx`,
+  `frontend/features/news/components/admin/NewsList.tsx`,
+  `frontend/features/programs/components/admin/{ProgramFormDialog,ProgramsList}.tsx`,
+  `frontend/STRUCTURE.md`, `docs/progress.md`.
+- **Pemeriksaan yang dijalankan + hasil aktual:**
+  - `npx tsc --noEmit` di `frontend/` — lulus tanpa output/error (exit 0).
+  - `npm run lint` di `frontend/` — lulus tanpa error/warning (exit 0).
+  - `npm run build` di `frontend/` — sukses; 9 route dihasilkan
+    (`/`, `/struktur`, `/login`, `/admin/dashboard`, `/admin/news`,
+    `/admin/programs`, `/_not-found`, `/robots.txt`, `/sitemap.xml`).
+  - Grep `<input`/`<select`/`<textarea` mentah pada `ProgramFormDialog.tsx`
+    dan `NewsList.tsx` — tidak ada hasil. Tidak ada `type="file"` di kedua file
+    maupun di `frontend/features`.
+- **Risiko/regresi yang diperiksa:**
+  - Form program tetap memakai field, nilai awal, validasi (`required`,
+    `minLength`, `maxLength`, urutan tanggal, status), dan payload yang sama.
+  - `Select` tetap native; placeholder hanya opsi kosong `disabled`, sehingga
+    perilaku pilihan dan keyboard tetap standar.
+  - Sidebar tetap memfilter item dengan daftar izin yang sama; tidak ada item
+    menu baru.
+  - `FormField` memakai `cloneElement`, jadi anak harus satu kontrol form.
+    Dokumentasi di `STRUCTURE.md` mencantumkan batasan ini.
+  - `news.update` dan `news.delete` belum punya kontrol di halaman news karena
+    halaman masih read-only; belum ada tombol edit/hapus untuk digerbang.
+    Tombol tambah kini mengikuti `news.create`, tetapi handler `onCreate` masih
+    stub lama (alur tambah belum dibuat).
+- **Blocker/keputusan yang diperlukan:** Tidak ada blocker teknis. Alur
+  tambah/ubah/hapus berita masih menjadi pekerjaan batch berikutnya.
+- **Konfirmasi batas scope:**
+  - Backend berubah: Tidak.
+  - Database/schema/migration berubah: Tidak.
+  - API contract/client/auth/CSRF/RBAC/cookie policy berubah: Tidak.
+  - Dependency, `.env*`, deployment, secret, atau konfigurasi environment
+    berubah: Tidak.
+  - Halaman/komponen publik berubah: Tidak (login dan
+    `StructureDirectory.tsx` tidak disentuh).
+- **Langkah berikutnya:** lanjutkan batch UI admin berikutnya (form/halaman
+  baru) memakai primitif dan gerbang izin ini; lengkapi alur tambah/ubah/hapus
+  berita agar `news.update`/`news.delete` punya kontrol nyata.
 
 ---
 

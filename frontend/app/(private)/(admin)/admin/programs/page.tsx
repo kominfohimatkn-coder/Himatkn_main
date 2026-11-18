@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 
+import { RequirePermission } from "@/components/admin/shared/RequirePermission";
 import { useAuth } from "@/features/auth/AuthContext";
+import { PERMISSIONS } from "@/features/auth/permissions";
 
 import {
   createAdminProgram,
@@ -31,11 +33,10 @@ type ProgramFormTarget = {
 };
 
 export default function ProgramsPage() {
-  const { admin } = useAuth();
+  const { admin, can } = useAuth();
 
-  const canView = admin?.permissions.includes("programs.view") ?? false;
-  const canManage =
-    admin?.permissions.includes("programs.manage") ?? false;
+  const canView = can(PERMISSIONS.PROGRAMS_VIEW);
+  const canManage = can(PERMISSIONS.PROGRAMS_MANAGE);
 
   const [items, setItems] = useState<AdminProgram[]>([]);
   const [offset, setOffset] = useState(0);
@@ -129,23 +130,6 @@ export default function ProgramsPage() {
 
   if (!admin) return null;
 
-  if (!canView) {
-    return (
-      <main className="min-h-screen bg-bg-light px-4 py-8 text-ink">
-        <section className="mx-auto max-w-5xl border border-paper-line p-6">
-          <h1 className="font-serif text-2xl font-semibold text-bg-dark">
-            Akses tidak tersedia
-          </h1>
-
-          <p className="mt-2 text-sm leading-6 text-ink-soft">
-            Akun ini belum memiliki izin programs.view untuk melihat
-            program kerja.
-          </p>
-        </section>
-      </main>
-    );
-  }
-
   function reloadPrograms() {
     setListError("");
     setIsLoading(true);
@@ -184,8 +168,9 @@ export default function ProgramsPage() {
     periods.length > 0;
 
   return (
-    <main className="min-h-screen bg-bg-light text-ink">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+    <RequirePermission permission={PERMISSIONS.PROGRAMS_VIEW}>
+      <main className="min-h-screen bg-bg-light text-ink">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         <header className="border-b border-paper-line pb-5">
           <p className="text-xs font-semibold uppercase tracking-widest text-gold">
             Konten / Program kerja
@@ -219,7 +204,6 @@ export default function ProgramsPage() {
           error={listError}
           offset={offset}
           hasNextPage={hasNextPage}
-          canManage={canManage}
           onReload={reloadPrograms}
           onPageChange={changePage}
           onCreate={() => {
@@ -259,6 +243,7 @@ export default function ProgramsPage() {
           />
         )}
       </div>
-    </main>
+      </main>
+    </RequirePermission>
   );
 }

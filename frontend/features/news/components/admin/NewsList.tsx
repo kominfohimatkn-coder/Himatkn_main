@@ -1,6 +1,9 @@
 
 import type { ReactNode } from "react";
 
+import { FormField } from "@/components/ui/FormField";
+import { Select } from "@/components/ui/Select";
+
 import type { AdminNews, NewsStatus } from "../../types";
 
 import { NewsListSkeleton } from "./NewsOverlays";
@@ -27,11 +30,8 @@ type NewsListProps = {
 };
 
 const styles = {
-  input:
-    "min-h-12 w-full min-w-0 border border-paper-line bg-bg-light px-3 py-2.5 text-sm text-ink outline-none placeholder:text-ink-soft/75 focus:border-gold focus:ring-2 focus:ring-gold/20 disabled:cursor-not-allowed disabled:bg-bg-light-2 disabled:text-ink-soft",
   secondary:
     "inline-flex min-h-12 items-center justify-center gap-2 border border-paper-line bg-bg-light px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-gold/70 hover:bg-bg-light-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-  label: "mb-1.5 block text-sm font-medium text-ink",
 };
 
 function formatDate(value: string | null | undefined): string {
@@ -90,24 +90,23 @@ export default function NewsList({
 
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2 sm:w-auto">
           <div className="sm:w-44">
-            <label htmlFor="news-filter" className={styles.label}>
-              Status
-            </label>
-
-            <select
-              id="news-filter"
-              value={statusFilter}
-              onChange={(event) =>
-                onStatusChange(event.target.value as NewsStatusFilter)
-              }
-              disabled={isLoading}
-              className={styles.input}
-            >
-              <option value="all">Semua status</option>
-              <option value="draft">Draft</option>
-              <option value="published">Terbit</option>
-              <option value="archived">Arsip</option>
-            </select>
+            <FormField label="Status">
+              <Select
+                id="news-filter"
+                value={statusFilter}
+                onChange={(event) =>
+                  onStatusChange(
+                    event.target.value as NewsStatusFilter,
+                  )
+                }
+                disabled={isLoading}
+              >
+                <option value="all">Semua status</option>
+                <option value="draft">Draft</option>
+                <option value="published">Terbit</option>
+                <option value="archived">Arsip</option>
+              </Select>
+            </FormField>
           </div>
 
           <button

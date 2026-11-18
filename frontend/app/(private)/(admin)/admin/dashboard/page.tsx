@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { RequirePermission } from "@/components/admin/shared/RequirePermission";
 import { useAuth } from "@/features/auth/AuthContext";
+import { PERMISSIONS } from "@/features/auth/permissions";
 import {
   getDashboardStats,
   type DashboardStats,
@@ -13,15 +15,14 @@ function formatNumber(value: number): string {
 
 
 export default function DashboardPage() {
-  const { admin } = useAuth();
+  const { admin, can } = useAuth();
   const adminId = admin?.id ?? null;
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const hasDashboardPermission =
-    admin?.permissions.includes("dashboard.view") ?? false;
+  const hasDashboardPermission = can(PERMISSIONS.DASHBOARD_VIEW);
 
 useEffect(() => {
   if (adminId === null || !hasDashboardPermission) {
@@ -66,34 +67,9 @@ useEffect(() => {
     return null;
   }
 
-  if (!hasDashboardPermission) {
-    return (
-      <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8">        
-        <div className="mx-auto max-w-7xl">
-          <section className="border border-zinc-200 bg-zinc-50 p-6 sm:p-8">
-            <p className="text-sm font-medium uppercase tracking-[0.16em] text-zinc-500">
-              Akses Ditolak
-            </p>
-
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-              Dashboard tidak tersedia
-            </h1>
-
-            <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-600">
-              Akun kamu tidak memiliki permission{" "}
-              <code className="font-mono text-zinc-900">
-                dashboard.view
-              </code>
-              .
-            </p>
-          </section>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <main className="min-h-screen bg-white px-4 py-6 text-zinc-950 sm:px-6 sm:py-8 lg:px-8">
+    <RequirePermission permission={PERMISSIONS.DASHBOARD_VIEW}>
+      <main className="min-h-screen bg-white px-4 py-6 text-zinc-950 sm:px-6 sm:py-8 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <header className="border-b border-zinc-200 pb-6">
           <p className="text-sm font-medium uppercase tracking-[0.16em] text-zinc-500">
@@ -237,6 +213,7 @@ useEffect(() => {
           </>
         )}
       </div>
-    </main>
+      </main>
+    </RequirePermission>
   );
 }
