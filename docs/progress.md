@@ -14,7 +14,7 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 
 ## 1. Current Project State
 
-> Terakhir diperbarui: 18 November 2026 (Batch B4a — model izin per akun, migrasi, katalog izin, dan seed; B4b menyusul). Perbarui bagian ini pada setiap batch.
+> Terakhir diperbarui: 18 November 2026 (Batch B4b — endpoint kelola akun, guard superadmin, katalog izin, dan dokumentasi `ADMIN_API.md`). Perbarui bagian ini pada setiap batch.
 
 ### a. Snapshot repository
 
@@ -43,6 +43,8 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 - Batch B3c (17 Nov) menambahkan `POST /api/v1/auth/change-password` (login + CSRF, tanpa permission tambahan) yang memverifikasi kata sandi lama, menyimpan hash baru, mencabut semua sesi lain milik admin yang sama, mempertahankan sesi saat ini, dan menulis audit `admin.password_change` tanpa menyimpan kata sandi. Sudah di-commit pemilik sebagai `7f13f03`; **belum di-deploy**.
 - Batch B3d (17 Nov) menambahkan setting `hero_image` (tipe `image`) dan `hero_image_alt` (text 200) sehingga registry menjadi **47 key**; validasi storage key gambar V2 + normalisasi path media, `preview_url` di admin settings hanya untuk tipe image, `GET /public/settings` mengirim `hero_image` sebagai path media, dokumentasi `Backend/docs/ORGANIZATION_API.md`, dan regenerasi `Backend/routes.txt` (71 baris). Perubahan berada di working tree; **belum di-commit dan belum di-deploy**.
 - **API-B3 selesai** (B3a–B3d). Frontend **belum sinkron**: API-F2 wajib menambahkan `hero_image` dan `hero_image_alt` ke `PUBLIC_SETTING_KEYS` + `PUBLIC_SETTINGS_FALLBACK`; hero homepage tetap memakai aset statis sampai R3.
+- **Batch B4a** (18 Nov) mengganti model izin menjadi izin langsung per akun: tabel `admin_permissions`, role `admin`/`editor` dihapus, katalog izin + implikasi, dan migrasi `20261118_0002`. Sudah di-commit pemilik sebagai `8ea1771`.
+- **Batch B4b** (18 Nov) menambahkan endpoint kelola akun berbasis superadmin (`GET /admin/admins/permissions`, `POST`/`PUT`/`DELETE /admin/admins`), guard maksimal 2 superadmin dan minimal 1 superadmin aktif, audit spesifik, dokumentasi `Backend/docs/ADMIN_API.md`, serta regenerasi `Backend/routes.txt` (71 baris). Perubahan berada di working tree; **belum di-commit dan belum di-deploy**.
 - URL Instagram `https://www.instagram.com/himatknuklir` **dikonfirmasi pemilik** pada 16 Nov. Konstanta dipertahankan sebagai utang teknis (lihat e.8); parameter share `rpxt` pada URL yang dikirim pemilik dibuang agar tautan stabil.
 
 ### b. Scope fase saat ini
@@ -97,6 +99,7 @@ Entri historis yang masih memuat referensi tersebut tetap utuh di Historical Arc
 12. **Pergantian periode dikerjakan bertahap B3a–B3d (API-B3).** B3a (17 Nov): `PUT /admin/organization/periods/{id}` hanya mengubah nama/tanggal (bukan `is_active`), dan `DELETE` hanya untuk periode nonaktif yang kosong (tanpa divisi/anggota/program). Satu-periode-aktif sudah dijaga oleh create (`61ab3c3`) dan activate (`d642419`) milik pemilik. B3b (17 Nov): CRUD divisi dengan nama unik per periode (case-insensitive), `DELETE` divisi ditolak selama masih ada anggota atau program kerja, dan salin divisi antarperiode menyalin nama/deskripsi/`sort_order` tanpa anggota, melewati nama yang sudah ada, dengan satu audit `division.copy`. Akun tanpa `organization.manage` → 403.
 13. **Ubah kata sandi sendiri (Batch B3c, 17 Nov).** `POST /api/v1/auth/change-password` wajib login + CSRF, tanpa permission tambahan. Kata sandi lama salah → **400** (bukan 401). Kata sandi baru 12–128 karakter dan tidak boleh sama dengan yang lama (422). Sesi yang dipakai untuk request tersebut **dipertahankan** (cookie sesi/CSRF tidak berubah); semua sesi lain milik admin yang sama dicabut dan dilaporkan sebagai `sessions_revoked`. Audit `admin.password_change` tidak menyimpan kata sandi. **Prototipe admin menulis minimal 8 karakter, backend mewajibkan 12** — frontend harus menyesuaikan validasi saat UI dibuat.
 14. **Foto hero memakai storage V2 (Batch B3d, 17 Nov).** `hero_image` berisi storage key `images/<nama>.<jpg|jpeg|png|webp>`, bukan URL. Alur: unggah `POST /media/images` → simpan `storage_key` ke setting → isi `hero_image_alt`. Path media lengkap `/api/v1/media/images/...` diterima dan dinormalisasi. URL (termasuk Vercel Blob), path absolut, `..`, backslash, karakter kontrol, dan ekstensi aneh ditolak 422. Backend tidak mengecek keberadaan file. Foto hero V1 di Vercel Blob harus diunggah ulang saat go-live. `GET /public/settings` mengirim path media; `GET /admin/settings` menyertakan `preview_url` hanya untuk tipe `image`.
+15. **Izin dicentang langsung per akun (Batch B4a/B4b, 18 Nov).** Role `admin` dan `editor` dihapus; `superadmin` tetap role khusus dengan semua izin. Izin `admins.view`, `admins.manage`, dan `roles.manage` tidak boleh diberikan ke akun non-superadmin. Superadmin maksimal **2 akun** (aktif + nonaktif) dan minimal **1 superadmin aktif**. Hanya superadmin yang dapat mengelola akun. Akun tidak boleh mengubah password/izin/status superadmin/status aktif dirinya lewat endpoint admin; password sendiri lewat `POST /auth/change-password`. Detail kontrak: `Backend/docs/ADMIN_API.md`.
 
 ### f. Kondisi aktual V2
 
@@ -120,6 +123,7 @@ Ringkasan dari audit 12 November 2026; detail dan bukti line-by-line ada di `doc
 - Public content API (Batch API-B2): `GET /public/programs` (filter periode/status/divisi, `total`, metadata divisi/periode), `GET /public/programs/{slug}`, `GET /public/news` (`q` judul, `total`, `excerpt`, `tags`), `GET /public/news/{slug}` (`tags`), dan `GET /public/organization` (`sort_order`, `photo_url` ternormalisasi). Kontrak lengkap: `Backend/docs/PUBLIC_API.md`.
 - **Admin organisasi (Batch B3a, 17 Nov):** `PUT /admin/organization/periods/{id}` mengubah nama/tanggal dengan nama unik case-insensitive dan validasi `end_date >= start_date`; `DELETE /admin/organization/periods/{id}` menolak periode aktif (409) dan periode yang masih punya divisi/anggota/program (409, pesan menyebut bagian yang menghalangi). Create periode juga memvalidasi urutan tanggal. Belum ada UI admin yang memakai endpoint ini.
 - **Admin divisi (Batch B3b, 17 Nov):** `POST`/`PUT`/`DELETE /admin/organization/divisions` (201/200/200) dengan nama unik per periode case-insensitive; `DELETE` menolak divisi yang masih punya anggota dan/atau dipakai program kerja (409). `POST /admin/organization/periods/{id}/divisions/copy` menyalin divisi antarperiode secara atomik, melewati nama yang sudah ada, tidak menyalin anggota, dan menulis satu audit `division.copy`. `GET /divisions` mengirim `sort_order` dan diurutkan `sort_order` lalu `id`. Perbaikan bug: audit `member.create`/`member.update`/`member.delete` kini memakai `ip_address`/`user_agent` (sebelumnya `request=request` yang membuat endpoint 500). Belum ada UI admin yang memakai endpoint ini.
+- **Admin akun & izin (Batch B4a/B4b, 18 Nov):** `GET /admin/admins` mengirim `is_superadmin`, `roles`, dan `permissions` efektif. `GET /admin/admins/permissions` mengirim katalog modul + `implies` (Agenda/Dokumen/Notifikasi `available: false`). `POST`/`PUT`/`DELETE /admin/admins` memakai izin `admins.manage` (hanya superadmin), dengan `permissions` langsung per akun (menggantikan seluruh izin bila dikirim), maksimal 2 superadmin, minimal 1 superadmin aktif, dan larangan mengubah field sensitif akun sendiri. `GET /admin/admins/roles` dihapus. Kontrak lengkap: `Backend/docs/ADMIN_API.md`. **Frontend belum memakai endpoint ini**; API-F2 perlu form centang izin dari katalog tersebut.
 - **Ubah kata sandi sendiri (Batch B3c, 17 Nov):** `POST /api/v1/auth/change-password` (login + CSRF) memverifikasi kata sandi lama (salah → 400), mewajibkan kata sandi baru 12–128 karakter dan berbeda dari yang lama (422), menyimpan hash baru, mencabut semua sesi lain admin tersebut, mempertahankan sesi saat ini, dan menulis audit `admin.password_change` tanpa kata sandi. Respons `{"ok": true, "sessions_revoked": n}`. Dokumentasi: `Backend/README.md` bagian API/Security. UI admin belum memakai endpoint ini; prototipe menulis minimal 8 karakter sedangkan backend 12.
 - **API layer frontend (Batch API-F, 16 Nov):**
   - `frontend/lib/api/errors.ts` berisi `ApiError` (`status`, `detail`, `errors?`, `retryAfter?`) dan helper `isApiError`, `isNotFound`, `isUnauthorized`, `isForbidden`, `isRateLimited`. `apiFetch` melempar `ApiError`; `message` lama dipertahankan dan `AbortError` tetap diteruskan.
@@ -128,7 +132,7 @@ Ringkasan dari audit 12 November 2026; detail dan bukti line-by-line ada di `doc
   - `frontend/lib/programs/status.ts` menjadi satu sumber label ("Direncanakan", "Berjalan", "Selesai", "Dibatalkan", "Status lain"); `ProgramPrimitives` dan `ProgramFormDialog` memakainya.
   - **Catatan `AuthContext` (belum diubah, batch berikutnya):** `readCurrentAdmin()` menelan semua error dan mengembalikan `null`. Sebaiknya ia membedakan 401 (`isUnauthorized` → sesi memang habis) dari error jaringan/5xx agar UI tidak salah menyimpulkan "belum login".
   - `frontend/lib/public/link.ts` tetap dipakai sebagai fallback Bank Soal/Instagram; migrasi ke `PublicSettings` belum dilakukan.
-- Baseline: `npm run lint` dan `npx tsc --noEmit` lulus pada audit. `npm run build` pertama kali dijalankan pada R1 Fase A (15 Nov): **gagal** karena `frontend/app/(private)/(admin)/loading.tsx` berukuran 0 byte; setelah file itu dihapus (disetujui pemilik) build lulus 9 route. Batch R1 Fase B (16 Nov) mengulang lint, tsc, dan build: ketiganya lulus 9 route. Batch API-F (16 Nov) mengulang lint dan tsc (lulus) serta `npm run build` (lulus 9 route, `ƒ /` dan `ƒ /struktur`). Baseline backend sebelum API-B1: `compileall` lulus, `pytest -q` **71 passed**; API-B1 (commit `ac9cd8a`): **102 passed**; setelah tindak lanjut review API-B1: **112 passed**; setelah API-B2 (commit `7b249b6`): **124 passed**; setelah API-F (commit `7a948f8`): **133 passed**; setelah B3a (commit `f80ecfb`): **145 passed**; setelah B3b (commit `35188af`): **165 passed**; setelah B3c: **172 passed**; setelah B3d: **191 passed**.
+- Baseline: `npm run lint` dan `npx tsc --noEmit` lulus pada audit. `npm run build` pertama kali dijalankan pada R1 Fase A (15 Nov): **gagal** karena `frontend/app/(private)/(admin)/loading.tsx` berukuran 0 byte; setelah file itu dihapus (disetujui pemilik) build lulus 9 route. Batch R1 Fase B (16 Nov) mengulang lint, tsc, dan build: ketiganya lulus 9 route. Batch API-F (16 Nov) mengulang lint dan tsc (lulus) serta `npm run build` (lulus 9 route, `ƒ /` dan `ƒ /struktur`). Baseline backend sebelum API-B1: `compileall` lulus, `pytest -q` **71 passed**; API-B1 (commit `ac9cd8a`): **102 passed**; setelah tindak lanjut review API-B1: **112 passed**; setelah API-B2 (commit `7b249b6`): **124 passed**; setelah API-F (commit `7a948f8`): **133 passed**; setelah B3a (commit `f80ecfb`): **145 passed**; setelah B3b (commit `35188af`): **165 passed**; setelah B3c: **172 passed**; setelah B3d: **191 passed**; setelah SEC-1 (commit `af39ba3`): **213 passed**; setelah B4a (commit `8ea1771`): **219 passed**; setelah B4b: **223 passed**.
 
 ### g. Keputusan yang masih tertunda (blok batch R1 dan seterusnya)
 
@@ -196,6 +200,7 @@ Hanya agregat; tidak ada data pribadi:
 | R1 Fase B | Hero, Tentang, section Program visual, Publikasi, Kepengurusan, Kontak disembunyikan, restyle 404, loading state | **Selesai, terverifikasi, dan di-commit pemilik sebagai `cc1d496`** |
 | API-B1 | Site Settings: registry 45 key, `GET /public/settings`, admin `GET/PUT/PATCH/DELETE`, validasi URL/email/teks, audit, test | **Selesai dan di-commit pemilik sebagai `ac9cd8a`; belum di-deploy.** |
 | API-B2 | Program (filter periode/status/divisi, detail slug, `total`, metadata), berita (`q`, `total`, `excerpt`, `tags`), organisasi (`sort_order`, `photo_url`), enum status admin, seed idempoten, tindak lanjut review API-B1 | **Selesai 16 Nov 2026; belum di-commit dan belum di-deploy.** |
+| B4 | Izin per akun: model `admin_permissions`, hapus role `admin`/`editor`, endpoint kelola akun + katalog izin, guard superadmin, dokumentasi `ADMIN_API.md` | **Selesai 18 Nov 2026 (B4a `8ea1771`, B4b di working tree); belum di-deploy** |
 | R2 | Halaman `/struktur`: dropdown custom yang aksesibel, visual tree/kartu/avatar, fallback foto | — |
 | R3 | Data homepage: grid divisi, program dengan 4 status, perbaikan link "Instagram" | Diblok keputusan g.7–8 |
 | R4 | `/publikasi` dan `/publikasi/[slug]` | Diblok keputusan g.5 |
@@ -208,7 +213,7 @@ Bukan untuk dikerjakan OpenCode frontend:
 2. **Selesai (API-B2):** detail program publik per slug; filter periode/status/divisi; `total`; metadata periode/divisi. Frontend belum memakainya (R3/R4).
 3. **Selesai (API-B2):** search judul dan `total` untuk `/public/news`, plus `excerpt` dan `tags`.
 4. Verifikasi `media.manage` di DB production. Seed sudah idempoten dan memberi permission ini ke `superadmin`; jalankan `python -m app.seed` sekali di production lalu verifikasi (lihat `Backend/docs/PUBLIC_API.md`).
-5. Pembedaan permission role `admin` dan `editor`.
+5. **Selesai (B4a/B4b):** role `admin` dan `editor` dihapus; izin kini dicentang per akun. Sisa pekerjaan frontend: form centang izin dari `GET /admin/admins/permissions` (API-F2).
 6. Pembersihan data uji sebelum rilis.
 7. Migrasi frontend dari hardcode Bank Soal/Instagram ke `GET /public/settings`, lalu tampilkan kontak/peta hanya jika nilainya terisi.
 
@@ -856,6 +861,51 @@ Entri sesi sejak 11 November 2026. Append-only: tambahkan entri baru di bawah; j
   - Secret/kredensial diekspos: Tidak.
   - Dokumentasi berubah: Ya — `docs/progress.md`.
 - **Langkah berikutnya:** B4b (schema/endpoint kelola akun, katalog permission endpoint, guard superadmin, dokumentasi `ADMIN_API.md`, regenerasi `routes.txt`).
+
+---
+
+### Sesi 2026-11-18 — Batch B4b: Endpoint kelola akun, guard superadmin, dan dokumentasi
+
+- **Status:** Selesai; **B4 selesai**. Berhenti. Tidak commit, push, deploy, seed, atau migrasi ke database sungguhan.
+- **Branch/HEAD:** `feat/admin-ui-foundation`, HEAD `8ea1771` (B4a sudah di-commit pemilik). Working tree bersih sebelum B4b dimulai.
+- **Tindak lanjut review B4a:**
+  - Migrasi `20261118_0002` tidak lagi memakai `DELETE ... WHERE id IN (SELECT ...)` pada tabel yang sama. Daftar id role (`non_superadmin_role_ids`, `legacy_role_ids`) diambil lebih dulu ke list Python dan penghapusan dilewati bila list kosong, sehingga aman untuk MySQL/TiDB (error 1093).
+  - `permissions_for_admin` membuang izin langsung yang termasuk `SUPERADMIN_ONLY` sebelum digabung; izin dari role superadmin tetap utuh. Test baru memastikan baris `admin_permissions` manual `admins.view`/`admins.manage`/`roles.manage` tidak memberi akses apa pun (hanya `dashboard.view`).
+- **Schema (`app/schemas/admin.py`):**
+  - `AdminCreate`: `username`, `password` (12–128), `is_superadmin: bool = False`, `permissions: list[str] = []`; field `role` dihapus.
+  - `AdminUpdate`: `username`, `password`, `is_active`, `is_superadmin`, `permissions`, semuanya opsional. `permissions` bila dikirim mengganti seluruh izin langsung.
+  - Validator menolak (`422`) `is_superadmin=true` dengan `permissions` terisi.
+- **Endpoint (`app/routers/admins.py`):**
+  - `GET /admin/admins/permissions` (`admins.view`) mengirim `items` = `PERMISSION_CATALOG` (termasuk `implies`), `superadmin_only`, dan `always_granted`.
+  - `GET /admin/admins/roles` **dihapus** karena role selain `superadmin` sudah tidak ada dan tidak ada pemakai di frontend.
+  - `POST /admin/admins` membuat superadmin dengan role `superadmin`, atau akun non-superadmin dengan `normalize_permissions(payload.permissions)` yang disimpan ke `admin_permissions`.
+  - `PUT /admin/admins/{id}` mendukung promosi/demosi `is_superadmin` dan penggantian `permissions`. Demosi tanpa `permissions` menyisakan `dashboard.view` saja.
+  - Audit spesifik tanpa password: `admin.create`, `admin.update`, `admin.permissions_update` (deskripsi menyebut izin ditambah/dihapus), `admin.password_reset`, `admin.superadmin_grant`, `admin.superadmin_revoke`, `admin.delete`; IP memakai `get_client_ip(request)`.
+- **Guard:**
+  - Maksimal **2 superadmin** dihitung semua akun ber-role superadmin (aktif + nonaktif); membuat/mempromosikan yang ketiga → `409 "Jumlah superadmin maksimal 2 akun"`.
+  - Minimal **1 superadmin aktif**; menonaktifkan, menghapus, atau mendemosi superadmin aktif terakhir → `409`.
+  - Akun tidak boleh mengubah password, `permissions`, `is_superadmin`, atau `is_active` milik sendiri lewat endpoint ini → `400`; pesan password: `Gunakan menu ganti kata sandi`.
+  - Helper guard SEC-1 berbasis role (`_active_admins_with_permission`, `_assert_active_manage_admin_remains`, `_assert_not_self_role_change`) diganti pengecekan superadmin aktif; tidak ada dua mekanisme yang berjalan bersamaan.
+  - Logika subset izin lama dan endpoint role dihapus. Endpoint efektif hanya dapat dicapai superadmin karena `admins.manage` superadmin-only.
+- **Sesi:** password reset, penonaktifan akun, dan perubahan status superadmin mencabut sesi target. Perubahan `permissions` saja **tidak** mencabut sesi karena izin dibaca ulang tiap request.
+- **Test:**
+  - `test_admin_permissions.py`: +1 test defense-in-depth izin langsung superadmin-only.
+  - `test_admins.py` disesuaikan ke model baru: create/expanded permissions, akses modul (`POST /admin/news` 201, `DELETE` 403, `GET /admin/admins` 403), `admins.manage`/nama ngawur/`is_superadmin` + permissions → 422, superadmin ketiga → 409, guard superadmin aktif terakhir, larangan ubah akun sendiri, reset password mencabut sesi target tetapi bukan sesi superadmin, perubahan izin langsung berlaku tanpa login ulang, dan struktur katalog (`available: false` untuk Agenda/Dokumen/Notifikasi).
+- **Dokumentasi:** `Backend/docs/ADMIN_API.md` (baru) memuat model izin, katalog, implikasi, guard, alur reset password, contoh request/response, error, audit, dan catatan API-F2. `Backend/routes.txt` diregenerasi lewat penelusuran `effective_route_contexts()` menjadi **71 baris**; hanya `GET /admin/admins/roles` berganti menjadi `GET /admin/admins/permissions`.
+- **File yang diubah/ditambah:**
+  - `Backend/alembic/versions/20261118_0002_admin_permissions.py`
+  - `Backend/app/services/auth.py`
+  - `Backend/app/schemas/admin.py`
+  - `Backend/app/routers/admins.py`
+  - `Backend/tests/test_admins.py`, `Backend/tests/test_admin_permissions.py`
+  - `Backend/docs/ADMIN_API.md` (baru), `Backend/routes.txt`
+  - `docs/progress.md`
+- **Verifikasi:** `python -m compileall app` lulus; `pytest -q` **219 passed → 223 passed**; `alembic upgrade head` + `alembic check` pada SQLite sementara → `No new upgrade operations detected`.
+- **Konfirmasi batas scope:**
+  - Hanya `Backend/` dan `docs/progress.md` yang diubah; `frontend/` tidak disentuh.
+  - Tidak menjalankan migrasi/seed/query tulis ke TiDB/MySQL sungguhan.
+  - Tidak membaca/mencetak `.env*`; tidak commit/push/deploy.
+- **Langkah berikutnya:** pemilik meninjau dan meng-commit B4b; API-F2 membangun form centang izin dari `GET /admin/admins/permissions`. **Berhenti.**
 
 ---
 

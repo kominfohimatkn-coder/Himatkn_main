@@ -110,6 +110,44 @@ def test_permissions_for_admin_with_direct_permissions():
         assert is_superadmin(db, admin.id) is False
 
 
+def test_direct_superadmin_only_permissions_are_ignored():
+    username = f"b4b-direct-superadmin-only-{uuid4().hex[:8]}"
+
+    with SessionLocal() as db:
+        admin = Admin(
+            username=username,
+            password_hash=hash_password("b4b-direct-password"),
+            is_active=True,
+        )
+        db.add(admin)
+        db.flush()
+
+        # Simulate a row inserted manually into the database. Even then a
+        # non-superadmin account must not receive admin-management rights.
+        for permission_name in ("admins.view", "admins.manage", "roles.manage"):
+            permission = db.scalar(
+                select(Permission).where(
+                    Permission.name == permission_name
+                )
+            )
+            db.add(
+                AdminPermission(
+                    admin_id=admin.id,
+                    permission_id=permission.id,
+                )
+            )
+
+        db.commit()
+
+        resolved = permissions_for_admin(db, admin.id)
+
+        assert "admins.view" not in resolved
+        assert "admins.manage" not in resolved
+        assert "roles.manage" not in resolved
+        assert resolved == set(ALWAYS_GRANTED)
+        assert is_superadmin(db, admin.id) is False
+
+
 def _insert_role(connection, name: str) -> int:
     connection.execute(
         text(

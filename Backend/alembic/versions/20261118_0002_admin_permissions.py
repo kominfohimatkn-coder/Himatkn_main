@@ -133,19 +133,35 @@ def upgrade() -> None:
         bind.execute(sa.insert(admin_permissions), inserts)
 
     # Direct permissions replace every non-superadmin role assignment.
-    non_superadmin_role_ids = sa.select(roles.c.id).where(
-        roles.c.name != "superadmin"
-    )
-    bind.execute(
-        sa.delete(admin_roles).where(
-            admin_roles.c.role_id.in_(non_superadmin_role_ids)
-        )
+    # Resolve the ids in Python first: MySQL/TiDB rejects a DELETE whose
+    # target table is also referenced in a subquery (error 1093).
+    non_superadmin_role_ids = list(
+        bind.execute(
+            sa.select(roles.c.id).where(
+                roles.c.name != "superadmin"
+            )
+        ).scalars().all()
     )
 
+    if non_superadmin_role_ids:
+        bind.execute(
+            sa.delete(admin_roles).where(
+                admin_roles.c.role_id.in_(non_superadmin_role_ids)
+            )
+        )
+
     # Remove the retired roles and their permission mappings.
-    legacy_role_ids = sa.select(roles.c.id).where(
-        roles.c.name.in_(LEGACY_ROLES)
+    legacy_role_ids = list(
+        bind.execute(
+            sa.select(roles.c.id).where(
+                roles.c.name.in_(LEGACY_ROLES)
+            )
+        ).scalars().all()
     )
+
+    if not legacy_role_ids:
+        return
+
     bind.execute(
         sa.delete(role_permissions).where(
             role_permissions.c.role_id.in_(legacy_role_ids)

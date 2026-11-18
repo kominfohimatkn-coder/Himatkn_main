@@ -17,6 +17,7 @@ from app.models import (
 )
 from app.services.permissions import (
     ALWAYS_GRANTED,
+    SUPERADMIN_ONLY,
     SUPERADMIN_ROLE,
     expand_permissions,
 )
@@ -52,7 +53,11 @@ def purge_expired(db: Session):
 def permissions_for_admin(db: Session, admin_id:int)->set[str]:
     role_statement=select(Permission.name).join(RolePermission,RolePermission.permission_id==Permission.id).join(AdminRole,AdminRole.role_id==RolePermission.role_id).where(AdminRole.admin_id==admin_id)
     direct_statement=select(Permission.name).join(AdminPermission,AdminPermission.permission_id==Permission.id).where(AdminPermission.admin_id==admin_id)
-    names=set(db.scalars(role_statement).all())|set(db.scalars(direct_statement).all())
+    # Defense in depth: a manually inserted direct row must never grant a
+    # superadmin-only permission to a non-superadmin account. Role-granted
+    # permissions are intentionally left intact.
+    direct_names=set(db.scalars(direct_statement).all())-set(SUPERADMIN_ONLY)
+    names=set(db.scalars(role_statement).all())|direct_names
     return expand_permissions(names)|set(ALWAYS_GRANTED)
 
 
