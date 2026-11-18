@@ -23,6 +23,10 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
 
   const hasDashboardPermission = can(PERMISSIONS.DASHBOARD_VIEW);
+  const canViewNews = can(PERMISSIONS.NEWS_VIEW);
+  const canViewPrograms = can(PERMISSIONS.PROGRAMS_VIEW);
+  const canViewOrganization = can(PERMISSIONS.ORGANIZATION_VIEW);
+  const canViewVisitors = can(PERMISSIONS.VISITOR_LOGS_VIEW);
 
 useEffect(() => {
   if (adminId === null || !hasDashboardPermission) {
@@ -66,6 +70,89 @@ useEffect(() => {
   if (!admin) {
     return null;
   }
+
+  const cards = stats
+    ? [
+        ...(canViewNews
+          ? [
+              {
+                key: "news",
+                label: "Publikasi",
+                value: stats.news_total,
+                caption: "Total berita",
+              },
+            ]
+          : []),
+        ...(canViewPrograms
+          ? [
+              {
+                key: "programs",
+                label: "Program Kerja",
+                value: stats.programs_total,
+                caption: "Total program",
+              },
+            ]
+          : []),
+        ...(canViewOrganization
+          ? [
+              {
+                key: "members",
+                label: "Anggota",
+                value: stats.members_total,
+                caption: "Data pengurus",
+              },
+            ]
+          : []),
+        ...(canViewVisitors
+          ? [
+              {
+                key: "visitors",
+                label: "Pengunjung",
+                value: stats.visitors_total,
+                caption: "Total kunjungan",
+              },
+            ]
+          : []),
+      ]
+    : [];
+
+  const cardGridClass =
+    cards.length >= 4
+      ? "sm:grid-cols-2 lg:grid-cols-4"
+      : cards.length === 3
+        ? "sm:grid-cols-2 lg:grid-cols-3"
+        : cards.length === 2
+          ? "sm:grid-cols-2"
+          : "";
+
+  const summaryItems = stats
+    ? [
+        ...(canViewNews
+          ? [
+              {
+                key: "news",
+                label: "Status Publikasi",
+                value:
+                  stats.news_total > 0
+                    ? "Website sudah memiliki publikasi."
+                    : "Belum ada publikasi.",
+              },
+            ]
+          : []),
+        ...(canViewOrganization
+          ? [
+              {
+                key: "organization",
+                label: "Data Organisasi",
+                value:
+                  stats.members_total > 0
+                    ? `${formatNumber(stats.members_total)} data anggota tersedia.`
+                    : "Belum ada data anggota.",
+              },
+            ]
+          : []),
+      ]
+    : [];
 
   return (
     <RequirePermission permission={PERMISSIONS.DASHBOARD_VIEW}>
@@ -117,99 +204,57 @@ useEffect(() => {
 
         {!isLoading && !error && stats && (
           <>
-            <section className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="border border-zinc-200 p-5">
-                <p className="text-sm text-zinc-500">Publikasi</p>
+            {cards.length > 0 && (
+              <section className={`mt-6 grid gap-4 ${cardGridClass}`}>
+                {cards.map((card) => (
+                  <div key={card.key} className="border border-zinc-200 p-5">
+                    <p className="text-sm text-zinc-500">{card.label}</p>
 
-                <p className="mt-3 text-3xl font-semibold tracking-tight">
-                  {formatNumber(stats.news_total)}
-                </p>
+                    <p className="mt-3 text-3xl font-semibold tracking-tight">
+                      {formatNumber(card.value)}
+                    </p>
 
-                <p className="mt-1 text-xs text-zinc-400">
-                  Total berita
-                </p>
-              </div>
+                    <p className="mt-1 text-xs text-zinc-400">
+                      {card.caption}
+                    </p>
+                  </div>
+                ))}
+              </section>
+            )}
 
-              <div className="border border-zinc-200 p-5">
-                <p className="text-sm text-zinc-500">Program Kerja</p>
-
-                <p className="mt-3 text-3xl font-semibold tracking-tight">
-                  {formatNumber(stats.programs_total)}
-                </p>
-
-                <p className="mt-1 text-xs text-zinc-400">
-                  Total program
-                </p>
-              </div>
-
-              <div className="border border-zinc-200 p-5">
-                <p className="text-sm text-zinc-500">Anggota</p>
-
-                <p className="mt-3 text-3xl font-semibold tracking-tight">
-                  {formatNumber(stats.members_total)}
-                </p>
-
-                <p className="mt-1 text-xs text-zinc-400">
-                  Data pengurus
-                </p>
-              </div>
-
-              <div className="border border-zinc-200 p-5">
-                <p className="text-sm text-zinc-500">Agenda</p>
-
-                <p className="mt-3 text-3xl font-semibold tracking-tight">
-                  {formatNumber(stats.agendas_total)}
-                </p>
-
-                <p className="mt-1 text-xs text-zinc-400">
-                  Total agenda
-                </p>
-              </div>
-
-              <div className="border border-zinc-200 p-5">
-                <p className="text-sm text-zinc-500">Pengunjung</p>
-
-                <p className="mt-3 text-3xl font-semibold tracking-tight">
-                  {formatNumber(stats.visitors_total)}
-                </p>
-
-                <p className="mt-1 text-xs text-zinc-400">
-                  Total kunjungan
-                </p>
-              </div>
-            </section>
-
-            <section className="mt-8 border border-zinc-200">
-              <div className="border-b border-zinc-200 px-5 py-4">
-                <h2 className="text-sm font-semibold">Ringkasan</h2>
-              </div>
-
-              <div className="grid gap-0 sm:grid-cols-2">
-                <div className="border-b border-zinc-200 px-5 py-4 sm:border-r">
-                  <p className="text-xs uppercase tracking-[0.12em] text-zinc-400">
-                    Status Publikasi
-                  </p>
-
-                  <p className="mt-2 text-sm text-zinc-700">
-                    {stats.news_total > 0
-                      ? "Website sudah memiliki publikasi."
-                      : "Belum ada publikasi."}
-                  </p>
+            {summaryItems.length > 0 && (
+              <section className="mt-8 border border-zinc-200">
+                <div className="border-b border-zinc-200 px-5 py-4">
+                  <h2 className="text-sm font-semibold">Ringkasan</h2>
                 </div>
 
-                <div className="px-5 py-4">
-                  <p className="text-xs uppercase tracking-[0.12em] text-zinc-400">
-                    Data Organisasi
-                  </p>
+                <div
+                  className={`grid gap-0 ${
+                    summaryItems.length > 1 ? "sm:grid-cols-2" : ""
+                  }`}
+                >
+                  {summaryItems.map((item, index) => (
+                    <div
+                      key={item.key}
+                      className={[
+                        "px-5 py-4",
+                        index < summaryItems.length - 1
+                          ? "border-b border-zinc-200 sm:border-r sm:border-b-0"
+                          : "",
+                      ].join(" ")}
+                    >
+                      <p className="text-xs uppercase tracking-[0.12em] text-zinc-400">
+                        {item.label}
+                      </p>
 
-                  <p className="mt-2 text-sm text-zinc-700">
-                    {stats.members_total > 0
-                      ? `${formatNumber(stats.members_total)} data anggota tersedia.`
-                      : "Belum ada data anggota."}
-                  </p>
+                      <p className="mt-2 text-sm text-zinc-700">
+                        {item.value}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            </section>
+              </section>
+            )}
           </>
         )}
       </div>

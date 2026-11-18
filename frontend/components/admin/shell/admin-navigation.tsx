@@ -47,7 +47,7 @@ export const primaryNavItems: NavItem[] = [
   },
   {
     href: "/admin/news",
-    label: "News",
+    label: "Publikasi",
     permission: PERMISSIONS.NEWS_VIEW,
     icon: (
       <NavIcon>
@@ -86,7 +86,7 @@ export const primaryNavItems: NavItem[] = [
   },
   {
     href: "/admin/organization",
-    label: "Organisasi",
+    label: "Struktur Organisasi",
     permission: PERMISSIONS.ORGANIZATION_VIEW,
     icon: (
       <NavIcon>
@@ -199,4 +199,5 @@ export const implementedAdminRoutes = new Set([
   "/admin/dashboard",
   "/admin/news",
   "/admin/programs",
+  "/admin/organization",
 ]);

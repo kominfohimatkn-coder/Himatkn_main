@@ -48,9 +48,16 @@ frontend/
 │   │       └── public/           # PublicationsSection
 │   ├── organization/
 │   │   ├── admin-api.ts
+│   │   ├── errors.ts
 │   │   ├── public-api.ts
 │   │   ├── types.ts
-│   │   └── components/           # OrganizationSection, StructureDirectory, StructurePage
+│   │   └── components/
+│   │       ├── admin/            # PeriodToolbar, PeriodFormDialog, PeriodActivateDialog,
+│   │       │                     # PeriodChecklist, DivisionsSection, DivisionFormDialog,
+│   │       │                     # DivisionCopyDialog, DivisionDeleteDialog, OrganizationPrimitives
+│   │       ├── OrganizationSection.tsx
+│   │       ├── StructureDirectory.tsx
+│   │       └── StructurePage.tsx
 │   ├── programs/
 │   │   ├── admin-api.ts
 │   │   ├── public-api.ts
@@ -90,6 +97,12 @@ Satu domain bisnis memiliki satu folder sendiri. Isi yang lazim:
 File khusus domain lain yang sudah ada sebelumnya dipertahankan namanya,
 misalnya `features/auth/permissions.ts`, `features/auth/AuthContext.tsx`,
 `features/programs/status.ts`, dan `features/settings/links.ts`.
+
+Halaman admin struktur organisasi merangkai komponen di
+`features/organization/components/admin/` (periode, divisi, salin divisi) dan
+memakai `features/organization/admin-api.ts` sebagai satu-satunya jalur
+pemanggilan API. Pesan error API diambil dari `ApiError` lewat
+`features/organization/errors.ts`.
 
 ## Yang tetap di `lib/` dan `components/` (shared)
 

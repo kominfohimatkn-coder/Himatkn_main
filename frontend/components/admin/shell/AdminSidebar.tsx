@@ -25,7 +25,7 @@ export function AdminSidebar({
   pathname: string;
   onNavigate?: () => void;
 }) {
-  const { admin, logout } = useAuth();
+  const { admin, isSuperadmin, logout } = useAuth();
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
@@ -148,7 +148,7 @@ const visibleManagementItems = managementNavItems.filter(
               {admin?.username ?? "Admin"}
             </p>
             <p className="truncate text-xs text-zinc-400">
-              {admin?.roles?.join(", ") || "Administrator"}
+              {isSuperadmin ? "Superadmin" : "Pengurus"}
             </p>
           </div>
         </div>

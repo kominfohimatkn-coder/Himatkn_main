@@ -14,7 +14,7 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 
 ## 1. Current Project State
 
-> Terakhir diperbarui: 18 November 2026 (Batch UI-0 — primitif form admin & gerbang izin selesai di working tree). Perbarui bagian ini pada setiap batch.
+> Terakhir diperbarui: 18 November 2026 (Batch ORG-A — halaman admin Struktur Organisasi selesai di working tree). Perbarui bagian ini pada setiap batch.
 
 ### a. Snapshot repository
 
@@ -48,6 +48,7 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 - **Batch F2a** (18 Nov) melengkapi service & type admin organisasi (`frontend/types/organization.ts`, `frontend/lib/admin/organization.ts`) untuk seluruh endpoint `ORGANIZATION_API.md` (periode, divisi + copy, posisi, anggota) serta upload & kompresi gambar (`frontend/lib/media/compress.ts`, `frontend/lib/api/media.ts`, `frontend/types/media.ts`). Sudah di-commit pemilik sebagai `fd60056`.
 - **Batch F2b** (18 Nov) menyelesaikan API-F2 di frontend: `Admin.is_superadmin` + `changePassword()`, helper izin `frontend/lib/auth/permissions.ts`, `can()`/`isSuperadmin` di `AuthContext`, service/type akun admin + katalog izin + `applyPermissionImplications`, sinkronisasi settings **47 key** (`hero_image`, `hero_image_alt`, tipe `image`, `preview_url`), dan kompresi `uploadAdminNewsImage`. Perubahan berada di working tree; **belum di-commit**. Frontend siap untuk halaman admin, tetapi UI-nya belum dibuat.
 - **Batch UI-0** (18 Nov) menambahkan primitif form `components/ui/` (`Input`, `Textarea`, `Select`, `Checkbox`, `FormField`) dan gerbang izin `components/admin/shared/` (`Can`, `RequirePermission`); form program, filter berita, serta halaman dashboard/news/programs sudah memakainya, dan navigasi memakai `PERMISSIONS`. Perubahan berada di working tree; **belum di-commit**.
+- **Batch ORG-A** (18 Nov) menambahkan halaman admin `/admin/organization` ("Struktur Organisasi") dengan pemilih periode, buat/ubah/aktifkan/hapus periode, checklist periode baru, daftar divisi untuk periode terpilih, CRUD divisi, dan salin divisi antarperiode. Mode baca saja untuk akun tanpa `organization.manage` memakai banner dan `Can`; pesan `409` backend ditampilkan dari `ApiError.detail`. Perbaikan kecil: kartu dashboard mengikuti izin `news.view`/`programs.view`/`organization.view`/`visitor_logs.view`, kartu Agenda dihapus, label akun sidebar menjadi "Superadmin"/"Pengurus", dan menu "News" menjadi "Publikasi". Perubahan berada di working tree; **belum di-commit**.
 - URL Instagram `https://www.instagram.com/himatknuklir` **dikonfirmasi pemilik** pada 16 Nov. Konstanta dipertahankan sebagai utang teknis (lihat e.8); parameter share `rpxt` pada URL yang dikirim pemilik dibuang agar tautan stabil.
 
 ### b. Scope fase saat ini
@@ -109,7 +110,7 @@ Entri historis yang masih memuat referensi tersebut tetap utuh di Historical Arc
 Ringkasan dari audit 12 November 2026; detail dan bukti line-by-line ada di `docs/audit/REDESIGN_AUDIT_2026-11-12.md` (rujukan; jangan disalin ulang).
 
 - Route publik produk: `/` dan `/struktur`. Fixture `/__structure-state` **sudah dihapus pada R1 Fase A** (folder berawalan `_` sebenarnya tidak pernah menjadi route Next; URL-nya 404 bahkan sebelum dihapus).
-- Route admin: `/login`, `/admin/dashboard`, `/admin/news` (read-only di UI), `/admin/programs` (CRUD).
+- Route admin: `/login`, `/admin/dashboard`, `/admin/news` (read-only di UI), `/admin/programs` (CRUD), `/admin/organization` (CRUD periode/divisi).
 - Endpoint publik yang tersedia dan pemakaiannya:
 
   | Endpoint | Dipakai frontend? |
@@ -209,6 +210,7 @@ Hanya agregat; tidak ada data pribadi:
 | R2 | Halaman `/struktur`: dropdown custom yang aksesibel, visual tree/kartu/avatar, fallback foto | — |
 | R3 | Data homepage: grid divisi, program dengan 4 status, perbaikan link "Instagram" | Diblok keputusan g.7–8 |
 | R4 | `/publikasi` dan `/publikasi/[slug]` | Diblok keputusan g.5 |
+| ORG-A | Halaman admin Struktur Organisasi: periode (buat/ubah/aktifkan/hapus), checklist, divisi (CRUD + salin), mode baca saja | **Selesai 18 Nov 2026; di working tree, belum di-commit** |
 
 ### l. Backlog untuk sesi backend
 
@@ -1084,6 +1086,62 @@ Entri sesi sejak 11 November 2026. Append-only: tambahkan entri baru di bawah; j
 - **Langkah berikutnya:** lanjutkan batch UI admin berikutnya (form/halaman
   baru) memakai primitif dan gerbang izin ini; lengkapi alur tambah/ubah/hapus
   berita agar `news.update`/`news.delete` punya kontrol nyata.
+
+---
+
+### Sesi 2026-11-18 — Batch ORG-A: halaman admin Struktur Organisasi (periode & divisi)
+
+- **Status:** Selesai di working tree; tidak commit, push, atau deploy.
+- **Branch:** `feat/admin-ui-foundation`. HEAD `6d21625` (`feat(frontend): form primitives and permission gates (UI-0)`); working tree bersih sebelum batch.
+- **Tujuan:** membangun halaman admin `/admin/organization` untuk periode dan divisi sesuai kontrak `Backend/docs/ORGANIZATION_API.md`, pola halaman `programs`, dan perilaku prototipe `Design/admin/`; sekaligus tiga perbaikan kecil untuk akun terbatas.
+- **Perbaikan kecil lebih dulu:**
+  - Dashboard: kartu statistik difilter izin (`news.view` → Publikasi, `programs.view` → Program Kerja, `organization.view` → Anggota, `visitor_logs.view` → Pengunjung); kartu Agenda dihapus. Baris Ringkasan hanya tampil bila izinnya ada, grid menyesuaikan jumlah kartu (1–4).
+  - Sidebar: label akun bawah memakai `isSuperadmin` → "Superadmin", selain itu "Pengurus".
+  - Navigasi: label "News" → "Publikasi" (route `/admin/news` tetap), dan item `/admin/organization` diberi label "Struktur Organisasi" serta dimasukkan `implementedAdminRoutes`.
+- **Yang selesai (ORG-A):**
+  - Halaman `app/(private)/(admin)/admin/organization/page.tsx` dibungkus `RequirePermission` `organization.view`.
+  - Pemilih periode native (`Select`) berisi semua periode, aktif ditandai "(aktif)", default periode aktif atau periode terbaru; info nama, rentang tanggal, dan status aktif.
+  - Buat periode (`FormDialog`: nama wajib 2–50, mulai, selesai) selalu `is_active: false`, menampilkan notice periode baru tidak aktif, lalu langsung memilih periode hasil create. Ubah periode hanya mengirim nama/tanggal.
+  - Aktifkan periode lewat dialog konfirmasi dengan teks prototipe (situs publik langsung menampilkan periode; periode aktif lama otomatis nonaktif); `warnings` dari respons backend ditampilkan dan tombol aktivasi disembunyikan untuk periode yang sudah aktif.
+  - Hapus periode: tombol dinonaktifkan dengan alasan untuk periode aktif; penolakan backend `409` (masih ada divisi/anggota/program) ditampilkan apa adanya.
+  - Checklist periode tidak aktif: divisi sudah ada, anggota "dikelola di bagian Anggota" (data anggota belum dimuat di ORG-A), dan tombol aktifkan.
+  - Divisi periode terpilih dimuat lewat `getAdminDivisions(periodId)`, diurutkan `sort_order` lalu nama; tabel menampilkan nama, deskripsi, urutan. State kosong: "Periode ini belum punya divisi" + tombol tambah/salin.
+  - Tambah/ubah divisi (`FormDialog`: nama wajib, deskripsi opsional, urutan angka bulat ≥ 0) dan hapus divisi (`ConfirmDialog`, `409` backend ditampilkan).
+  - Salin divisi: dialog memuat jumlah divisi tiap periode lain, hanya menampilkan periode sumber yang punya divisi, menampilkan ringkasan "X divisi disalin, Y dilewati" beserta nama yang dilewati; bila tidak ada sumber, tampil pesan informatif (bukan error).
+  - Mode baca saja untuk akun tanpa `organization.manage`: banner singkat di atas halaman dan semua tombol tambah/ubah/hapus/aktifkan/salin dibungkus `Can`.
+- **Cara error 409 ditampilkan:** semua pemanggilan tulis melempar `ApiError`; `features/organization/errors.ts` memprioritaskan `ApiError.detail` (fallback `Error.message`) sehingga pesan backend seperti "Periode tidak bisa dihapus: masih ada 9 divisi, 57 anggota, 1 program kerja" muncul di `ConfirmDialog`/`FormDialog` terkait, bukan pesan generik.
+- **File dibuat:**
+  - `frontend/app/(private)/(admin)/admin/organization/page.tsx`
+  - `frontend/features/organization/errors.ts`
+  - `frontend/features/organization/components/admin/OrganizationPrimitives.tsx`
+  - `frontend/features/organization/components/admin/PeriodToolbar.tsx`
+  - `frontend/features/organization/components/admin/PeriodFormDialog.tsx`
+  - `frontend/features/organization/components/admin/PeriodActivateDialog.tsx`
+  - `frontend/features/organization/components/admin/PeriodDeleteDialog.tsx`
+  - `frontend/features/organization/components/admin/PeriodChecklist.tsx`
+  - `frontend/features/organization/components/admin/DivisionsSection.tsx`
+  - `frontend/features/organization/components/admin/DivisionFormDialog.tsx`
+  - `frontend/features/organization/components/admin/DivisionDeleteDialog.tsx`
+  - `frontend/features/organization/components/admin/DivisionCopyDialog.tsx`
+- **File diubah:**
+  - `frontend/app/(private)/(admin)/admin/dashboard/page.tsx`
+  - `frontend/components/admin/shell/AdminSidebar.tsx`
+  - `frontend/components/admin/shell/admin-navigation.tsx`
+  - `frontend/STRUCTURE.md`
+  - `docs/progress.md`
+- **Pemeriksaan yang dijalankan + hasil aktual:**
+  - `npx tsc --noEmit` di `frontend/` — lulus tanpa output.
+  - `npm run lint` di `frontend/` — lulus tanpa error/warning.
+  - `npm run build` di `frontend/` — sukses, 10 route termasuk `/admin/organization`; warning Turbopack lockfile di luar repository tetap ada dan tidak menggagalkan build.
+- **Konfirmasi batas scope:**
+  - `Backend/`, `.env*`, dependency, API contract, auth/CSRF/RBAC, deployment: tidak diubah/dibaca.
+  - `features/organization/admin-api.ts` dan `types.ts` tidak diubah; tidak ditemukan bug kontrak.
+  - Halaman/komponen publik tidak diubah.
+  - Commit/push/deploy: tidak.
+- **Catatan/ambiguitas:**
+  - Data anggota belum dimuat di ORG-A (sesuai batasan), jadi checklist anggota bersifat informatif; jumlah anggota per periode baru akan tersedia di batch Anggota.
+  - Jumlah divisi periode sumber pada dialog salin diambil dengan memanggil `GET /divisions?period_id=` per periode saat dialog dibuka; tidak ada endpoint agregat.
+- **Langkah berikutnya:** batch ORG-B (anggota/posisi/foto) dan penyesuaian UI lain menunggu instruksi pemilik.
 
 ---
 
