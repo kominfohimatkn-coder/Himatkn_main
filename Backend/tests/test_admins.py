@@ -13,6 +13,7 @@ from app.core.security import hash_password
 from app.main import app
 from app.models import (
     Admin,
+    AdminPermission,
     AdminRole,
     Permission,
     Role,
@@ -137,6 +138,53 @@ def create_test_admin(
         db.close()
 
 
+def create_admin_with_permissions(
+    username: str,
+    password: str,
+    permissions: list[str],
+) -> int:
+    db = TestSession()
+
+    try:
+        admin = Admin(
+            username=username,
+            password_hash=hash_password(password),
+            is_active=True,
+        )
+        db.add(admin)
+        db.flush()
+
+        for permission_name in permissions:
+            permission = db.scalar(
+                select(Permission).where(
+                    Permission.name == permission_name
+                )
+            )
+
+            if permission is None:
+                permission = Permission(
+                    name=permission_name,
+                    description=permission_name,
+                )
+                db.add(permission)
+                db.flush()
+
+            db.add(
+                AdminPermission(
+                    admin_id=admin.id,
+                    permission_id=permission.id,
+                )
+            )
+
+        db.commit()
+        db.refresh(admin)
+
+        return admin.id
+
+    finally:
+        db.close()
+
+
 def test_list_admins(client):
     login(
         client,
@@ -166,6 +214,9 @@ def test_list_admins(client):
 
 
 def test_create_admin(client):
+    role_name = f"content-test-role-{uuid4().hex[:8]}"
+    create_role(role_name, ["news.view"])
+
     csrf = login(
         client,
         "admin",
@@ -180,7 +231,7 @@ def test_create_admin(client):
         json={
             "username": "test-create-admin",
             "password": "test-password-12345",
-            "role": "editor",
+            "role": role_name,
         },
     )
 
@@ -190,7 +241,7 @@ def test_create_admin(client):
 
     assert body["username"] == "test-create-admin"
     assert body["is_active"] is True
-    assert body["roles"] == ["editor"]
+    assert body["roles"] == [role_name]
     assert "password_hash" not in body
 
 
@@ -201,36 +252,11 @@ def test_update_admin_revokes_sessions(client):
         "admin-password-1234",
     )
 
-    db = TestSession()
-
-    try:
-        role = db.scalar(
-            select(Role).where(Role.name == "editor")
-        )
-        assert role is not None
-
-        target = Admin(
-            username="target-update-admin",
-            password_hash=hash_password(
-                "target-password-12345"
-            ),
-            is_active=True,
-        )
-        db.add(target)
-        db.flush()
-
-        db.add(
-            AdminRole(
-                admin_id=target.id,
-                role_id=role.id,
-            )
-        )
-
-        db.commit()
-        target_id = target.id
-
-    finally:
-        db.close()
+    target_id = create_admin_with_permissions(
+        "target-update-admin",
+        "target-password-12345",
+        ["news.view"],
+    )
 
     response = client.put(
         f"/api/v1/admin/admins/{target_id}",
@@ -496,17 +522,10 @@ def test_delete_other_admin(client):
         "admin-password-1234",
     )
 
-    role_id = create_role(
-        "delete-target-test",
-        [
-            "dashboard.view",
-        ],
-    )
-
-    target_id = create_test_admin(
+    target_id = create_admin_with_permissions(
         "delete-target-admin",
         "delete-target-password-12345",
-        role_id,
+        ["news.view"],
     )
 
     response = client.delete(
@@ -655,7 +674,7 @@ def test_self_role_change_is_rejected(client):
             "X-CSRF-Token": csrf,
         },
         json={
-            "role": "editor",
+            "role": "superadmin",
         },
     )
 

@@ -14,7 +14,7 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 
 ## 1. Current Project State
 
-> Terakhir diperbarui: 18 November 2026 (Batch SEC-1 — Konfigurasi produksi dan guard superadmin; SEC-T1 ditunda). Perbarui bagian ini pada setiap batch.
+> Terakhir diperbarui: 18 November 2026 (Batch B4a — model izin per akun, migrasi, katalog izin, dan seed; B4b menyusul). Perbarui bagian ini pada setiap batch.
 
 ### a. Snapshot repository
 
@@ -807,6 +807,55 @@ Entri sesi sejak 11 November 2026. Append-only: tambahkan entri baru di bawah; j
   - Secret/kredensial diekspos: Tidak.
   - Dokumentasi berubah: Ya — `docs/progress.md`.
 - **Langkah berikutnya:** menunggu keputusan SEC-T1, lalu review dan commit oleh pemilik.
+
+---
+
+### Sesi 2026-11-18 — Batch B4a: Model izin per akun, migrasi, katalog izin, dan seed
+
+- **Status:** B4a selesai; **berhenti**. B4b belum dikerjakan dan menunggu B4a di-commit. Tidak commit, push, deploy, seed, atau migrasi ke database sungguhan.
+- **Branch/HEAD:** `feat/admin-ui-foundation`, HEAD `af39ba3` (SEC-1). Working tree bersih sebelum B4a dimulai.
+- **Keputusan model:** izin dicentang langsung per akun oleh superadmin. Role `admin` dan `editor` dihapus; hanya role `superadmin` yang tersisa dan tetap memegang semua izin. `admins.view`, `admins.manage`, dan `roles.manage` tidak dapat diberikan ke akun non-superadmin.
+- **Yang selesai:**
+  - Model `AdminPermission` (`admin_permissions`: PK gabungan `admin_id` + `permission_id`, FK cascade, `created_at`, indeks `permission_id`) dan ekspor di `app/models/__init__.py`.
+  - Migrasi `20261118_0002_admin_permissions.py`: membuat tabel, menyalin izin role non-superadmin ke izin langsung (kecuali `SUPERADMIN_ONLY`), menghapus seluruh `admin_roles` non-superadmin, lalu menghapus `role_permissions` dan role `admin`/`editor`. `downgrade()` hanya menghapus tabel dengan komentar bahwa data role lama tidak dipulihkan. Memakai SQLAlchemy core dan tipe BIGINT dengan varian MySQL unsigned agar cocok dengan `admins.id`.
+  - `app/services/permissions.py`: `PERMISSION_CATALOG` berurutan (Dashboard, Publikasi, Program kerja, Organisasi, Pengaturan situs, Upload gambar, Log aktivitas, Statistik pengunjung; Agenda/Dokumen/Notifikasi `available=False`), `SUPERADMIN_ONLY`, `ALWAYS_GRANTED`, aturan implikasi, `normalize_permissions()`, serta validasi saat import terhadap `PERMS` seed.
+  - `app/services/auth.py`: `permissions_for_admin` = izin role ∪ izin langsung ∪ `ALWAYS_GRANTED`, menerapkan implikasi; `is_superadmin()`; `admin_payload` menambah `is_superadmin` dan tetap mengirim `roles`.
+  - `app/seed.py`: `ROLE_SEEDS` hanya `superadmin`, semua izin `PERMS` diberikan ke superadmin, logika role lain dihapus; seed tetap idempoten.
+  - `app/core/config.py`: `ADMIN_DEFAULT_ROLE` hanya menerima `superadmin` (case-insensitive); `.env.example` diberi komentar.
+- **File yang diubah/ditambah:**
+  - `Backend/app/models/auth.py`, `Backend/app/models/__init__.py`
+  - `Backend/app/services/permissions.py` (baru), `Backend/app/services/auth.py`
+  - `Backend/app/seed.py`, `Backend/app/core/config.py`, `Backend/.env.example`
+  - `Backend/alembic/versions/20261118_0002_admin_permissions.py` (baru)
+  - `Backend/tests/conftest.py`, `Backend/tests/test_admins.py`, `Backend/tests/test_models.py`, `Backend/tests/test_admin_permissions.py` (baru)
+  - `docs/progress.md`
+- **Penyesuaian test yang sudah ada (beserta alasan):**
+  - `conftest.py`: role `editor` dihapus; akun `limited` kini memakai izin langsung `news.view`. `ADMIN_DEFAULT_ROLE=superadmin` ditambahkan ke environment test.
+  - `test_admins.py`: target update/delete memakai izin langsung; test create memakai role sementara khusus test karena schema endpoint masih memakai `role` sampai B4b; self role change memakai role `superadmin` yang valid. Test guard SEC-1 berbasis role dipertahankan untuk sementara dan akan diganti dengan guard superadmin di B4b.
+  - `test_models.py`: jumlah tabel 22 → 23 karena `admin_permissions`.
+- **Test B4a yang ditambahkan:**
+  - Migrasi data pada SQLite sementara: admin dengan role `editor` lama mendapat izin langsung yang sama tanpa `SUPERADMIN_ONLY`, tidak lagi punya role, dan role `editor`/`admin` hilang.
+  - `normalize_permissions`: implikasi `news.create`/`organization.manage`/`settings.manage`, penolakan nama tidak dikenal dan `admins.manage`/`roles.manage`, serta `dashboard.view` selalu ada.
+  - `permissions_for_admin`: superadmin mendapat semua izin; akun dengan izin langsung `news.create` mendapat `news.create` + `news.view` + `dashboard.view`; `is_superadmin` benar.
+- **Pemeriksaan yang dijalankan + hasil:**
+  - `python -m compileall app` → lulus.
+  - `pytest -q` → **219 passed** (sebelum B4a: 213; +6 test baru).
+  - `alembic upgrade head` pada SQLite sementara `storage/b4a-migration-check.sqlite3` → berhasil; file sementara dihapus setelah pemeriksaan.
+  - `alembic check` pada SQLite sementara yang sama → `No new upgrade operations detected`.
+- **Risiko/regresi yang diperiksa:**
+  - Route, schema, dan endpoint admin belum diubah pada B4a; semuanya masih kompatibel dengan field `role` sampai B4b.
+  - Superadmin tetap mendapat seluruh izin melalui role; akun non-superadmin memakai izin langsung + `dashboard.view`.
+  - Migration tidak memakai sintaks SQL khusus dialek dan aman ketika tabel sudah ada (baseline SQLite membuat metadata terkini).
+  - Tidak ada perubahan `frontend/`, model konten, atau migration lama.
+- **Blocker/keputusan yang diperlukan:**
+  - Tidak ada blocker teknis untuk B4a.
+  - B4b menunggu B4a di-commit oleh pemilik.
+- **Konfirmasi batas scope:**
+  - Backend berubah: Ya — sesuai scope B4a.
+  - Database/schema/migration berubah: Ya — model dan satu migration baru; tidak dijalankan ke database sungguhan.
+  - Secret/kredensial diekspos: Tidak.
+  - Dokumentasi berubah: Ya — `docs/progress.md`.
+- **Langkah berikutnya:** B4b (schema/endpoint kelola akun, katalog permission endpoint, guard superadmin, dokumentasi `ADMIN_API.md`, regenerasi `routes.txt`).
 
 ---
 

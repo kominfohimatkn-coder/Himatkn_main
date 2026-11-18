@@ -122,6 +122,18 @@ class Settings(BaseSettings):
 
         return normalized
 
+    @field_validator("admin_default_role", mode="before")
+    @classmethod
+    def normalize_admin_default_role(cls, value: str) -> str:
+        normalized = str(value).strip().lower()
+
+        if normalized != "superadmin":
+            raise ValueError(
+                "ADMIN_DEFAULT_ROLE hanya mendukung superadmin."
+            )
+
+        return normalized
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(

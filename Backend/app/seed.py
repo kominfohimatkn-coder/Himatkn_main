@@ -8,8 +8,6 @@ from app.models import Admin, AdminRole, Permission, Role, RolePermission
 
 ROLE_SEEDS = {
     "superadmin": "Akses penuh seluruh backend.",
-    "admin": "Administrator operasional.",
-    "editor": "Akses baca dan konten terbatas.",
 }
 
 PERMS = [
@@ -77,35 +75,11 @@ def seed() -> None:
 
             perms[name] = row
 
-        # Assign permissions to roles
+        # Assign all permissions to the superadmin role.
         all_permissions = list(perms.values())
 
         for role in roles.values():
-            if role.name == "superadmin":
-                wanted = all_permissions
-            else:
-                wanted = [
-                    permission
-                    for permission_name, permission in perms.items()
-                    if permission_name.startswith(
-                        (
-                            "dashboard.",
-                            "news.",
-                            "organization.",
-                            "programs.",
-                            "agendas.",
-                            "documents.view",
-                            "settings.view",
-                            "notifications.view",
-                            "activity_logs.view",
-                            "admins.view",
-                            "visitor_logs.view",
-                            "media.",
-                        )
-                    )
-                ]
-
-            for permission in wanted:
+            for permission in all_permissions:
                 existing = db.get(
                     RolePermission,
                     {

@@ -10,6 +10,7 @@ os.environ.update(
         "RATE_LIMIT_BACKEND": "memory",
         "STORAGE_BACKEND": "local",
         "STORAGE_LOCAL_DIR": "storage/test-uploads",
+        "ADMIN_DEFAULT_ROLE": "superadmin",
     }
 )
 
@@ -23,6 +24,7 @@ from app.database.connection import Base, engine
 from app.core.security import hash_password
 from app.models import (
     Admin,
+    AdminPermission,
     AdminRole,
     Permission,
     Role,
@@ -52,13 +54,6 @@ def db_setup():
             description="test",
         )
         db.add(superadmin)
-        db.flush()
-
-        editor = Role(
-            name="editor",
-            description="limited",
-        )
-        db.add(editor)
         db.flush()
 
         # =========================================================
@@ -111,16 +106,6 @@ def db_setup():
                 )
             )
 
-        # Editor hanya punya news.view
-        news_view = permissions["news.view"]
-
-        db.add(
-            RolePermission(
-                role_id=editor.id,
-                permission_id=news_view.id,
-            )
-        )
-
         # =========================================================
         # Admin accounts
         # =========================================================
@@ -151,9 +136,9 @@ def db_setup():
         db.flush()
 
         db.add(
-            AdminRole(
+            AdminPermission(
                 admin_id=limited.id,
-                role_id=editor.id,
+                permission_id=permissions["news.view"].id,
             )
         )
 
