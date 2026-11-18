@@ -1,13 +1,19 @@
 from __future__ import annotations
 
+from uuid import uuid4
+
 from sqlalchemy import func, select
 
+from app.core.security import hash_password
 from app.database.connection import SessionLocal
 from app.models import (
     ActivityLog,
+    Admin,
+    AdminPermission,
     Division,
     Member,
     Period,
+    Permission,
     Position,
     Program,
 )
@@ -1282,3 +1288,91 @@ def test_delete_member_success_writes_audit_log(client):
             )
         )
         assert log is not None
+
+
+def _login_programs_view(client):
+    username = f"test-programs-view-{uuid4().hex[:8]}"
+    password = "programs-view-password-1234"
+
+    with SessionLocal() as db:
+        admin = Admin(
+            username=username,
+            password_hash=hash_password(password),
+            is_active=True,
+        )
+        db.add(admin)
+        db.flush()
+
+        permission = db.scalar(
+            select(Permission).where(Permission.name == "programs.view")
+        )
+        db.add(
+            AdminPermission(
+                admin_id=admin.id,
+                permission_id=permission.id,
+            )
+        )
+        db.commit()
+
+    client.get("/api/v1/auth/csrf")
+    response = client.post(
+        "/api/v1/auth/login",
+        json={
+            "username": username,
+            "password": password,
+        },
+        headers={"Origin": "http://localhost:3000"},
+    )
+    assert response.status_code == 200
+
+    return {
+        "X-CSRF-Token": client.cookies.get("himatkn_csrf"),
+        "Origin": "http://localhost:3000",
+    }
+
+
+def test_programs_view_can_read_periods_and_divisions_only(client):
+    headers = _login_programs_view(client)
+
+    assert (
+        client.get(
+            "/api/v1/admin/organization/periods",
+            headers=headers,
+        ).status_code
+        == 200
+    )
+    assert (
+        client.get(
+            "/api/v1/admin/organization/divisions",
+            headers=headers,
+        ).status_code
+        == 200
+    )
+    assert (
+        client.get(
+            "/api/v1/admin/organization/members",
+            headers=headers,
+        ).status_code
+        == 403
+    )
+    assert (
+        client.get(
+            "/api/v1/admin/organization/positions",
+            headers=headers,
+        ).status_code
+        == 403
+    )
+
+    response = client.post(
+        "/api/v1/admin/organization/periods",
+        json={
+            "name": "TEST-PROGRAMS-VIEW-FORBIDDEN",
+            "start_date": "2050-01-01",
+            "end_date": "2050-12-31",
+            "is_active": False,
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Anda tidak memiliki izin untuk modul ini"

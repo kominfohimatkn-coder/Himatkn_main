@@ -112,6 +112,14 @@ Semua akun selalu mendapat `dashboard.view`.
 Contoh: mengirim `["news.create"]` menghasilkan izin efektif
 `news.create`, `news.view`, dan `dashboard.view`.
 
+### Akses lintas modul
+
+Akun dengan `programs.view` juga dapat membaca daftar periode dan divisi
+organisasi melalui `GET /admin/organization/periods` dan
+`GET /admin/organization/divisions`. Izin `programs.view` hanya membuka dua
+endpoint baca tersebut; endpoint organisasi lain (posisi, anggota) dan semua
+mutasi tetap memerlukan `organization.view`/`organization.manage`.
+
 ## 3. Endpoint
 
 Semua endpoint memerlukan sesi login. Endpoint tulis juga memerlukan header

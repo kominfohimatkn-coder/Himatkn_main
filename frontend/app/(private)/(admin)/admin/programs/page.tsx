@@ -191,9 +191,7 @@ export default function ProgramsPage() {
             role="alert"
             className="mt-5 border border-gold/40 bg-gold/10 p-4 text-sm leading-6 text-ink"
           >
-            Daftar periode tidak bisa dimuat. Pastikan akun memiliki
-            permission organization.view. Membuat program baru memerlukan
-            data periode.
+            Daftar periode tidak bisa dimuat. Coba muat ulang halaman.
           </div>
         )}
 

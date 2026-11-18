@@ -1256,6 +1256,62 @@ Entri sesi sejak 11 November 2026. Append-only: tambahkan entri baru di bawah; j
 
 ---
 
+### Sesi 2026-11-18 — Batch PERM: `programs.view` untuk baca periode & divisi
+
+- **Status:** Selesai di working tree; tidak commit, push, atau deploy.
+- **Branch:** `feat/admin-ui-foundation`. Tree bersih sebelum batch.
+- **Tujuan:** memungkinkan akun dengan izin `programs.view` (tanpa
+  `organization.view`) membuka form Program kerja, yang membutuhkan daftar
+  periode dan divisi.
+- **Yang selesai:**
+  - Menambahkan `require_any_permission(*permissions)` di
+    `Backend/app/database/dependencies.py` dengan pola dan pesan `403` yang sama
+    seperti `require_permission`.
+  - `GET /admin/organization/periods` dan
+    `GET /admin/organization/divisions` kini memakai
+    `require_any_permission("organization.view", "programs.view")`. Endpoint
+    anggota, posisi, dan seluruh mutasi tidak berubah.
+  - Menambahkan test akun dengan izin langsung `["programs.view"]` saja:
+    periods `200`, divisions `200`, members `403`, positions `403`, dan
+    POST periods `403`.
+  - Mengganti pesan teknis di halaman Program kerja menjadi
+    "Daftar periode tidak bisa dimuat. Coba muat ulang halaman." tanpa mengubah
+    logika pemuatan periode.
+  - Mencatat akses lintas modul pada `ORGANIZATION_API.md` dan `ADMIN_API.md`.
+- **File diubah:**
+  - `Backend/app/database/dependencies.py`
+  - `Backend/app/routers/organization.py`
+  - `Backend/tests/test_organization.py`
+  - `Backend/docs/ORGANIZATION_API.md`
+  - `Backend/docs/ADMIN_API.md`
+  - `frontend/app/(private)/(admin)/admin/programs/page.tsx`
+  - `docs/progress.md`
+- **Pemeriksaan yang dijalankan + hasil aktual:**
+  - `Backend/.venv` → `python -m pytest -q` — 224 passed, 37 warnings
+    (baseline 223 + 1 test baru).
+  - `Backend/.venv` → `python -m alembic check` — "No new upgrade operations
+    detected."
+  - `frontend/` → `npx tsc --noEmit` — lulus tanpa output.
+  - `frontend/` → `npm run lint` — lulus tanpa error/warning.
+- **Risiko/regresi yang diperiksa:**
+  - Hanya dua endpoint baca yang memperoleh izin alternatif; posisi, anggota,
+    dan semua endpoint tulis tetap memakai `organization.view`/
+    `organization.manage`.
+  - `programs.view` tidak mengimplikasikan `organization.view`, sehingga test
+    benar-benar menguji jalur izin alternatif.
+  - Pesan frontend diganti tanpa mengubah kondisi render atau alur data.
+- **Blocker/keputusan yang diperlukan:** Tidak ada blocker teknis.
+- **Konfirmasi batas scope:**
+  - Backend berubah: Ya — hanya dependency, dua endpoint baca, test, dan
+    dokumentasi sesuai instruksi.
+  - Database/schema/migration berubah: Tidak.
+  - Dependency/lockfile/environment/`.env*`/deployment berubah atau dibaca:
+    Tidak.
+  - Commit/push/merge/rebase/deploy: Tidak.
+- **Langkah berikutnya:** menunggu instruksi pemilik untuk batch berikutnya.
+
+---
+
 ## 3. Historical Archive
 
 > **Arsip historis.** Entri di bawah ini dibuat sebelum 11 November 2026 dan memakai referensi desain yang sudah deprecated. Keputusan visual di dalamnya (token, font, layout, komposisi) **tidak berlaku**. Fakta teknis (dependency, kontrak API, hasil validasi, konfigurasi) hanya berlaku jika masih sesuai dengan source code terkini; verifikasi ulang sebelum dipakai. Jangan melanjutkan tugas atau "langkah berikutnya" dari entri ini tanpa konfirmasi. Untuk koreksi yang sudah diketahui, lihat Current Project State bagian Koreksi.

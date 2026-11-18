@@ -9,7 +9,9 @@ alur pergantian periode. Kontrak publik struktur organisasi ada di
 - Base path: `/api/v1/admin/organization`
 - Semua endpoint admin memerlukan sesi login (cookie JWT HttpOnly).
 - Endpoint baca memerlukan `organization.view`; endpoint tulis memerlukan
-  `organization.manage`.
+  `organization.manage`. Pengecualian: `GET /periods` dan `GET /divisions`
+  juga dapat dibaca dengan `programs.view` karena form program kerja
+  membutuhkan daftar periode dan divisi.
 - Semua endpoint tulis memerlukan CSRF (`X-CSRF-Token` harus sama dengan cookie
   CSRF) dan menulis `activity_logs` dengan `ip_address` + `user_agent`.
 - Pesan error berbahasa Indonesia. `422` dipakai untuk validasi body,
@@ -20,13 +22,13 @@ alur pergantian periode. Kontrak publik struktur organisasi ada di
 
 | Method | Path | Permission | CSRF |
 |---|---|---|---|
-| GET | `/periods` | `organization.view` | — |
+| GET | `/periods` | `organization.view` atau `programs.view` | — |
 | POST | `/periods` | `organization.manage` | Ya |
 | PUT | `/periods/{period_id}` | `organization.manage` | Ya |
 | DELETE | `/periods/{period_id}` | `organization.manage` | Ya |
 | POST | `/periods/{period_id}/activate` | `organization.manage` | Ya |
 | POST | `/periods/{period_id}/divisions/copy` | `organization.manage` | Ya |
-| GET | `/divisions` | `organization.view` | — |
+| GET | `/divisions` | `organization.view` atau `programs.view` | — |
 | POST | `/divisions` | `organization.manage` | Ya |
 | PUT | `/divisions/{division_id}` | `organization.manage` | Ya |
 | DELETE | `/divisions/{division_id}` | `organization.manage` | Ya |
@@ -86,7 +88,8 @@ eksternal lama). Endpoint publik menormalkannya menjadi path media; lihat
 ### `GET /api/v1/admin/organization/periods`
 
 Mengembalikan `{"items": [period, ...]}` diurutkan `start_date` DESC lalu `id`
-DESC.
+DESC. Dapat diakses dengan `organization.view` atau `programs.view` (form
+program kerja memerlukan daftar periode).
 
 ### `POST /api/v1/admin/organization/periods`
 
@@ -169,7 +172,8 @@ Mengaktifkan periode secara atomik dan idempoten. Tidak ada body.
 ### `GET /api/v1/admin/organization/divisions`
 
 Query opsional `period_id`. Respons `{"items": [division, ...]}` diurutkan
-`period_id`, `sort_order`, lalu `id`. Item selalu memuat `sort_order`.
+`period_id`, `sort_order`, lalu `id`. Item selalu memuat `sort_order`. Dapat
+diakses dengan `organization.view` atau `programs.view`.
 
 ### `POST /api/v1/admin/organization/divisions`
 

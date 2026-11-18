@@ -6,7 +6,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.utils.ip import get_client_ip
 from app.database.connection import get_db
-from app.database.dependencies import require_csrf, require_permission
+from app.database.dependencies import (
+    require_any_permission,
+    require_csrf,
+    require_permission,
+)
 from app.models import Admin, Division, Member, Period, Position, Program
 from app.schemas.organization import (
     DivisionCopyIn,
@@ -26,6 +30,7 @@ router = APIRouter(
 
 PERMISSION_VIEW = "organization.view"
 PERMISSION_MANAGE = "organization.manage"
+PERMISSION_PROGRAMS_VIEW = "programs.view"
 
 
 def _period_item(period: Period) -> dict:
@@ -123,7 +128,9 @@ def _commit_or_conflict(db: Session) -> None:
 @router.get("/periods")
 def periods(
     db: Session = Depends(get_db),
-    _: Admin = Depends(require_permission(PERMISSION_VIEW)),
+    _: Admin = Depends(
+        require_any_permission(PERMISSION_VIEW, PERMISSION_PROGRAMS_VIEW)
+    ),
 ):
     rows = db.scalars(
         select(Period).order_by(
@@ -187,7 +194,9 @@ def create_period(
 def divisions(
     period_id: int | None = None,
     db: Session = Depends(get_db),
-    _: Admin = Depends(require_permission(PERMISSION_VIEW)),
+    _: Admin = Depends(
+        require_any_permission(PERMISSION_VIEW, PERMISSION_PROGRAMS_VIEW)
+    ),
 ):
     statement = select(Division).order_by(
         Division.period_id,
