@@ -49,6 +49,13 @@ def test_login_me_logout(client):
     assert logout.status_code == 200
 
     assert client.get("/api/v1/auth/me").status_code == 401
+    assert response.status_code == 200
+    assert response.json()["admin"]["is_superadmin"] is True
+
+    me = client.get("/api/v1/auth/me")
+    assert me.status_code == 200
+    assert me.json()["admin"]["username"] == "admin"
+    assert me.json()["admin"]["is_superadmin"] is True
 
 
 def test_bad_login(client):
