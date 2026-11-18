@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/AuthContext";
 import {
   getDashboardStats,
   type DashboardStats,
-} from "@/lib/admin/dashboard";
+} from "@/features/dashboard/admin-api";
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat("id-ID").format(value);

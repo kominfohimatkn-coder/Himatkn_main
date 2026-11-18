@@ -5,7 +5,7 @@
 import { Image as ImageIcon } from "lucide-react";
 import { useState } from "react";
 
-import { resolveMediaUrl } from "@/lib/api/media";
+import { resolveMediaUrl } from "@/lib/media/api";
 
 type PublicImageProps = {
   src: string | null;

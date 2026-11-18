@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
-import { StructurePage } from "@/components/public/StructurePage";
-import { loadPublicOrganization } from "@/lib/public/organization";
+import { StructurePage } from "@/features/organization/components/StructurePage";
+import { loadPublicOrganization } from "@/features/organization/public-api";
 
 export const dynamic = "force-dynamic";
 

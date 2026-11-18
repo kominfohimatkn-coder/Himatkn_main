@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider } from "@/features/auth/AuthContext";
 
 export default function PrivateLayout({
   children,

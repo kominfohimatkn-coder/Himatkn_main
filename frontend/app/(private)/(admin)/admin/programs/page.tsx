@@ -2,26 +2,26 @@
 
 import { useEffect, useState } from "react";
 
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/AuthContext";
 
 import {
   createAdminProgram,
   deleteAdminProgram,
   getAdminPrograms,
   updateAdminProgram,
-} from "@/lib/admin/programs";
+} from "@/features/programs/admin-api";
 
-import { getAdminPeriods } from "@/lib/admin/organization";
+import { getAdminPeriods } from "@/features/organization/admin-api";
 
 import type {
   AdminProgram,
   CreateProgramPayload,
-} from "@/types/programs";
-import type { AdminPeriod } from "@/types/organization";
+} from "@/features/programs/types";
+import type { AdminPeriod } from "@/features/organization/types";
 
-import ProgramsList from "@/components/admin/programs/ProgramsList";
-import ProgramFormDialog from "@/components/admin/programs/ProgramFormDialog";
-import ProgramDeleteDialog from "@/components/admin/programs/ProgramDeleteDialog";
+import ProgramsList from "@/features/programs/components/admin/ProgramsList";
+import ProgramFormDialog from "@/features/programs/components/admin/ProgramFormDialog";
+import ProgramDeleteDialog from "@/features/programs/components/admin/ProgramDeleteDialog";
 
 const PAGE_SIZE = 20;
 

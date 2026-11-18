@@ -2,18 +2,18 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { ArrowRight, CalendarDays, ExternalLink } from "lucide-react";
 
-import { OrganizationSection } from "@/components/public/OrganizationSection";
-import { PublicationsSection } from "@/components/public/PublicationsSection";
+import { OrganizationSection } from "@/features/organization/components/OrganizationSection";
+import { PublicationsSection } from "@/features/news/components/public/PublicationsSection";
 import {
   PublicButtonAnchor,
   PublicButtonLink,
 } from "@/components/public/PublicButton";
 import { PublicLabel } from "@/components/public/PublicLabel";
 import { PublicStateBox } from "@/components/public/PublicStateBox";
-import { PUBLIC_LINKS } from "@/lib/public/link";
-import { getPublicNews } from "@/lib/public/news";
-import { loadPublicOrganization } from "@/lib/public/organization";
-import type { PublicNewsItem } from "@/types/news";
+import { PUBLIC_LINKS } from "@/features/settings/links";
+import { getPublicNews } from "@/features/news/public-api";
+import { loadPublicOrganization } from "@/features/organization/public-api";
+import type { PublicNewsItem } from "@/features/news/types";
 
 export const dynamic = "force-dynamic";
 

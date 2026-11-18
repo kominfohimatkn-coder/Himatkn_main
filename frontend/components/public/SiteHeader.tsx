@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { ExternalLink, Menu, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { PUBLIC_LINKS } from "@/lib/public/link";
+import { PUBLIC_LINKS } from "@/features/settings/links";
 
 type NavItem = {
   label: string;

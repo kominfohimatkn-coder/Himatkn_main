@@ -1496,6 +1496,79 @@ Informasi ini berasal dari audit repo remote dan dapat berubah. Agent harus veri
 
 ---
 
+### Sesi 2026-11-18 - Batch FE-S: struktur folder frontend per domain (`features/`)
+
+- **Status:** Selesai; tidak commit, push, merge, rebase, atau deploy.
+- **Branch:** `feat/admin-ui-foundation`.
+- **Tujuan batch:** memindahkan file API, tipe, dan komponen frontend ke folder
+  per domain di `frontend/features/`, memperbarui import, menghapus file yang
+  tidak dipakai, dan mendokumentasikan struktur baru. Tidak ada perubahan
+  logika, JSX, class Tailwind, atau teks.
+- **Struktur baru:**
+  - `frontend/features/auth/`: `api.ts`, `types.ts`, `permissions.ts`,
+    `AuthContext.tsx`.
+  - `frontend/features/accounts/`: `api.ts`, `types.ts`.
+  - `frontend/features/organization/`: `admin-api.ts`, `public-api.ts`,
+    `types.ts`, `components/OrganizationSection.tsx`,
+    `components/StructureDirectory.tsx`, `components/StructurePage.tsx`.
+  - `frontend/features/news/`: `admin-api.ts`, `public-api.ts`, `types.ts`,
+    `components/admin/*`, `components/public/PublicationsSection.tsx`.
+  - `frontend/features/programs/`: `admin-api.ts`, `public-api.ts`, `types.ts`,
+    `status.ts`, `components/admin/*`.
+  - `frontend/features/settings/`: `admin-api.ts`, `public-api.ts`, `types.ts`,
+    `links.ts`.
+  - `frontend/features/dashboard/admin-api.ts` dan
+    `frontend/features/visits/public-api.ts`.
+  - Shared yang tetap: `lib/api/client.ts`, `lib/api/errors.ts`,
+    `lib/media/{api,compress,types}.ts`, `components/ui/Button.tsx`,
+    `components/admin/shell/*`, `components/admin/shared/*`, dan komponen publik
+    lintas fitur di `components/public/`.
+  - Folder lama `types/`, `context/`, `lib/admin/`, `lib/public/`, `lib/auth/`,
+    `lib/programs/`, `components/admin/news/`, dan `components/admin/programs/`
+    kosong lalu dihapus.
+  - Dokumentasi aturan struktur ditambahkan di `frontend/STRUCTURE.md`.
+- **File yang dihapus:** `frontend/lib/api/health.ts`,
+  `frontend/components/public/BrandMark.tsx`, `frontend/components/ui/FormField.tsx`,
+  `frontend/components/ui/Input.tsx`, `frontend/components/ui/Select.tsx`.
+  Pencarian `lib/api/health`, `BrandMark`, `FormField`, `Input`, dan `Select`
+  pada seluruh `*.ts`/`*.tsx` hanya menemukan definisi di file itu sendiri;
+  tidak ada import dari file lain.
+- **Catatan wiring:** `frontend/features/settings/links.ts` masih berisi
+  konstanta `PUBLIC_LINKS`; pada batch wiring akan diganti dengan
+  `getPublicLinks(settings)`.
+- **File yang diubah:** file yang dipindah (lihat `git status --short`, Git
+  mencatatnya sebagai rename) serta import di `app/**` dan
+  `components/**`; `frontend/STRUCTURE.md`; `docs/progress.md`.
+- **Pemeriksaan yang dijalankan + hasil:**
+  - Baseline sebelum pindah: `npx tsc --noEmit` lulus (exit 0),
+    `npm run lint` lulus (exit 0), `npm run build` berhasil compile dan
+    menghasilkan 9 route tetapi berhenti dengan `SecurityFatalError` dari
+    Next.js 16.4.3 yang meminta upgrade keamanan (bukan error kode).
+  - Sesudah refactor: `npx tsc --noEmit` lulus, `npm run lint` lulus,
+    `npm run build` menunjukkan hasil yang sama dengan baseline (compile dan
+    route sukses, berhenti pada pengingat upgrade keamanan Next.js).
+  - Pencarian import lama (`@/lib/admin`, `@/lib/public`, `@/types/`,
+    `@/context/`, `@/lib/auth`, `@/lib/programs`, `@/lib/api/media`,
+    `@/lib/api/auth`, `@/components/admin/news`,
+    `@/components/admin/programs`) tidak menemukan sisa.
+- **Risiko/regresi yang diperiksa:**
+  - Hanya baris import yang berubah; isi komponen, logika, dan class Tailwind
+    tidak disentuh.
+  - Semua pemindahan memakai `git mv`, sehingga Git mencatat rename (`R`/`RM`),
+    bukan pasangan hapus+tambah.
+- **Blocker/keputusan yang diperlukan:** Tidak ada blocker teknis. Build
+  produksi tetap meminta upgrade keamanan Next.js, di luar scope batch ini.
+- **Konfirmasi batas scope:**
+  - Backend berubah: Tidak.
+  - Database/schema/migration berubah: Tidak.
+  - API contract/client/auth/CSRF/RBAC/cookie policy berubah: Tidak.
+  - Dependency, `.env*`, deployment, secret, atau konfigurasi environment
+    berubah: Tidak.
+- **Langkah berikutnya:** lanjutkan batch wiring, termasuk mengganti
+  `PUBLIC_LINKS` dengan `getPublicLinks(settings)`.
+
+---
+
 ## 4. Template Catatan Sesi
 
 Salin bagian ini dan isi dengan fakta aktual setiap selesai satu batch. Jangan mengklaim check/test berhasil jika tidak dijalankan.

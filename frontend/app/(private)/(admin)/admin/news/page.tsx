@@ -3,12 +3,12 @@
 
 import { useEffect, useState } from "react";
 
-import { useAuth } from "@/context/AuthContext";
-import { getAdminNews } from "@/lib/admin/news";
+import { useAuth } from "@/features/auth/AuthContext";
+import { getAdminNews } from "@/features/news/admin-api";
 
-import type { AdminNews } from "@/types/news";
+import type { AdminNews } from "@/features/news/types";
 
-import NewsList, { type NewsStatusFilter, } from "@/components/admin/news/NewsList";
+import NewsList, { type NewsStatusFilter, } from "@/features/news/components/admin/NewsList";
 const PAGE_SIZE = 20;
 const REQUEST_SIZE = PAGE_SIZE + 1;
 

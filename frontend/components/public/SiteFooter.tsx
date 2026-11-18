@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 
-import { PUBLIC_LINKS } from "@/lib/public/link";
+import { PUBLIC_LINKS } from "@/features/settings/links";
 
 type FooterItem = {
   label: string;
