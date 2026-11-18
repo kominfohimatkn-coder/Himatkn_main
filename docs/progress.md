@@ -14,7 +14,7 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 
 ## 1. Current Project State
 
-> Terakhir diperbarui: 18 November 2026 (Batch ORG-A — halaman admin Struktur Organisasi selesai di working tree). Perbarui bagian ini pada setiap batch.
+> Terakhir diperbarui: 18 November 2026 (Batch ORG-B — anggota dan foto anggota pada halaman admin Struktur Organisasi selesai di working tree). Perbarui bagian ini pada setiap batch.
 
 ### a. Snapshot repository
 
@@ -49,6 +49,7 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 - **Batch F2b** (18 Nov) menyelesaikan API-F2 di frontend: `Admin.is_superadmin` + `changePassword()`, helper izin `frontend/lib/auth/permissions.ts`, `can()`/`isSuperadmin` di `AuthContext`, service/type akun admin + katalog izin + `applyPermissionImplications`, sinkronisasi settings **47 key** (`hero_image`, `hero_image_alt`, tipe `image`, `preview_url`), dan kompresi `uploadAdminNewsImage`. Perubahan berada di working tree; **belum di-commit**. Frontend siap untuk halaman admin, tetapi UI-nya belum dibuat.
 - **Batch UI-0** (18 Nov) menambahkan primitif form `components/ui/` (`Input`, `Textarea`, `Select`, `Checkbox`, `FormField`) dan gerbang izin `components/admin/shared/` (`Can`, `RequirePermission`); form program, filter berita, serta halaman dashboard/news/programs sudah memakainya, dan navigasi memakai `PERMISSIONS`. Perubahan berada di working tree; **belum di-commit**.
 - **Batch ORG-A** (18 Nov) menambahkan halaman admin `/admin/organization` ("Struktur Organisasi") dengan pemilih periode, buat/ubah/aktifkan/hapus periode, checklist periode baru, daftar divisi untuk periode terpilih, CRUD divisi, dan salin divisi antarperiode. Mode baca saja untuk akun tanpa `organization.manage` memakai banner dan `Can`; pesan `409` backend ditampilkan dari `ApiError.detail`. Perbaikan kecil: kartu dashboard mengikuti izin `news.view`/`programs.view`/`organization.view`/`visitor_logs.view`, kartu Agenda dihapus, label akun sidebar menjadi "Superadmin"/"Pengurus", dan menu "News" menjadi "Publikasi". Perubahan berada di working tree; **belum di-commit**.
+- **Batch ORG-B** (18 Nov) melengkapi halaman admin `/admin/organization` dengan bagian **Anggota** di bawah divisi: daftar anggota periode terpilih dikelompokkan per divisi (`sort_order` divisi) lalu "Tanpa divisi", urut `sort_order` anggota lalu nama, dengan foto/inisial, nama, dan jabatan dari `GET /positions`; pencarian nama di sisi klien. Form anggota memakai `FormDialog` (nama, jabatan, divisi periode terpilih atau tanpa divisi, urutan, foto) dan tombol "Tambah anggota" per grup mengisi divisi otomatis. Foto diunggah lewat `uploadImage()` (`POST /media/images`, kompresi browser), `storage_key` disimpan ke `photo_url`; pratinjau memakai `mediaPathFromStorageKey()` + `resolveMediaUrl()` dan nilai lama URL/path tetap lewat `resolveMediaUrl()`. Tanpa `media.manage`, area unggah diganti pemberitahuan. Hapus anggota memakai `ConfirmDialog` dengan nama dan periode, dan checklist periode kini memakai jumlah anggota sebenarnya. Perubahan berada di working tree; **belum di-commit**.
 - URL Instagram `https://www.instagram.com/himatknuklir` **dikonfirmasi pemilik** pada 16 Nov. Konstanta dipertahankan sebagai utang teknis (lihat e.8); parameter share `rpxt` pada URL yang dikirim pemilik dibuang agar tautan stabil.
 
 ### b. Scope fase saat ini
@@ -110,7 +111,7 @@ Entri historis yang masih memuat referensi tersebut tetap utuh di Historical Arc
 Ringkasan dari audit 12 November 2026; detail dan bukti line-by-line ada di `docs/audit/REDESIGN_AUDIT_2026-11-12.md` (rujukan; jangan disalin ulang).
 
 - Route publik produk: `/` dan `/struktur`. Fixture `/__structure-state` **sudah dihapus pada R1 Fase A** (folder berawalan `_` sebenarnya tidak pernah menjadi route Next; URL-nya 404 bahkan sebelum dihapus).
-- Route admin: `/login`, `/admin/dashboard`, `/admin/news` (read-only di UI), `/admin/programs` (CRUD), `/admin/organization` (CRUD periode/divisi).
+- Route admin: `/login`, `/admin/dashboard`, `/admin/news` (read-only di UI), `/admin/programs` (CRUD), `/admin/organization` (CRUD periode/divisi/anggota + foto anggota).
 - Endpoint publik yang tersedia dan pemakaiannya:
 
   | Endpoint | Dipakai frontend? |
@@ -125,8 +126,9 @@ Ringkasan dari audit 12 November 2026; detail dan bukti line-by-line ada di `doc
 
 - Admin settings API (Batch API-B1, diperluas B3d): `GET /admin/settings` (`settings.view`), `PUT`/`DELETE /admin/settings/{key}` dan `PATCH /admin/settings` (`settings.manage` + CSRF), dengan registry **47 key** dan validasi. Sejak B3d, item bertipe `image` (`hero_image`) menyertakan `preview_url` berupa path media; tipe lain tidak. Service admin (`frontend/lib/admin/settings.ts`) siap sejak API-F; **halaman admin Pengaturan belum dibuat**.
 - Public content API (Batch API-B2): `GET /public/programs` (filter periode/status/divisi, `total`, metadata divisi/periode), `GET /public/programs/{slug}`, `GET /public/news` (`q` judul, `total`, `excerpt`, `tags`), `GET /public/news/{slug}` (`tags`), dan `GET /public/organization` (`sort_order`, `photo_url` ternormalisasi). Kontrak lengkap: `Backend/docs/PUBLIC_API.md`.
-- **Admin organisasi (Batch B3a, 17 Nov):** `PUT /admin/organization/periods/{id}` mengubah nama/tanggal dengan nama unik case-insensitive dan validasi `end_date >= start_date`; `DELETE /admin/organization/periods/{id}` menolak periode aktif (409) dan periode yang masih punya divisi/anggota/program (409, pesan menyebut bagian yang menghalangi). Create periode juga memvalidasi urutan tanggal. Belum ada UI admin yang memakai endpoint ini.
-- **Admin divisi (Batch B3b, 17 Nov):** `POST`/`PUT`/`DELETE /admin/organization/divisions` (201/200/200) dengan nama unik per periode case-insensitive; `DELETE` menolak divisi yang masih punya anggota dan/atau dipakai program kerja (409). `POST /admin/organization/periods/{id}/divisions/copy` menyalin divisi antarperiode secara atomik, melewati nama yang sudah ada, tidak menyalin anggota, dan menulis satu audit `division.copy`. `GET /divisions` mengirim `sort_order` dan diurutkan `sort_order` lalu `id`. Perbaikan bug: audit `member.create`/`member.update`/`member.delete` kini memakai `ip_address`/`user_agent` (sebelumnya `request=request` yang membuat endpoint 500). Belum ada UI admin yang memakai endpoint ini.
+- **Admin organisasi (Batch B3a, 17 Nov):** `PUT /admin/organization/periods/{id}` mengubah nama/tanggal dengan nama unik case-insensitive dan validasi `end_date >= start_date`; `DELETE /admin/organization/periods/{id}` menolak periode aktif (409) dan periode yang masih punya divisi/anggota/program (409, pesan menyebut bagian yang menghalangi). Create periode juga memvalidasi urutan tanggal. UI periode ada di halaman `/admin/organization` (Batch ORG-A).
+- **Admin divisi (Batch B3b, 17 Nov):** `POST`/`PUT`/`DELETE /admin/organization/divisions` (201/200/200) dengan nama unik per periode case-insensitive; `DELETE` menolak divisi yang masih punya anggota dan/atau dipakai program kerja (409). `POST /admin/organization/periods/{id}/divisions/copy` menyalin divisi antarperiode secara atomik, melewati nama yang sudah ada, tidak menyalin anggota, dan menulis satu audit `division.copy`. `GET /divisions` mengirim `sort_order` dan diurutkan `sort_order` lalu `id`. Perbaikan bug: audit `member.create`/`member.update`/`member.delete` kini memakai `ip_address`/`user_agent` (sebelumnya `request=request` yang membuat endpoint 500). UI divisi ada di halaman `/admin/organization` (Batch ORG-A).
+- **Admin anggota (Batch ORG-B, 18 Nov):** UI `/admin/organization` memakai `GET /members?period_id` dan `GET /positions` untuk daftar per divisi, serta `POST`/`PUT`/`DELETE /members` untuk CRUD anggota. Foto memakai `POST /media/images` (izin `media.manage`); `storage_key` disimpan ke `photo_url`. `DELETE /members/{id}` mengembalikan `204` dan pesan `404`/`400` backend ditampilkan dari `ApiError`. Pencarian nama dan pengelompokan dilakukan di klien.
 - **Admin akun & izin (Batch B4a/B4b, 18 Nov):** `GET /admin/admins` mengirim `is_superadmin`, `roles`, dan `permissions` efektif. `GET /admin/admins/permissions` mengirim katalog modul + `implies` (Agenda/Dokumen/Notifikasi `available: false`). `POST`/`PUT`/`DELETE /admin/admins` memakai izin `admins.manage` (hanya superadmin), dengan `permissions` langsung per akun (menggantikan seluruh izin bila dikirim), maksimal 2 superadmin, minimal 1 superadmin aktif, dan larangan mengubah field sensitif akun sendiri. `GET /admin/admins/roles` dihapus. Kontrak lengkap: `Backend/docs/ADMIN_API.md`. **Service frontend siap sejak F2b** (`frontend/lib/admin/accounts.ts`, `frontend/types/admin-accounts.ts`, helper `applyPermissionImplications`); halaman/form admin belum dibuat.
 - **Ubah kata sandi sendiri (Batch B3c, 17 Nov):** `POST /api/v1/auth/change-password` (login + CSRF) memverifikasi kata sandi lama (salah → 400), mewajibkan kata sandi baru 12–128 karakter dan berbeda dari yang lama (422), menyimpan hash baru, mencabut semua sesi lain admin tersebut, mempertahankan sesi saat ini, dan menulis audit `admin.password_change` tanpa kata sandi. Respons `{"ok": true, "sessions_revoked": n}`. Dokumentasi: `Backend/README.md` bagian API/Security. UI admin belum memakai endpoint ini; prototipe menulis minimal 8 karakter sedangkan backend 12.
 - **API layer frontend (Batch API-F, 16 Nov):**
@@ -211,6 +213,7 @@ Hanya agregat; tidak ada data pribadi:
 | R3 | Data homepage: grid divisi, program dengan 4 status, perbaikan link "Instagram" | Diblok keputusan g.7–8 |
 | R4 | `/publikasi` dan `/publikasi/[slug]` | Diblok keputusan g.5 |
 | ORG-A | Halaman admin Struktur Organisasi: periode (buat/ubah/aktifkan/hapus), checklist, divisi (CRUD + salin), mode baca saja | **Selesai 18 Nov 2026; di working tree, belum di-commit** |
+| ORG-B | Bagian anggota halaman admin Struktur Organisasi: daftar per divisi, pencarian, form anggota, unggah/ganti/hapus foto, hapus anggota, checklist jumlah anggota | **Selesai 18 Nov 2026; di working tree, belum di-commit** |
 
 ### l. Backlog untuk sesi backend
 
@@ -1142,6 +1145,48 @@ Entri sesi sejak 11 November 2026. Append-only: tambahkan entri baru di bawah; j
   - Data anggota belum dimuat di ORG-A (sesuai batasan), jadi checklist anggota bersifat informatif; jumlah anggota per periode baru akan tersedia di batch Anggota.
   - Jumlah divisi periode sumber pada dialog salin diambil dengan memanggil `GET /divisions?period_id=` per periode saat dialog dibuka; tidak ada endpoint agregat.
 - **Langkah berikutnya:** batch ORG-B (anggota/posisi/foto) dan penyesuaian UI lain menunggu instruksi pemilik.
+
+---
+
+### Sesi 2026-11-18 — Batch ORG-B: anggota dan foto pada halaman admin Struktur Organisasi
+
+- **Status:** Selesai di working tree; tidak commit, push, atau deploy.
+- **Branch:** `feat/admin-ui-foundation`. HEAD `3726581` (`feat(frontend): admin organization page — periods and divisions (ORG-A)`); working tree bersih sebelum batch.
+- **Tujuan:** melengkapi `/admin/organization` dengan daftar anggota per divisi, pencarian nama, form anggota (`FormDialog`), unggah/ganti/hapus foto lewat `POST /media/images`, hapus anggota, dan checklist periode berbasis jumlah anggota sebenarnya, sesuai `Backend/docs/ORGANIZATION_API.md` dan prototipe `Design/admin/`.
+- **Yang selesai:**
+  - `MembersSection` di bawah `DivisionsSection`: anggota periode terpilih dikelompokkan per divisi (urut `sort_order` divisi lalu nama), ditambah grup "Tanpa divisi" bila ada `division_id = null`; di dalam grup urut `sort_order` anggota lalu nama. Setiap kartu menampilkan foto (atau inisial), nama, dan jabatan dari `getAdminPositions`.
+  - Pencarian nama sederhana di sisi klien; saat pencarian aktif hanya grup yang memiliki hasil ditampilkan, lengkap dengan state "tidak ada yang cocok" dan tombol menampilkan semua. Pencarian direset saat periode berganti.
+  - Tombol "Tambah anggota" di header dan di tiap grup divisi (mengisi `division_id` otomatis), "Ubah" per kartu, dan tombol "Hapus anggota" di form ubah yang membuka `ConfirmDialog` berisi nama anggota dan periode.
+  - `MemberFormDialog`: nama wajib, jabatan (`Select` wajib dari `getAdminPositions`), divisi (`Select` opsional berisi hanya divisi periode terpilih + "Tanpa divisi"), urutan tampil (angka bulat ≥ 0), dan foto. Form tidak menampilkan pemilih periode karena periode mengikuti pilihan halaman.
+  - Foto: `uploadImage()` mengompres di browser lalu menyimpan `storage_key` hasil respons ke `photo_url` (bukan URL/path). Pratinjau memakai `mediaPathFromStorageKey()` + `resolveMediaUrl()` untuk storage key; nilai `photo_url` lama berupa URL/path ditampilkan apa adanya lewat `resolveMediaUrl()`. Input `accept="image/jpeg,image/png,image/webp"`, validasi tipe file, status "Mengompres dan mengunggah foto...", dan error kompresi/upload berbahasa Indonesia (termasuk batas hasil kompresi 3,8 MB). Aksi ganti dan hapus (`photo_url: null`) tersedia.
+  - Tanpa `media.manage`, area unggah/hapus diganti pemberitahuan seperti prototipe; foto lama tetap tampil dan field lain tetap dapat diubah.
+  - `PeriodChecklist` kini memakai `memberCount`, `membersLoading`, dan `membersError`; langkah "Anggota sudah ada" ditandai selesai bila jumlah anggota > 0 dan menampilkan jumlah sebenarnya.
+  - Pesan error backend tetap lewat `ApiError.detail` (`getOrganizationErrorMessage`), termasuk `404`/`400`/`409`, bukan pesan generik.
+- **File dibuat:**
+  - `frontend/features/organization/components/admin/MembersSection.tsx`
+  - `frontend/features/organization/components/admin/MemberFormDialog.tsx`
+  - `frontend/features/organization/components/admin/MemberPhotoField.tsx`
+  - `frontend/features/organization/components/admin/MemberAvatar.tsx`
+  - `frontend/features/organization/components/admin/MemberDeleteDialog.tsx`
+- **File diubah:**
+  - `frontend/app/(private)/(admin)/admin/organization/page.tsx`
+  - `frontend/features/organization/components/admin/PeriodChecklist.tsx`
+  - `frontend/STRUCTURE.md`
+  - `docs/progress.md`
+- **Pemeriksaan yang dijalankan + hasil aktual:**
+  - `npx tsc --noEmit` di `frontend/` — lulus tanpa output.
+  - `npm run lint` di `frontend/` — lulus tanpa error/warning.
+  - `npm run build` di `frontend/` — sukses; `/admin/organization` ikut ter-build (10 route). Warning Turbopack tentang lockfile di luar repository tetap muncul dan tidak menggagalkan build.
+- **Konfirmasi batas scope:**
+  - `Backend/`, `.env*`, dependency/lockfile, API contract, auth/CSRF/RBAC, deployment: tidak diubah/dibaca. Build hanya memuat environment lewat mekanisme Next biasa.
+  - `features/organization/admin-api.ts` dan `types.ts` tidak diubah; tidak ditemukan bug kontrak.
+  - Halaman/komponen publik dan komponen shared tidak diubah.
+  - Commit/push/deploy: tidak.
+- **Catatan/ambiguitas:**
+  - Prototipe menampilkan grup divisi hanya bila sudah punya anggota; implementasi menampilkan semua divisi periode agar tombol "Tambah anggota" per divisi tersedia. Divisi kosong menampilkan teks "Belum ada anggota di divisi ini."
+  - `photo_url` lama yang bukan storage key V2 (URL eksternal atau path lama) tetap didukung lewat `resolveMediaUrl()`; tidak ada migrasi data.
+  - Bila daftar jabatan gagal dimuat, anggota tetap dapat dilihat, tetapi tombol tambah dinonaktifkan dan form menampilkan pesan; tidak ada endpoint retry khusus positions.
+- **Langkah berikutnya:** menunggu instruksi pemilik untuk batch admin berikutnya.
 
 ---
 

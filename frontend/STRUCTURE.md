@@ -54,7 +54,9 @@ frontend/
 │   │   └── components/
 │   │       ├── admin/            # PeriodToolbar, PeriodFormDialog, PeriodActivateDialog,
 │   │       │                     # PeriodChecklist, DivisionsSection, DivisionFormDialog,
-│   │       │                     # DivisionCopyDialog, DivisionDeleteDialog, OrganizationPrimitives
+│   │       │                     # DivisionCopyDialog, DivisionDeleteDialog, OrganizationPrimitives,
+│   │       │                     # MembersSection, MemberFormDialog, MemberPhotoField,
+│   │       │                     # MemberAvatar, MemberDeleteDialog
 │   │       ├── OrganizationSection.tsx
 │   │       ├── StructureDirectory.tsx
 │   │       └── StructurePage.tsx
@@ -99,10 +101,16 @@ misalnya `features/auth/permissions.ts`, `features/auth/AuthContext.tsx`,
 `features/programs/status.ts`, dan `features/settings/links.ts`.
 
 Halaman admin struktur organisasi merangkai komponen di
-`features/organization/components/admin/` (periode, divisi, salin divisi) dan
-memakai `features/organization/admin-api.ts` sebagai satu-satunya jalur
-pemanggilan API. Pesan error API diambil dari `ApiError` lewat
+`features/organization/components/admin/` (periode, divisi, salin divisi,
+anggota, foto anggota) dan memakai `features/organization/admin-api.ts` sebagai
+satu-satunya jalur pemanggilan API. Pesan error API diambil dari `ApiError` lewat
 `features/organization/errors.ts`.
+
+Foto anggota disimpan sebagai `storage_key` hasil `uploadImage()`
+(`POST /media/images`) di `photo_url`. Pratinjau menormalkan storage key dengan
+`mediaPathFromStorageKey()` lalu `resolveMediaUrl()`; nilai lama berupa URL atau
+path tetap ditampilkan lewat `resolveMediaUrl()`. Pencarian anggota dilakukan di
+sisi klien dan tidak menambah parameter API.
 
 ## Yang tetap di `lib/` dan `components/` (shared)
 

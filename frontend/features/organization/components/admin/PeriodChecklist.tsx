@@ -13,6 +13,9 @@ interface PeriodChecklistProps {
   period: AdminPeriod;
   divisionCount: number;
   divisionsLoading: boolean;
+  memberCount: number;
+  membersLoading: boolean;
+  membersError: string;
   onActivate: (period: AdminPeriod) => void;
 }
 
@@ -74,9 +77,13 @@ export default function PeriodChecklist({
   period,
   divisionCount,
   divisionsLoading,
+  memberCount,
+  membersLoading,
+  membersError,
   onActivate,
 }: PeriodChecklistProps) {
   const hasDivisions = !divisionsLoading && divisionCount > 0;
+  const hasMembers = !membersLoading && !membersError && memberCount > 0;
 
   return (
     <section
@@ -95,8 +102,9 @@ export default function PeriodChecklist({
       </h2>
 
       <p className="mt-1 text-sm leading-6 text-ink-soft">
-        Data anggota belum dimuat di halaman ini; anggota tetap dikelola di
-        bagian Anggota.
+        Lengkapi divisi dan anggota sebelum mengaktifkan periode. Data yang
+        kosong tetap boleh diaktifkan, tetapi halaman Struktur situs akan
+        tampil kosong sampai diisi.
       </p>
 
       <ol className="mt-4 space-y-4">
@@ -116,8 +124,16 @@ export default function PeriodChecklist({
         <ChecklistItem
           index={2}
           label="Anggota sudah ada"
-          informational
-          hint="Dikelola di bagian Anggota."
+          done={hasMembers}
+          hint={
+            membersLoading
+              ? "Memuat anggota..."
+              : membersError
+                ? `Jumlah anggota belum dapat diperiksa: ${membersError}`
+                : hasMembers
+                  ? `${memberCount} anggota tersedia di periode ini.`
+                  : "Belum ada anggota di periode ini. Anggota dapat ditambahkan lewat bagian Anggota di bawah."
+          }
         />
 
         <ChecklistItem

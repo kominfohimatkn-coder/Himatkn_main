@@ -9,12 +9,17 @@ import {
   activateAdminPeriod,
   copyAdminDivisions,
   createAdminDivision,
+  createAdminMember,
   createAdminPeriod,
   deleteAdminDivision,
+  deleteAdminMember,
   deleteAdminPeriod,
   getAdminDivisions,
+  getAdminMembers,
   getAdminPeriods,
+  getAdminPositions,
   updateAdminDivision,
+  updateAdminMember,
   updateAdminPeriod,
 } from "@/features/organization/admin-api";
 import { getOrganizationErrorMessage } from "@/features/organization/errors";
@@ -23,6 +28,9 @@ import DivisionCopyDialog from "@/features/organization/components/admin/Divisio
 import DivisionDeleteDialog from "@/features/organization/components/admin/DivisionDeleteDialog";
 import DivisionFormDialog from "@/features/organization/components/admin/DivisionFormDialog";
 import DivisionsSection from "@/features/organization/components/admin/DivisionsSection";
+import MemberDeleteDialog from "@/features/organization/components/admin/MemberDeleteDialog";
+import MemberFormDialog from "@/features/organization/components/admin/MemberFormDialog";
+import MembersSection from "@/features/organization/components/admin/MembersSection";
 import { OrganizationNotice } from "@/features/organization/components/admin/OrganizationPrimitives";
 import PeriodActivateDialog from "@/features/organization/components/admin/PeriodActivateDialog";
 import PeriodChecklist from "@/features/organization/components/admin/PeriodChecklist";
@@ -31,10 +39,13 @@ import PeriodFormDialog from "@/features/organization/components/admin/PeriodFor
 import PeriodToolbar from "@/features/organization/components/admin/PeriodToolbar";
 
 import type { DivisionFormValues } from "@/features/organization/components/admin/DivisionFormDialog";
+import type { MemberFormValues } from "@/features/organization/components/admin/MemberFormDialog";
 import type { PeriodFormValues } from "@/features/organization/components/admin/PeriodFormDialog";
 import type {
   AdminDivision,
+  AdminMember,
   AdminPeriod,
+  AdminPosition,
   DivisionCopyResponse,
 } from "@/features/organization/types";
 
@@ -73,6 +84,18 @@ export default function OrganizationPage() {
   >(null);
   const [divisionsRefreshing, setDivisionsRefreshing] = useState(false);
 
+  const [positions, setPositions] = useState<AdminPosition[]>([]);
+  const [positionsLoading, setPositionsLoading] = useState(true);
+  const [positionsError, setPositionsError] = useState("");
+
+  const [members, setMembers] = useState<AdminMember[]>([]);
+  const [membersError, setMembersError] = useState("");
+  const [membersRefreshKey, setMembersRefreshKey] = useState(0);
+  const [membersLoadedPeriodId, setMembersLoadedPeriodId] = useState<
+    number | null
+  >(null);
+  const [membersRefreshing, setMembersRefreshing] = useState(false);
+
   const [periodFormTarget, setPeriodFormTarget] = useState<{
     period?: AdminPeriod;
   } | null>(null);
@@ -89,6 +112,14 @@ export default function OrganizationPage() {
 
   const [deleteDivisionTarget, setDeleteDivisionTarget] =
     useState<AdminDivision | null>(null);
+
+  const [memberFormTarget, setMemberFormTarget] = useState<{
+    member?: AdminMember;
+    divisionId?: number | null;
+  } | null>(null);
+
+  const [deleteMemberTarget, setDeleteMemberTarget] =
+    useState<AdminMember | null>(null);
 
   const [isCopyOpen, setIsCopyOpen] = useState(false);
 
@@ -175,6 +206,77 @@ export default function OrganizationPage() {
     return () => controller.abort();
   }, [canView, selectedPeriodId, divisionsRefreshKey]);
 
+  useEffect(() => {
+    if (!canView) return;
+
+    const controller = new AbortController();
+
+    void getAdminPositions({
+      signal: controller.signal,
+    })
+      .then((result) => {
+        if (controller.signal.aborted) return;
+
+        setPositions(result.items);
+        setPositionsError("");
+      })
+      .catch((err: unknown) => {
+        if (controller.signal.aborted) return;
+
+        setPositions([]);
+        setPositionsError(
+          getOrganizationErrorMessage(
+            err,
+            "Daftar jabatan gagal dimuat.",
+          ),
+        );
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setPositionsLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [canView]);
+
+  useEffect(() => {
+    if (!canView || selectedPeriodId === null) return;
+
+    const controller = new AbortController();
+
+    void getAdminMembers(
+      { period_id: selectedPeriodId },
+      { signal: controller.signal },
+    )
+      .then((result) => {
+        if (controller.signal.aborted) return;
+
+        setMembers(result.items);
+        setMembersError("");
+        setMembersLoadedPeriodId(selectedPeriodId);
+      })
+      .catch((err: unknown) => {
+        if (controller.signal.aborted) return;
+
+        setMembers([]);
+        setMembersError(
+          getOrganizationErrorMessage(
+            err,
+            "Daftar anggota gagal dimuat.",
+          ),
+        );
+        setMembersLoadedPeriodId(selectedPeriodId);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setMembersRefreshing(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [canView, selectedPeriodId, membersRefreshKey]);
+
   if (!admin) return null;
 
   const selectedPeriod =
@@ -183,6 +285,10 @@ export default function OrganizationPage() {
   const divisionsLoading =
     selectedPeriodId !== null &&
     (divisionsLoadedPeriodId !== selectedPeriodId || divisionsRefreshing);
+
+  const membersLoading =
+    selectedPeriodId !== null &&
+    (membersLoadedPeriodId !== selectedPeriodId || membersRefreshing);
 
   function reloadPeriods() {
     setPeriodsError("");
@@ -196,6 +302,19 @@ export default function OrganizationPage() {
     setDivisionsRefreshKey((current) => current + 1);
   }
 
+  function reloadMembers() {
+    setMembersError("");
+    setMembersRefreshing(true);
+    setMembersRefreshKey((current) => current + 1);
+  }
+
+  function resetMemberState() {
+    setMembers([]);
+    setMembersError("");
+    setMembersLoadedPeriodId(null);
+    setMembersRefreshing(false);
+  }
+
   function selectPeriod(periodId: number) {
     if (periodId === selectedPeriodId) return;
 
@@ -203,6 +322,7 @@ export default function OrganizationPage() {
     setDivisionsError("");
     setDivisionsLoadedPeriodId(null);
     setDivisionsRefreshing(false);
+    resetMemberState();
     setSelectedPeriodId(periodId);
   }
 
@@ -238,6 +358,7 @@ export default function OrganizationPage() {
     setDivisionsError("");
     setDivisionsLoadedPeriodId(null);
     setDivisionsRefreshing(false);
+    resetMemberState();
     setSelectedPeriodId(created.id);
     reloadPeriods();
   }
@@ -281,6 +402,7 @@ export default function OrganizationPage() {
       setDivisionsError("");
       setDivisionsLoadedPeriodId(null);
       setDivisionsRefreshing(false);
+      resetMemberState();
       setSelectedPeriodId(nextPeriod?.id ?? null);
     }
 
@@ -307,6 +429,36 @@ export default function OrganizationPage() {
   async function removeDivision(division: AdminDivision) {
     await deleteAdminDivision(division.id);
     reloadDivisions();
+  }
+
+  async function saveMember(values: MemberFormValues) {
+    if (!selectedPeriod) {
+      throw new Error("Pilih periode terlebih dahulu.");
+    }
+
+    if (memberFormTarget?.member) {
+      await updateAdminMember(memberFormTarget.member.id, {
+        period_id: selectedPeriod.id,
+        ...values,
+      });
+    } else {
+      await createAdminMember({
+        period_id: selectedPeriod.id,
+        ...values,
+      });
+    }
+
+    reloadMembers();
+  }
+
+  async function removeMember(member: AdminMember) {
+    await deleteAdminMember(member.id);
+    reloadMembers();
+  }
+
+  function requestDeleteMember(member: AdminMember) {
+    setMemberFormTarget(null);
+    setDeleteMemberTarget(member);
   }
 
   async function copyDivisions(
@@ -339,7 +491,7 @@ export default function OrganizationPage() {
             </h1>
 
             <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-soft">
-              Kelola periode kepengurusan dan divisi. Periode aktif
+              Kelola periode kepengurusan, divisi, dan anggota. Periode aktif
               ditampilkan di halaman Struktur situs publik.
             </p>
           </header>
@@ -372,6 +524,9 @@ export default function OrganizationPage() {
               period={selectedPeriod}
               divisionCount={divisions.length}
               divisionsLoading={divisionsLoading}
+              memberCount={members.length}
+              membersLoading={membersLoading}
+              membersError={membersError}
               onActivate={openActivateDialog}
             />
           )}
@@ -387,6 +542,25 @@ export default function OrganizationPage() {
               onEdit={(division) => setDivisionFormTarget({ division })}
               onDelete={setDeleteDivisionTarget}
               onCopy={() => setIsCopyOpen(true)}
+            />
+          )}
+
+          {selectedPeriod && (
+            <MembersSection
+              key={selectedPeriod.id}
+              periodName={selectedPeriod.name}
+              divisions={divisions}
+              members={members}
+              positions={positions}
+              positionsLoading={positionsLoading}
+              positionsError={positionsError}
+              isLoading={membersLoading}
+              error={membersError}
+              onReload={reloadMembers}
+              onCreate={(divisionId) =>
+                setMemberFormTarget({ divisionId: divisionId ?? null })
+              }
+              onEdit={(member) => setMemberFormTarget({ member })}
             />
           )}
 
@@ -442,6 +616,34 @@ export default function OrganizationPage() {
               periods={periods}
               onClose={() => setIsCopyOpen(false)}
               onCopy={copyDivisions}
+            />
+          )}
+
+          {memberFormTarget && canManage && selectedPeriod && (
+            <MemberFormDialog
+              key={
+                memberFormTarget.member
+                  ? `edit-${memberFormTarget.member.id}`
+                  : `create-${memberFormTarget.divisionId ?? "none"}`
+              }
+              period={selectedPeriod}
+              member={memberFormTarget.member}
+              divisions={divisions}
+              positions={positions}
+              defaultDivisionId={memberFormTarget.divisionId ?? null}
+              defaultSortOrder={members.length}
+              onClose={() => setMemberFormTarget(null)}
+              onSubmit={saveMember}
+              onRequestDelete={requestDeleteMember}
+            />
+          )}
+
+          {deleteMemberTarget && canManage && selectedPeriod && (
+            <MemberDeleteDialog
+              member={deleteMemberTarget}
+              periodName={selectedPeriod.name}
+              onClose={() => setDeleteMemberTarget(null)}
+              onConfirm={() => removeMember(deleteMemberTarget)}
             />
           )}
         </div>
