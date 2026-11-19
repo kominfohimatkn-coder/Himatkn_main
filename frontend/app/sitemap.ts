@@ -1,34 +1,18 @@
-// app/sitemap.ts
-import { MetadataRoute } from 'next';
-// Nanti import fungsi fetch kamu di sini, misal: import { getNews } from '@/lib/api/news'
+import type { MetadataRoute } from "next";
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://himatknuklir.vercel.app';
-
-  // Contoh rute statis
-  const staticRoutes = [
+export default function sitemap(): MetadataRoute.Sitemap {
+  return [
     {
-      url: baseUrl,
+      url: "https://www.himatknuklir.web.id/",
       lastModified: new Date(),
-      changeFrequency: 'daily' as const,
+      changeFrequency: "weekly",
       priority: 1,
     },
     {
-      url: `${baseUrl}/tentang`, // Jika ada halaman tentang
+      url: "https://www.himatknuklir.web.id/struktur",
       lastModified: new Date(),
-      changeFrequency: 'monthly' as const,
+      changeFrequency: "monthly",
       priority: 0.8,
     },
   ];
-
-  // NANTI: Contoh fetch dinamis untuk artikel/berita
-  // const news = await getNews();
-  // const newsRoutes = news.map((post) => ({
-  //   url: `${baseUrl}/berita/${post.slug}`,
-  //   lastModified: new Date(post.updatedAt),
-  //   changeFrequency: 'weekly' as const,
-  //   priority: 0.7,
-  // }));
-
-  return [...staticRoutes /*, ...newsRoutes */];
 }

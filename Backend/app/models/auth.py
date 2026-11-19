@@ -120,7 +120,6 @@ class AdminRole(Base):
 
 class RolePermission(Base):
     __tablename__ = "role_permissions"
-
     role_id: Mapped[int] = mapped_column(
         ID,
         ForeignKey(
@@ -149,6 +148,40 @@ class RolePermission(Base):
 
     __table_args__ = (
         Index("idx_role_permissions_permission", "permission_id"),
+    )
+
+
+class AdminPermission(Base):
+    __tablename__ = "admin_permissions"
+
+    admin_id: Mapped[int] = mapped_column(
+        ID,
+        ForeignKey(
+            "admins.id",
+            ondelete="CASCADE",
+            onupdate="CASCADE",
+            name="fk_admin_permissions_admin",
+        ),
+        primary_key=True,
+    )
+    permission_id: Mapped[int] = mapped_column(
+        ID,
+        ForeignKey(
+            "permissions.id",
+            ondelete="CASCADE",
+            onupdate="CASCADE",
+            name="fk_admin_permissions_permission",
+        ),
+        primary_key=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+    )
+
+    __table_args__ = (
+        Index("idx_admin_permissions_permission", "permission_id"),
     )
 
 

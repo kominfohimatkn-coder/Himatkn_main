@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/AuthContext";
 import { AdminShell } from "@/components/admin/shell/AdminShell";
 
 export default function AdminLayout({
@@ -22,7 +22,7 @@ export default function AdminLayout({
 
   if (isLoading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-zinc-50">
+      <main className="admin-theme flex min-h-screen items-center justify-center bg-zinc-50">
         <p className="text-sm text-zinc-500">Memuat...</p>
       </main>
     );

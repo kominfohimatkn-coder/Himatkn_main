@@ -1,4 +1,4 @@
-from app.models.auth import Admin, Role, Permission, AdminRole, RolePermission, AuthSession
+from app.models.auth import Admin, Role, Permission, AdminRole, RolePermission, AdminPermission, AuthSession
 from app.models.organization import Period, Division, Position, Member
 from app.models.content import (
     News,
@@ -18,6 +18,7 @@ __all__ = [
     "Permission",
     "AdminRole",
     "RolePermission",
+    "AdminPermission",
     "AuthSession",
     "Period",
     "Division",

@@ -42,7 +42,7 @@ Route utama yang tersedia:
 
 `GET /api/v1/health`
 
-`GET /api/v1/auth/csrf` · `POST /api/v1/auth/login` · `GET /api/v1/auth/me` · `POST /api/v1/auth/logout`
+`GET /api/v1/auth/csrf` · `POST /api/v1/auth/login` · `GET /api/v1/auth/me` · `POST /api/v1/auth/change-password` · `POST /api/v1/auth/logout`
 
 `GET/POST /api/v1/admin/admins` · `GET /api/v1/admin/admins/roles` · `PUT/DELETE /api/v1/admin/admins/{admin_id}`
 
@@ -58,7 +58,7 @@ Route utama yang tersedia:
 
 `GET/POST /api/v1/admin/documents`
 
-`GET /api/v1/admin/settings` · `PUT /api/v1/admin/settings/{key}`
+`GET /api/v1/admin/settings` · `PUT/DELETE /api/v1/admin/settings/{key}` · `PATCH /api/v1/admin/settings`
 
 `GET/POST /api/v1/admin/notifications` · `POST /api/v1/admin/notifications/{notification_id}/read`
 
@@ -66,11 +66,37 @@ Route utama yang tersedia:
 
 `GET/POST /api/v1/media/images` · `GET /api/v1/media/images/{filename:path}` · `GET /api/v1/media/documents/{filename:path}`
 
-`GET /api/v1/public/news` · `GET /api/v1/public/news/{slug}` · `GET /api/v1/public/programs` · `GET /api/v1/public/organization` · `POST /api/v1/public/visits`
+`GET /api/v1/public/news` · `GET /api/v1/public/news/{slug}` · `GET /api/v1/public/programs` · `GET /api/v1/public/programs/{slug}` · `GET /api/v1/public/organization` · `GET /api/v1/public/settings` · `POST /api/v1/public/visits`
+
+## Public Content API
+
+Kontrak `GET /public/news`, `GET /public/programs`, dan
+`GET /public/organization` (filter, `total`, `excerpt`, `tags`, `sort_order`,
+normalisasi `photo_url`) beserta contoh respons ada di
+[`docs/PUBLIC_API.md`](docs/PUBLIC_API.md).
+
+## Site Settings
+
+Nilai teks dan tautan publik dikelola lewat registry di
+`app/services/site_settings.py`. Detail registry, validasi, endpoint, dan contoh
+pemakaian ada di [`docs/SITE_SETTINGS.md`](docs/SITE_SETTINGS.md).
+
+## Seed
+
+`python -m app.seed` bersifat idempoten: role dan permission yang belum ada
+akan dibuat, permission baru diberikan ke `superadmin`, dan admin default hanya
+dibuat bila tabel `admins` masih kosong. Jalankan sekali setelah deploy untuk
+menambahkan permission yang belum ada di DB (misalnya `media.manage`).
 
 ## Security
 
-Authentication menggunakan JWT HttpOnly cookie + server-side session record. Mutation pada endpoint authenticated membutuhkan CSRF token. RBAC ditegakkan di backend. Login throttling menggunakan per-IP dan per-account bucket. Production wajib Redis. Error 500 tidak mengekspos detail internal. Upload image memakai Pillow dan disimpan dengan random storage key; dokumen tidak punya route publik.
+Authentication menggunakan JWT HttpOnly cookie + server-side session record. Mutation pada endpoint authenticated membutuhkan CSRF token. RBAC ditegakkan di backend. Login throttling menggunakan bucket per-IP, per-IP+username, dan per-akun lintas IP (`login-account-global`, default 20 percobaan / 900 detik, berlaku juga untuk username yang tidak ada agar keberadaan akun tidak bocor). Ganti kata sandi dibatasi per akun (`change-password`, default 5 percobaan / 900 detik) dan dicek **sebelum** verifikasi kata sandi lama. Production wajib Redis. Error 500 tidak mengekspos detail internal. Upload image memakai Pillow dan disimpan dengan random storage key; dokumen tidak punya route publik.
+
+**Sumber IP klien.** `CLIENT_IP_SOURCE` menentukan satu sumber IP untuk rate limit dan audit log (`app/utils/ip.py`): `direct` memakai `request.client.host` (default lokal), `trusted_proxy` memakai `TRUSTED_PROXY_IPS` lalu membaca `X-Forwarded-For` **dari kanan** dan mengambil hop pertama yang bukan proxy tepercaya, dan `vercel` membaca `x-vercel-forwarded-for` (elemen pertama), lalu `x-real-ip`, lalu `request.client.host`. Nilai lain ditolak saat startup. Bila `APP_ENV=production` dan environment variable `VERCEL` ada, `CLIENT_IP_SOURCE` wajib `vercel` karena `request.client.host` di Vercel bukan IP pengunjung. Koneksi MySQL/TiDB memakai `connect_timeout`, `read_timeout`, dan `write_timeout` (default 10/30/30 detik); SQLite tidak memakainya.
+
+**Audit login.** `auth.login.success`, `auth.login.failure` (username yang dicoba, maksimal 100 karakter, CR/LF dibuang; `admin_id` terisi bila akun ada), `auth.login.rate_limited`, dan `auth.logout` ditulis ke `activity_logs` tanpa kata sandi atau token. Log pada jalur gagal di-commit sebelum respons error dikirim.
+
+`POST /api/v1/auth/change-password` (login + CSRF, tanpa permission tambahan) memverifikasi kata sandi lama, menyimpan hash baru (12–128 karakter), menulis audit `admin.password_change` tanpa menyimpan kata sandi, dan mencabut semua sesi lain milik admin yang sama. Sesi yang dipakai untuk request tersebut **dipertahankan** (cookie sesi dan CSRF tidak dihapus atau diganti) dengan mengecualikan `jti` token saat ini. Respons `200 {"ok": true, "sessions_revoked": n}`. Selain grup tulis `auth` bawaan middleware, endpoint ini memakai bucket `change-password:{admin_id}` yang dicek sebelum verifikasi kata sandi lama.
 
 ## Testing
 

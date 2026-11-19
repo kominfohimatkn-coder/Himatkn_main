@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HIMATKN · Himpunan Mahasiswa Teknokimia Nuklir</title>
+  <meta name="description" content="Himpunan Mahasiswa Teknokimia Nuklir, Politeknik Teknologi Nuklir Indonesia.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Literata:ital,opsz,wght@0,7..72,600;0,7..72,700;1,7..72,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/app.js" defer></script>
+</head>
+<body data-states="proker news struktur">
+  <a class="skip-link" href="#main">Langsung ke konten</a>
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="index.html" aria-label="HIMA Teknokimia Nuklir, ke beranda">
+        <span><span class="brand__name">Hima Teknokimia Nuklir</span><span class="brand__sub">Politeknik Teknologi Nuklir</span></span>
+      </a>
+      <nav class="nav" aria-label="Navigasi utama">
+        <a href="index.html" aria-current="page">Beranda</a>
+        <a href="index.html#tentang">Tentang</a>
+        <a href="kegiatan.html">Kegiatan</a>
+        <a href="publikasi.html">Publikasi</a>
+        <a href="https://drive.google.com/drive/folders/1cURykHoJWo6xkeHE99uZE_wG0-WbGqi_" target="_blank" rel="noopener">Bank Soal</a>
+        <a href="struktur.html">Struktur</a>
+      </nav>
+      <button class="menu-btn" type="button" aria-expanded="false" aria-controls="mobile-nav" aria-label="Buka menu"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+  <nav class="mobile-nav" id="mobile-nav" aria-label="Navigasi mobile">
+    <a href="index.html" aria-current="page">Beranda</a>
+    <a href="index.html#tentang">Tentang</a>
+    <a href="kegiatan.html">Kegiatan</a>
+    <a href="publikasi.html">Publikasi</a>
+    <a href="bank-soal.html">Bank Soal</a>
+    <a href="struktur.html">Struktur</a>
+    <a class="btn btn--solid" href="https://instagram.com/himatknuklir" target="_blank" rel="noopener">Instagram @himatknuklir</a>
+  </nav>
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero__media ph" data-label="assets/img/hero.jpg"><img src="assets/img/hero.jpg" alt="Pengurus dan anggota HIMATKN berfoto bersama"></div>
+      <div class="container hero__body">
+        <h1 id="hero-title">Himpunan Mahasiswa <em>Teknokimia Nuklir</em></h1>
+        <p class="hero__tag">Kabinet Nexus - Beyond Chemistry Into Energy</p>
+        <div class="hero__actions">
+          <a class="btn btn--white" href="kegiatan.html">Lihat Kegiatan <span aria-hidden="true">↗</span></a>
+          <a class="btn btn--outline-white" href="struktur.html">Kenali Pengurus</a>
+        </div>
+        <div class="hero__stats">
+          <div><strong>Kabinet Nexus</strong><span>Periode 2026</span></div>
+          <div><strong>7 Divisi</strong><span>+ Badan Pengurus Harian</span></div>
+          <div><strong>Babarsari</strong><span>Student Center Poltek Nuklir</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section--mint" id="tentang" aria-labelledby="tentang-title">
+      <div class="container about">
+        <div>
+          <p class="label">Tentang Kami</p>
+          <h2 id="tentang-title">Bukan organisasi formalitas. Ruang untuk benar-benar paham apa yang kami pelajari.</h2>
+          <p class="about__lead">Simbol Kabinet Nexus memiliki makna mengikat dan menyatukan. Menjadi wadah pergerakan progresif untuk membangun ekosistem mahasiswa yang adaptif terhadap masa depan.</p>
+        </div>
+        <ul class="pillars">
+          <li class="pillar"><span class="label">Akademik</span><div><h3>Belajar bersama, bukan sendiri-sendiri</h3><p>Membantu mahasiswa Teknokimia Nuklir melewati kesulitan mata kuliah inti melalui kerja sama yang solid.</p></div></li>
+          <li class="pillar"><span class="label">Riset</span><div><h3>Dari rasa ingin tahu ke publikasi</h3><p>Wadah kolaborasi riset mahasiswa, publikasi, dan pendampingan menuju inovasi nasional.</p></div></li>
+          <li class="pillar"><span class="label">Komunitas</span><div><h3>Satu ikatan yang saling kenal</h3><p>Dari mentoring mahasiswa baru sampai kolaborasi antarangkatan, tidak ada yang berjalan sendirian.</p></div></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section" id="program-kerja" aria-labelledby="proker-title">
+      <div class="container">
+        <div class="sec-head"><p class="label">Program Kerja</p><h2 class="sec-title" id="proker-title">Inisiatif dan agenda strategis HIMATKN</h2></div>
+        <div id="home-proker" aria-live="polite"></div>
+        <div class="sec-foot"><a class="btn btn--outline" href="kegiatan.html">Lihat Semua Program Kerja →</a></div>
+      </div>
+    </section>
+
+    <section class="section" id="publikasi" aria-labelledby="pub-title">
+      <div class="container">
+        <div class="sec-head"><p class="label">Publikasi Terkini</p><h2 class="sec-title" id="pub-title">Kabar dan dokumentasi kami</h2></div>
+        <div id="home-news" aria-live="polite"></div>
+        <div class="sec-foot" data-hide-when-empty><a class="btn btn--outline" href="publikasi.html">Lihat Semua Publikasi →</a></div>
+      </div>
+    </section>
+
+    <section class="section section--dark on-dark" id="kepengurusan" aria-labelledby="struct-title">
+      <div class="container">
+        <div class="struct-head">
+          <p class="label">Susunan Kepengurusan</p>
+          <h2 class="sec-title" id="struct-title">Tujuh simpul divisi, satu kepengurusan</h2>
+          <p>Struktur HIMATKN Kabinet Nexus membagi fokus melalui Divisi Internal, Eksternal, Reaksi, Minat dan Bakat, Keuangan, Minfo, dan Sosmas.</p>
+        </div>
+        <div class="struct-stats"><div><strong>7</strong><span>Bagian</span></div><div><strong style="font-size:18px;padding-top:8px">Nexus 2026</strong><span>Periode</span></div></div>
+        <div id="home-divisions"></div>
+        <div class="struct-foot"><p>Struktur diperbarui tiap pergantian periode kepengurusan.</p><a class="btn btn--white" href="struktur.html">Selengkapnya →</a></div>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer on-dark">
+    <div class="container">
+      <div class="footer-top">
+        <a class="brand" href="index.html"><span><span class="brand__name">Hima Teknokimia Nuklir</span><span class="brand__sub">Politeknik Teknologi Nuklir</span></span></a>
+        <nav class="footer-nav" aria-label="Navigasi footer">
+          <a href="index.html">Beranda</a>
+          <a href="index.html#tentang">Tentang</a>
+          <a href="kegiatan.html">Kegiatan</a>
+          <a href="publikasi.html">Berita</a>
+          <a href="struktur.html">Struktur</a>
+        </nav>
+      </div>
+      <div class="footer-map">
+        <div class="footer-map__head"><span class="label">Lokasi Kami</span><a href="https://maps.google.com/?q=Politeknik+Teknologi+Nuklir+Indonesia" target="_blank" rel="noopener">Buka Google Maps ↗</a></div>
+        <div class="map">
+          <iframe title="Peta Politeknik Teknologi Nuklir Indonesia" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q=Politeknik%20Teknologi%20Nuklir%20Indonesia&z=15&output=embed"></iframe>
+          <div class="map__fallback" role="status">
+            <span class="label">Peta tidak dapat dimuat</span>
+            <strong>Politeknik Teknologi Nuklir Indonesia</strong>
+            <p>Jl. Babarsari, Yogyakarta 55281</p>
+            <a class="btn btn--outline-white" href="https://maps.google.com/?q=Politeknik+Teknologi+Nuklir+Indonesia" target="_blank" rel="noopener">Buka di Google Maps</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom"><span>© 2026 HIMATKN · Kabinet Nexus</span><span>Politeknik Teknologi Nuklir Indonesia, BRIN</span></div>
+    </div>
+  </footer>
+</body>
+</html>

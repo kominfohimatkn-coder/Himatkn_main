@@ -1,14 +1,35 @@
+# Python
 .venv/
 __pycache__/
 *.py[cod]
-.env
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 .coverage
 htmlcov/
+
+# Environment dan secret
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Upload lokal
 uploads/*
 !uploads/.gitkeep
-alembic/versions/*.pyc
-.sql
+
+# Artefak build dan dependency
+node_modules/
+.next/
+dist/
+build/
+coverage/
+
+# File log
+*.log
+
+/*.sql
 isrgrootx1.pem
+
+
+/docs/validation

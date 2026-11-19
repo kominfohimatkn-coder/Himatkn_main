@@ -8,15 +8,30 @@ from sqlalchemy.orm import Session
 from app.core.security import hash_password
 from app.database.connection import get_db
 from app.database.dependencies import require_csrf, require_permission
-from app.models import Admin, AdminRole, Permission, Role, RolePermission
+from app.models import Admin, AdminPermission, AdminRole, Permission, Role
 from app.schemas.admin import AdminCreate, AdminUpdate
-from app.services.auth import admin_payload, permissions_for_admin, revoke_admin_sessions
+from app.services.auth import (
+    admin_payload,
+    is_superadmin,
+    revoke_admin_sessions,
+)
 from app.services.audit import log_activity
+from app.services.permissions import (
+    ALWAYS_GRANTED,
+    PERMISSION_CATALOG,
+    SUPERADMIN_ONLY,
+    SUPERADMIN_ROLE,
+    PermissionValidationError,
+    normalize_permissions,
+)
+from app.utils.ip import get_client_ip
 
 router = APIRouter(prefix="/admin/admins", tags=["admin"])
 
 P_ADMINS_VIEW = "admins.view"
 P_ADMINS_MANAGE = "admins.manage"
+
+MAX_SUPERADMINS = 2
 
 
 def _normalize_username(value: str) -> str:
@@ -29,18 +44,8 @@ def _normalize_username(value: str) -> str:
     return username
 
 
-def _normalize_role_name(value: str) -> str:
-    role_name = value.strip().lower()
-    if not role_name:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Role administrator tidak valid",
-        )
-    return role_name
-
-
 def _get_role(db: Session, role_name: str) -> Role:
-    role = db.scalar(select(Role).where(Role.name == _normalize_role_name(role_name)))
+    role = db.scalar(select(Role).where(Role.name == role_name))
     if role is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -49,46 +54,119 @@ def _get_role(db: Session, role_name: str) -> Role:
     return role
 
 
-def _permissions_for_role(db: Session, role_id: int) -> set[str]:
+def _normalize_payload_permissions(permissions: list[str]) -> set[str]:
+    try:
+        return normalize_permissions(permissions)
+    except PermissionValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
+
+def _direct_permission_names(db: Session, admin_id: int) -> set[str]:
     statement = (
         select(Permission.name)
-        .join(RolePermission, RolePermission.permission_id == Permission.id)
-        .where(RolePermission.role_id == role_id)
+        .join(
+            AdminPermission,
+            AdminPermission.permission_id == Permission.id,
+        )
+        .where(AdminPermission.admin_id == admin_id)
     )
     return set(db.scalars(statement).all())
 
 
-def _can_manage_target(
+def _replace_direct_permissions(
     db: Session,
-    actor: Admin,
-    target: Admin,
-    *,
-    replacement_role: Role | None = None,
+    admin_id: int,
+    permission_names: set[str],
 ) -> None:
-    actor_permissions = permissions_for_admin(db, actor.id)
-    target_permissions = permissions_for_admin(db, target.id)
+    db.query(AdminPermission).filter(
+        AdminPermission.admin_id == admin_id
+    ).delete(synchronize_session=False)
 
-    if not target_permissions.issubset(actor_permissions):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Anda tidak memiliki kewenangan untuk mengelola administrator tersebut",
+    if not permission_names:
+        return
+
+    permission_ids = db.scalars(
+        select(Permission.id).where(
+            Permission.name.in_(permission_names)
         )
+    ).all()
 
-    if replacement_role is not None:
-        replacement_permissions = _permissions_for_role(db, replacement_role.id)
-        if not replacement_permissions.issubset(actor_permissions):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Anda tidak dapat memberikan role dengan izin melebihi kewenangan Anda",
+    for permission_id in permission_ids:
+        db.add(
+            AdminPermission(
+                admin_id=admin_id,
+                permission_id=permission_id,
             )
-
-
-def _assert_not_self_deactivate(actor: Admin, target: Admin, is_active: bool | None) -> None:
-    if actor.id == target.id and is_active is False:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Anda tidak dapat menonaktifkan akun sendiri",
         )
+
+
+def _superadmin_ids(db: Session) -> set[int]:
+    statement = (
+        select(AdminRole.admin_id)
+        .join(Role, Role.id == AdminRole.role_id)
+        .where(Role.name == SUPERADMIN_ROLE)
+    )
+    return set(db.scalars(statement).all())
+
+
+def _active_superadmin_ids(db: Session) -> set[int]:
+    statement = (
+        select(AdminRole.admin_id)
+        .join(Role, Role.id == AdminRole.role_id)
+        .join(Admin, Admin.id == AdminRole.admin_id)
+        .where(
+            Role.name == SUPERADMIN_ROLE,
+            Admin.is_active.is_(True),
+        )
+    )
+    return set(db.scalars(statement).all())
+
+
+def _assert_superadmin_limit(db: Session) -> None:
+    if len(_superadmin_ids(db)) >= MAX_SUPERADMINS:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Jumlah superadmin maksimal 2 akun",
+        )
+
+
+def _assert_active_superadmin_remains(db: Session, target_id: int) -> None:
+    if not (_active_superadmin_ids(db) - {target_id}):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Operasi ditolak: harus tersisa minimal satu "
+                "superadmin aktif"
+            ),
+        )
+
+
+def _permission_change_description(
+    username: str,
+    before: set[str],
+    after: set[str],
+) -> str | None:
+    added = sorted(after - before)
+    removed = sorted(before - after)
+
+    if not added and not removed:
+        return None
+
+    parts: list[str] = []
+
+    if added:
+        parts.append("menambah izin " + ", ".join(added))
+
+    if removed:
+        parts.append("menghapus izin " + ", ".join(removed))
+
+    return (
+        f"Memperbarui izin administrator {username}: "
+        + "; ".join(parts)
+    )
 
 
 @router.get("")
@@ -96,25 +174,20 @@ def list_admins(
     db: Session = Depends(get_db),
     _: Admin = Depends(require_permission(P_ADMINS_VIEW)),
 ):
-    admins = db.scalars(select(Admin).order_by(Admin.username.asc(), Admin.id.asc())).all()
+    admins = db.scalars(
+        select(Admin).order_by(Admin.username.asc(), Admin.id.asc())
+    ).all()
     return {"items": [admin_payload(db, admin) for admin in admins]}
 
 
-@router.get("/roles")
-def roles(
-    db: Session = Depends(get_db),
-    _: Admin = Depends(require_permission("roles.manage")),
+@router.get("/permissions")
+def permission_catalog(
+    _: Admin = Depends(require_permission(P_ADMINS_VIEW)),
 ):
-    rows = db.scalars(select(Role).order_by(Role.name.asc(), Role.id.asc())).all()
     return {
-        "items": [
-            {
-                "id": role.id,
-                "name": role.name,
-                "description": role.description,
-            }
-            for role in rows
-        ]
+        "items": PERMISSION_CATALOG,
+        "superadmin_only": sorted(SUPERADMIN_ONLY),
+        "always_granted": sorted(ALWAYS_GRANTED),
     }
 
 
@@ -130,15 +203,6 @@ def create_admin(
     actor: Admin = Depends(require_permission(P_ADMINS_MANAGE)),
 ):
     username = _normalize_username(payload.username)
-    role = _get_role(db, payload.role)
-
-    actor_permissions = permissions_for_admin(db, actor.id)
-    role_permissions = _permissions_for_role(db, role.id)
-    if not role_permissions.issubset(actor_permissions):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Anda tidak dapat memberikan role dengan izin melebihi kewenangan Anda",
-        )
 
     if db.scalar(
         select(Admin).where(func.lower(Admin.username) == username.casefold())
@@ -147,6 +211,17 @@ def create_admin(
             status_code=status.HTTP_409_CONFLICT,
             detail="Username administrator sudah digunakan",
         )
+
+    direct_permissions: set[str] = set()
+
+    if payload.is_superadmin:
+        _assert_superadmin_limit(db)
+        role = _get_role(db, SUPERADMIN_ROLE)
+    else:
+        direct_permissions = _normalize_payload_permissions(
+            payload.permissions
+        )
+        role = None
 
     item = Admin(
         username=username,
@@ -157,15 +232,25 @@ def create_admin(
 
     try:
         db.flush()
-        db.add(AdminRole(admin_id=item.id, role_id=role.id))
+
+        if role is not None:
+            db.add(AdminRole(admin_id=item.id, role_id=role.id))
+        else:
+            _replace_direct_permissions(
+                db,
+                item.id,
+                direct_permissions,
+            )
+
+        role_label = " superadmin" if role is not None else ""
         log_activity(
             db,
             actor.id,
             "admin.create",
             "admin",
             item.id,
-            f"Membuat administrator {item.username}",
-            ip_address=request.client.host if request.client else None,
+            f"Membuat administrator{role_label} {item.username}",
+            ip_address=get_client_ip(request),
             user_agent=request.headers.get("user-agent", "")[:500],
         )
         db.commit()
@@ -201,21 +286,82 @@ def update_admin(
             detail="Administrator tidak ditemukan",
         )
 
-    replacement_role: Role | None = None
-    if payload.role is not None:
-        replacement_role = _get_role(db, payload.role)
+    if actor.id == item.id:
+        if payload.password is not None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Gunakan menu ganti kata sandi",
+            )
 
-    _can_manage_target(
-        db,
-        actor,
-        item,
-        replacement_role=replacement_role,
+        if payload.permissions is not None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Anda tidak dapat mengubah izin akun sendiri",
+            )
+
+        if payload.is_superadmin is not None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "Anda tidak dapat mengubah status superadmin "
+                    "akun sendiri"
+                ),
+            )
+
+        if payload.is_active is not None:
+            detail = (
+                "Anda tidak dapat menonaktifkan akun sendiri"
+                if payload.is_active is False
+                else "Anda tidak dapat mengubah status aktif akun sendiri"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=detail,
+            )
+
+    current_superadmin = is_superadmin(db, item.id)
+    next_superadmin = (
+        payload.is_superadmin
+        if payload.is_superadmin is not None
+        else current_superadmin
     )
-    _assert_not_self_deactivate(actor, item, payload.is_active)
+    superadmin_changed = next_superadmin != current_superadmin
+    next_active = (
+        payload.is_active
+        if payload.is_active is not None
+        else item.is_active
+    )
 
-    password_changed = payload.password is not None
-    active_changed = payload.is_active is not None
-    role_changed = payload.role is not None
+    if superadmin_changed and next_superadmin:
+        _assert_superadmin_limit(db)
+
+    if next_superadmin and payload.permissions:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "Akun superadmin tidak boleh memiliki izin langsung; "
+                "superadmin otomatis memiliki semua izin."
+            ),
+        )
+
+    if current_superadmin and item.is_active:
+        removes_active_superadmin = (
+            not next_superadmin or not next_active
+        )
+
+        if removes_active_superadmin:
+            _assert_active_superadmin_remains(db, item.id)
+
+    direct_permissions: set[str] | None = None
+
+    if payload.permissions is not None:
+        direct_permissions = _normalize_payload_permissions(
+            payload.permissions
+        )
+    elif current_superadmin and not next_superadmin:
+        # Demotion without an explicit list leaves only the always-granted
+        # dashboard permission.
+        direct_permissions = normalize_permissions([])
 
     if payload.username is not None:
         username = _normalize_username(payload.username)
@@ -230,30 +376,74 @@ def update_admin(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Username administrator sudah digunakan",
             )
+    else:
+        username = item.username
+
+    username_changed = username != item.username
+    password_changed = payload.password is not None
+    active_changed = payload.is_active is not None
+    direct_permissions_before = _direct_permission_names(db, item.id)
+    permissions_after: set[str] | None = None
+
+    if username_changed:
         item.username = username
 
-    if payload.password is not None:
+    if password_changed:
         item.password_hash = hash_password(payload.password)
 
-    if payload.is_active is not None:
+    if active_changed:
         item.is_active = payload.is_active
 
-    if replacement_role is not None:
-        db.query(AdminRole).filter(AdminRole.admin_id == item.id).delete(
-            synchronize_session=False
-        )
-        db.add(AdminRole(admin_id=item.id, role_id=replacement_role.id))
+    if superadmin_changed:
+        role = _get_role(db, SUPERADMIN_ROLE)
 
+        if next_superadmin:
+            existing = db.get(
+                AdminRole,
+                {"admin_id": item.id, "role_id": role.id},
+            )
+
+            if existing is None:
+                db.add(
+                    AdminRole(admin_id=item.id, role_id=role.id)
+                )
+
+            # Superadmin permissions come from the role, so stale direct
+            # grants are cleared.
+            _replace_direct_permissions(db, item.id, set())
+            permissions_after = set()
+        else:
+            db.query(AdminRole).filter(
+                AdminRole.admin_id == item.id,
+                AdminRole.role_id == role.id,
+            ).delete(synchronize_session=False)
+
+            _replace_direct_permissions(
+                db,
+                item.id,
+                direct_permissions or set(),
+            )
+            permissions_after = direct_permissions or set()
+    elif direct_permissions is not None and not next_superadmin:
+        _replace_direct_permissions(
+            db,
+            item.id,
+            direct_permissions,
+        )
+        permissions_after = direct_permissions
+
+    # A permissions-only change is intentionally not revoked: permissions
+    # are re-read from the database on every request.
     session_must_be_revoked = (
-    password_changed
-    or role_changed
-    or (active_changed and payload.is_active is False)
+        password_changed
+        or superadmin_changed
+        or (active_changed and payload.is_active is False)
     )
 
     if session_must_be_revoked:
         revoke_admin_sessions(db, item.id)
 
-    try:
+    if username_changed or active_changed:
         log_activity(
             db,
             actor.id,
@@ -261,9 +451,62 @@ def update_admin(
             "admin",
             item.id,
             f"Memperbarui administrator {item.username}",
-            ip_address=request.client.host if request.client else None,
+            ip_address=get_client_ip(request),
             user_agent=request.headers.get("user-agent", "")[:500],
         )
+
+    if password_changed:
+        log_activity(
+            db,
+            actor.id,
+            "admin.password_reset",
+            "admin",
+            item.id,
+            f"Mereset kata sandi administrator {item.username}",
+            ip_address=get_client_ip(request),
+            user_agent=request.headers.get("user-agent", "")[:500],
+        )
+
+    if superadmin_changed:
+        log_activity(
+            db,
+            actor.id,
+            (
+                "admin.superadmin_grant"
+                if next_superadmin
+                else "admin.superadmin_revoke"
+            ),
+            "admin",
+            item.id,
+            (
+                f"Menjadikan {item.username} superadmin"
+                if next_superadmin
+                else f"Mencabut status superadmin {item.username}"
+            ),
+            ip_address=get_client_ip(request),
+            user_agent=request.headers.get("user-agent", "")[:500],
+        )
+
+    if permissions_after is not None:
+        description = _permission_change_description(
+            item.username,
+            direct_permissions_before,
+            permissions_after,
+        )
+
+        if description is not None:
+            log_activity(
+                db,
+                actor.id,
+                "admin.permissions_update",
+                "admin",
+                item.id,
+                description,
+                ip_address=get_client_ip(request),
+                user_agent=request.headers.get("user-agent", "")[:500],
+            )
+
+    try:
         db.commit()
         db.refresh(item)
     except HTTPException:
@@ -303,7 +546,8 @@ def delete_admin(
             detail="Administrator tidak ditemukan",
         )
 
-    _can_manage_target(db, actor, item)
+    if is_superadmin(db, item.id) and item.is_active:
+        _assert_active_superadmin_remains(db, item.id)
 
     try:
         log_activity(
@@ -313,7 +557,7 @@ def delete_admin(
             "admin",
             item.id,
             f"Menghapus administrator {item.username}",
-            ip_address=request.client.host if request.client else None,
+            ip_address=get_client_ip(request),
             user_agent=request.headers.get("user-agent", "")[:500],
         )
         db.delete(item)

@@ -4,7 +4,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -44,14 +44,14 @@ export default function LoginPage() {
 
   if (isLoading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-bg-light px-4">
+      <main className="admin-theme flex min-h-screen items-center justify-center bg-bg-light px-4">
         <p className="text-sm text-ink-soft">Memuat sesi...</p>
       </main>
     );
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-bg-light px-4 py-10">
+    <main className="admin-theme flex min-h-screen items-center justify-center bg-bg-light px-4 py-10">
       <div className="w-full max-w-sm">
         <h1 className="text-2xl font-semibold tracking-tight text-ink">
           Login Admin

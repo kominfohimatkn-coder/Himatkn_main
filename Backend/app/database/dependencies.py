@@ -81,6 +81,27 @@ def require_permission(permission: str):
     return dependency
 
 
+def require_any_permission(*permissions: str):
+    def dependency(
+        admin: Admin = Depends(current_admin),
+        db: Session = Depends(get_db),
+    ) -> Admin:
+        granted = permissions_for_admin(
+            db,
+            admin.id,
+        )
+
+        if not any(permission in granted for permission in permissions):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Anda tidak memiliki izin untuk modul ini",
+            )
+
+        return admin
+
+    return dependency
+
+
 async def require_csrf(
     csrf_cookie: str | None = Cookie(
         default=None,

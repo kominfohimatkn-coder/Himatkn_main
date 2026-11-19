@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/features/auth/AuthContext";
 
 import {
   implementedAdminRoutes,
@@ -25,7 +25,7 @@ export function AdminSidebar({
   pathname: string;
   onNavigate?: () => void;
 }) {
-  const { admin, logout } = useAuth();
+  const { admin, isSuperadmin, logout } = useAuth();
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
@@ -144,11 +144,24 @@ const visibleManagementItems = managementNavItems.filter(
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-zinc-950">
+            <Link
+              href="/admin/account"
+              onClick={onNavigate}
+              className="block truncate text-sm font-medium text-zinc-950 underline-offset-4 hover:underline"
+              title="Akun saya"
+            >
               {admin?.username ?? "Admin"}
-            </p>
+            </Link>
             <p className="truncate text-xs text-zinc-400">
-              {admin?.roles?.join(", ") || "Administrator"}
+              {isSuperadmin ? "Superadmin" : "Pengurus"}
+              <span aria-hidden="true"> · </span>
+              <Link
+                href="/admin/account"
+                onClick={onNavigate}
+                className="underline-offset-4 hover:text-zinc-700 hover:underline"
+              >
+                Akun saya
+              </Link>
             </p>
           </div>
         </div>

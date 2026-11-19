@@ -8,7 +8,7 @@ def test_no_duplicate_tables():
     names=[t.name for t in Base.metadata.sorted_tables]
     dup=[n for n,c in Counter(names).items() if c>1]
     assert not dup
-    assert len(names)==22
+    assert len(names)==23
 
 def test_unique_admin_constraint():
     with SessionLocal() as db:

@@ -1,10 +1,30 @@
 from __future__ import annotations
 
 import json
+import os
 from functools import lru_cache
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+ALLOWED_APP_ENVS = {"development", "test", "production"}
+CLIENT_IP_SOURCES = {"direct", "trusted_proxy", "vercel"}
+APP_ENV_ALIASES = {
+    "dev": "development",
+    "prod": "production",
+}
+
+WEAK_ADMIN_PASSWORDS = {
+    "admin123",
+    "admin",
+    "password",
+    "changeme",
+    "change_me",
+    "12345678",
+    "123456789012",
+    "himatkn",
+}
 
 
 class Settings(BaseSettings):
@@ -37,8 +57,10 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: list[str] = Field(default_factory=list)
 
-    # Proxy
+    # Proxy / client IP
     trusted_proxy_ips: str = ""
+    # direct | trusted_proxy | vercel
+    client_ip_source: str = "direct"
 
     # Rate limiting
     rate_limit_backend: str = "memory"
@@ -49,11 +71,11 @@ class Settings(BaseSettings):
     login_ip_window_seconds: int = 60
     login_account_limit: int = 5
     login_account_window_seconds: int = 60
+    login_account_global_limit: int = Field(20, ge=1)
+    login_account_global_window_seconds: int = Field(900, ge=1)
 
-    general_read_limit: int = 120
-    general_read_window_seconds: int = 60
-    general_write_limit: int = 60
-    general_write_window_seconds: int = 60
+    change_password_limit: int = Field(5, ge=1)
+    change_password_window_seconds: int = Field(900, ge=1)
 
     global_read_limit: int = Field(360, ge=1)
     global_write_limit: int = Field(120, ge=1)
@@ -63,6 +85,11 @@ class Settings(BaseSettings):
 
     general_write_limit: int = Field(60, ge=1)
     general_write_window_seconds: int = Field(60, ge=1)
+
+    # Database timeouts (MySQL/TiDB only; ignored for SQLite)
+    db_connect_timeout: int = Field(10, ge=1)
+    db_read_timeout: int = Field(30, ge=1)
+    db_write_timeout: int = Field(30, ge=1)
 
     # Request / upload limits
     max_request_body_bytes: int = 4_300_000
@@ -89,6 +116,45 @@ class Settings(BaseSettings):
     admin_default_username: str = "admin"
     admin_default_password: str
     admin_default_role: str = "superadmin"
+
+    @field_validator("app_env", mode="before")
+    @classmethod
+    def normalize_app_env(cls, value: str) -> str:
+        normalized = str(value).strip().lower()
+        normalized = APP_ENV_ALIASES.get(normalized, normalized)
+
+        if normalized not in ALLOWED_APP_ENVS:
+            raise ValueError(
+                "APP_ENV harus salah satu dari development, test, "
+                "atau production (alias: dev, prod)."
+            )
+
+        return normalized
+
+    @field_validator("admin_default_role", mode="before")
+    @classmethod
+    def normalize_admin_default_role(cls, value: str) -> str:
+        normalized = str(value).strip().lower()
+
+        if normalized != "superadmin":
+            raise ValueError(
+                "ADMIN_DEFAULT_ROLE hanya mendukung superadmin."
+            )
+
+        return normalized
+
+    @field_validator("client_ip_source", mode="before")
+    @classmethod
+    def normalize_client_ip_source(cls, value: str) -> str:
+        normalized = str(value).strip().lower()
+
+        if normalized not in CLIENT_IP_SOURCES:
+            raise ValueError(
+                "CLIENT_IP_SOURCE harus salah satu dari "
+                "direct, trusted_proxy, atau vercel."
+            )
+
+        return normalized
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -130,7 +196,7 @@ class Settings(BaseSettings):
 
     @property
     def production(self) -> bool:
-        return self.app_env.lower() in {"production", "prod"}
+        return self.app_env == "production"
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -146,9 +212,28 @@ class Settings(BaseSettings):
 
     def validate_runtime(self) -> None:
         if self.production:
+            if "VERCEL" in os.environ and self.client_ip_source != "vercel":
+                raise RuntimeError(
+                    "CLIENT_IP_SOURCE=vercel wajib dipakai saat aplikasi "
+                    "berjalan di Vercel (APP_ENV=production + env VERCEL). "
+                    "request.client.host di Vercel bukan IP pengunjung."
+                )
+
             if len(self.jwt_secret_key) < 32:
                 raise RuntimeError(
                     "JWT_SECRET_KEY minimal 32 karakter pada production."
+                )
+
+            if "change_me" in self.jwt_secret_key.lower():
+                raise RuntimeError(
+                    "JWT_SECRET_KEY tidak boleh memakai placeholder "
+                    "CHANGE_ME pada production."
+                )
+
+            if len(set(self.jwt_secret_key)) < 10:
+                raise RuntimeError(
+                    "JWT_SECRET_KEY terlalu lemah: minimal 10 karakter "
+                    "unik pada production."
                 )
 
             if not self.cookie_secure:
@@ -184,12 +269,22 @@ class Settings(BaseSettings):
                     "ADMIN_DEFAULT_PASSWORD wajib diisi di production."
                 )
 
-            if self.admin_default_password in {
-                "CHANGE_ME",
-                "password",
-            }:
+            normalized_password = self.admin_default_password.strip().lower()
+
+            if len(self.admin_default_password) < 12:
                 raise RuntimeError(
-                    "ADMIN_DEFAULT_PASSWORD harus diganti di production."
+                    "ADMIN_DEFAULT_PASSWORD minimal 12 karakter "
+                    "pada production."
+                )
+
+            if (
+                normalized_password in WEAK_ADMIN_PASSWORDS
+                or "change_me" in normalized_password
+            ):
+                raise RuntimeError(
+                    "ADMIN_DEFAULT_PASSWORD tidak boleh memakai nilai "
+                    "contoh atau placeholder pada production. Gunakan "
+                    "password acak minimal 12 karakter."
                 )
 
             if (
