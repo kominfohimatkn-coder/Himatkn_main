@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 
@@ -37,18 +36,11 @@ export function SiteFooter() {
       <div className="site-container">
         <div className="flex flex-col gap-6 border-b border-line-on-dark pb-8 min-[641px]:flex-row min-[641px]:items-start min-[641px]:justify-between">
           <Link href="/" className="flex items-center gap-3">
-            <Image
-              src="/favicon.png"
-              alt="Logo HIMATKN"
-              width={29}
-              height={36}
-              className="shrink-0 rounded-sm bg-white"
-            />
             <span>
               <span className="block font-serif text-[13px] leading-[1.1] font-bold tracking-[0.01em] text-white uppercase min-[641px]:text-[15px]">
                 Hima Teknokimia Nuklir
               </span>
-              <span className="mt-[3px] block text-[10px] leading-[1.3] font-medium tracking-[0.08em] text-on-dark-soft uppercase min-[641px]:text-[11px]">
+              <span className="mt-0.75 block text-[10px] leading-[1.3] font-medium tracking-[0.08em] text-on-dark-soft uppercase min-[641px]:text-[11px]">
                 Politeknik Teknologi Nuklir
               </span>
             </span>
@@ -56,7 +48,7 @@ export function SiteFooter() {
 
           <nav
             aria-label="Navigasi footer"
-            className="grid w-full grid-cols-2 gap-x-6 gap-y-3 min-[641px]:flex min-[641px]:w-auto min-[641px]:gap-[26px]"
+            className="grid w-full grid-cols-2 gap-x-6 gap-y-3 min-[641px]:flex min-[641px]:w-auto min-[641px]:gap-6.5"
           >
             {footerNavigation.map((item) => {
               if (item.external) {
@@ -86,7 +78,7 @@ export function SiteFooter() {
           </nav>
         </div>
 
-        <div className="flex flex-col gap-3 pt-[22px] pb-[30px] text-xs text-on-dark-soft min-[641px]:flex-row min-[641px]:items-center min-[641px]:justify-between">
+        <div className="flex flex-col gap-3 pt-5.5 pb-7.5 text-xs text-on-dark-soft min-[641px]:flex-row min-[641px]:items-center min-[641px]:justify-between">
           <p>
             © {year} HIMATKN — Himpunan Mahasiswa Teknokimia Nuklir
           </p>
