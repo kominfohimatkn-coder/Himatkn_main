@@ -202,4 +202,5 @@ export const implementedAdminRoutes = new Set([
   "/admin/organization",
   "/admin/accounts",
   "/admin/account",
+  "/admin/settings",
 ]);

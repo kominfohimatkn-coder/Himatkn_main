@@ -14,7 +14,7 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 
 ## 1. Current Project State
 
-> Terakhir diperbarui: 18 November 2026 (Batch ACC — halaman Administrator dan Akun saya selesai di working tree). Perbarui bagian ini pada setiap batch.
+> Terakhir diperbarui: 19 November 2026 (Batch ADM-SET — halaman admin Pengaturan situs selesai di working tree). Perbarui bagian ini pada setiap batch.
 
 ### a. Snapshot repository
 
@@ -52,6 +52,7 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 - **Batch ORG-B** (18 Nov) melengkapi halaman admin `/admin/organization` dengan bagian **Anggota** di bawah divisi: daftar anggota periode terpilih dikelompokkan per divisi (`sort_order` divisi) lalu "Tanpa divisi", urut `sort_order` anggota lalu nama, dengan foto/inisial, nama, dan jabatan dari `GET /positions`; pencarian nama di sisi klien. Form anggota memakai `FormDialog` (nama, jabatan, divisi periode terpilih atau tanpa divisi, urutan, foto) dan tombol "Tambah anggota" per grup mengisi divisi otomatis. Foto diunggah lewat `uploadImage()` (`POST /media/images`, kompresi browser), `storage_key` disimpan ke `photo_url`; pratinjau memakai `mediaPathFromStorageKey()` + `resolveMediaUrl()` dan nilai lama URL/path tetap lewat `resolveMediaUrl()`. Tanpa `media.manage`, area unggah diganti pemberitahuan. Hapus anggota memakai `ConfirmDialog` dengan nama dan periode, dan checklist periode kini memakai jumlah anggota sebenarnya. Perubahan berada di working tree; **belum di-commit**.
 - **Batch ACC** (18 Nov) menambahkan halaman superadmin `/admin/accounts` (daftar akun, tambah/ubah, checklist izin per modul dengan implikasi otomatis, reset password, hapus) dan halaman `/admin/account` untuk semua akun yang login (profil ringkas + ganti kata sandi sendiri). Menu "Administrator" memakai izin `admins.view` dan mengarah ke `/admin/accounts`; blok akun sidebar menaut ke `/admin/account`. Helper pesan error dipindahkan ke `getApiErrorMessage` di `lib/api/errors.ts` dan `features/organization/errors.ts` dihapus. Perubahan berada di working tree; **belum di-commit**.
 - URL Instagram `https://www.instagram.com/himatknuklir` **dikonfirmasi pemilik** pada 16 Nov. Konstanta dipertahankan sebagai utang teknis (lihat e.8); parameter share `rpxt` pada URL yang dikirim pemilik dibuang agar tautan stabil.
+- **Batch ADM-SET** (19 Nov) menambahkan halaman `/admin/settings` ("Pengaturan Situs") dengan `RequirePermission settings.view`, mode baca saja tanpa `settings.manage`, navigasi per grup dari backend, simpan per grup lewat `PATCH /admin/settings` hanya untuk key yang berubah, error `422` per key di field terkait, foto hero (`hero_image`) dengan unggah `POST /media/images` + `storage_key` dan `hero_image_alt` berdampingan, reset per field lewat `DELETE /admin/settings/{key}`, serta panel `unknown_keys` untuk pembersihan data lama. Menu Pengaturan kini masuk `implementedAdminRoutes`. Perubahan berada di working tree; **belum di-commit**.
 
 ### b. Scope fase saat ini
 
@@ -112,7 +113,7 @@ Entri historis yang masih memuat referensi tersebut tetap utuh di Historical Arc
 Ringkasan dari audit 12 November 2026; detail dan bukti line-by-line ada di `docs/audit/REDESIGN_AUDIT_2026-11-12.md` (rujukan; jangan disalin ulang).
 
 - Route publik produk: `/` dan `/struktur`. Fixture `/__structure-state` **sudah dihapus pada R1 Fase A** (folder berawalan `_` sebenarnya tidak pernah menjadi route Next; URL-nya 404 bahkan sebelum dihapus).
-- Route admin: `/login`, `/admin/dashboard`, `/admin/news` (read-only di UI), `/admin/programs` (CRUD), `/admin/organization` (CRUD periode/divisi/anggota + foto anggota), `/admin/accounts` (khusus superadmin), `/admin/account` (semua akun yang login).
+- Route admin: `/login`, `/admin/dashboard`, `/admin/news` (read-only di UI), `/admin/programs` (CRUD), `/admin/organization` (CRUD periode/divisi/anggota + foto anggota), `/admin/settings` (pengaturan situs per grup), `/admin/accounts` (khusus superadmin), `/admin/account` (semua akun yang login).
 - Endpoint publik yang tersedia dan pemakaiannya:
 
   | Endpoint | Dipakai frontend? |
@@ -125,7 +126,7 @@ Ringkasan dari audit 12 November 2026; detail dan bukti line-by-line ada di `doc
   | `/public/settings` | Service `getPublicSettings()`/`loadPublicSettings()`, `PUBLIC_SETTING_KEYS`, dan `PUBLIC_SETTINGS_FALLBACK` siap; UI belum migrasi. |
   | `POST /public/visits` | Service `recordVisit()` siap (error ditelan); belum dipasang ke halaman. |
 
-- Admin settings API (Batch API-B1, diperluas B3d): `GET /admin/settings` (`settings.view`), `PUT`/`DELETE /admin/settings/{key}` dan `PATCH /admin/settings` (`settings.manage` + CSRF), dengan registry **47 key** dan validasi. Sejak B3d, item bertipe `image` (`hero_image`) menyertakan `preview_url` berupa path media; tipe lain tidak. Service admin (`frontend/lib/admin/settings.ts`) siap sejak API-F; **halaman admin Pengaturan belum dibuat**.
+- Admin settings API (Batch API-B1, diperluas B3d): `GET /admin/settings` (`settings.view`), `PUT`/`DELETE /admin/settings/{key}` dan `PATCH /admin/settings` (`settings.manage` + CSRF), dengan registry **47 key** dan validasi. Sejak B3d, item bertipe `image` (`hero_image`) menyertakan `preview_url` berupa path media; tipe lain tidak. Service admin (`features/settings/admin-api.ts`) siap sejak API-F; **halaman admin Pengaturan dibuat pada Batch ADM-SET (19 Nov)** dan memakai `getAdminSettings`, `patchAdminSettings`, `updateAdminSetting`, serta `deleteAdminSetting`.
 - Public content API (Batch API-B2): `GET /public/programs` (filter periode/status/divisi, `total`, metadata divisi/periode), `GET /public/programs/{slug}`, `GET /public/news` (`q` judul, `total`, `excerpt`, `tags`), `GET /public/news/{slug}` (`tags`), dan `GET /public/organization` (`sort_order`, `photo_url` ternormalisasi). Kontrak lengkap: `Backend/docs/PUBLIC_API.md`.
 - **Admin organisasi (Batch B3a, 17 Nov):** `PUT /admin/organization/periods/{id}` mengubah nama/tanggal dengan nama unik case-insensitive dan validasi `end_date >= start_date`; `DELETE /admin/organization/periods/{id}` menolak periode aktif (409) dan periode yang masih punya divisi/anggota/program (409, pesan menyebut bagian yang menghalangi). Create periode juga memvalidasi urutan tanggal. UI periode ada di halaman `/admin/organization` (Batch ORG-A).
 - **Admin divisi (Batch B3b, 17 Nov):** `POST`/`PUT`/`DELETE /admin/organization/divisions` (201/200/200) dengan nama unik per periode case-insensitive; `DELETE` menolak divisi yang masih punya anggota dan/atau dipakai program kerja (409). `POST /admin/organization/periods/{id}/divisions/copy` menyalin divisi antarperiode secara atomik, melewati nama yang sudah ada, tidak menyalin anggota, dan menulis satu audit `division.copy`. `GET /divisions` mengirim `sort_order` dan diurutkan `sort_order` lalu `id`. Perbaikan bug: audit `member.create`/`member.update`/`member.delete` kini memakai `ip_address`/`user_agent` (sebelumnya `request=request` yang membuat endpoint 500). UI divisi ada di halaman `/admin/organization` (Batch ORG-A).
@@ -2023,6 +2024,55 @@ Informasi ini berasal dari audit repo remote dan dapat berubah. Agent harus veri
   - Hanya `Backend/` dan `docs/progress.md` diubah; `frontend/` tidak disentuh.
   - Tidak membaca/mencetak `.env*`; tidak install/upgrade paket; tidak commit/push/deploy.
 - **Langkah berikutnya:** pemilik meninjau dan meng-commit SEC-2. **Berhenti.**
+
+---
+
+### Sesi 2026-11-19 — Batch ADM-SET: halaman admin Pengaturan situs
+
+- **Status:** Selesai di working tree; tidak commit, push, atau deploy. **Berhenti.**
+- **Branch/HEAD:** `feat/admin-ui-foundation`, HEAD `db509d6` (merge `origin/main`). Working tree bersih sebelum batch.
+- **Tujuan batch:** membuat halaman `/admin/settings` untuk registry 47 key site settings, dengan mode baca saja, simpan per grup, validasi 422 per key, foto hero, reset per field, dan pembersihan `unknown_keys`.
+- **Yang selesai:**
+  - **Struktur halaman:** `app/(private)/(admin)/admin/settings/page.tsx` hanya mengatur state (muat data, draft nilai, dirty per grup, simpan/reset/hapus, konfirmasi). UI dipecah ke `features/settings/components/admin/`: `SettingsGroupNav`, `SettingsGroupForm`, `SettingField`, `HeroImageField`, `UnknownKeysPanel`, `SettingsPrimitives`, dan helper `settings-utils.ts`.
+  - **Izin:** halaman dibungkus `RequirePermission permission={settings.view}`. Tanpa `settings.manage`, banner mode lihat saja tampil, seluruh input `disabled`, dan tombol simpan/batalkan/reset/hapus disembunyikan memakai `Can` (footer aksi, reset per field, dan hapus `unknown_keys`).
+  - **Grup dan urutan:** grup dibentuk dari `group` item backend dengan urutan kemunculan registry: `brand` (Identitas), `links` (Tautan), `contact` (Kontak), `hero` (Beranda / Hero), `about` (Tentang), `program` (Program Kerja), `news` (Publikasi), `structure` (Struktur). Label field memakai `label` backend; hint dari peta per key dan pola `_eyebrow`/`_label`/URL. Navigasi grup berupa tombol tab tanpa memuat ulang data dan menampilkan jumlah perubahan per grup.
+  - **Field:** `text`/`email`/`url` memakai `Input` dengan `type` sesuai, `multiline` memakai `Textarea`; semuanya lewat `FormField`. Counter karakter untuk field panjang, badge "Bawaan", serta meta waktu perubahan. Field kosong boleh disimpan.
+  - **Validasi klien + backend:** validasi ringan email, wajib `https://`, host yang diizinkan, path Maps/embed, dan panjang maksimum hanya untuk umpan balik cepat. Simpan tetap mengirim ke backend; respons `422` dibaca dari `ApiError.errors` dan pesan per key ditempatkan di field terkait, dengan ringkasan "N kolom perlu diperbaiki; belum ada perubahan yang disimpan".
+  - **Simpan per grup:** `patchAdminSettings({ values })` hanya mengirim key yang berubah di grup aktif (atomik di backend). Tombol menampilkan jumlah perubahan dan nonaktif saat tidak ada perubahan. Sukses memperbarui `items`/draft dari `response.settings`, menampilkan pesan jumlah perubahan, dan catatan cache publik ±1 menit. Kegagalan non-422 memakai `getApiErrorMessage`.
+  - **Peringatan perubahan:** pindah grup dengan draft kotor memunculkan `ConfirmDialog`; meninggalkan halaman memakai `beforeunload` dan intersepsi klik tautan dengan konfirmasi sederhana.
+  - **Reset per field:** tombol kecil "Kembalikan ke bawaan"/"Kosongkan" hanya muncul bila nilai tersimpan berbeda dari default dan `settings.manage` tersedia; konfirmasi lalu `deleteAdminSetting(key)`, state diperbarui dari respons (`value` default) dan draft diselaraskan.
+  - **Foto hero:** `HeroImageField` menampilkan pratinjau dari `preview_url` atau `mediaPathFromStorageKey()` + `resolveMediaUrl()`; unggah memakai `uploadImage()` dengan input `accept="image/jpeg,image/png,image/webp"`, status mengompres/mengunggah, dan error kompresi/upload berbahasa Indonesia. Nilai yang disimpan adalah `storage_key`; tombol hapus mengisi draft `""`. Tanpa `media.manage` area unggah diganti pemberitahuan, sementara `hero_image_alt` (hint "Deskripsi foto untuk pembaca layar") tetap tampil berdampingan dan dapat diubah.
+  - **Unknown keys:** panel "Pengaturan lama yang tidak dikenal" menampilkan daftar `unknown_keys`; tombol hapus (di dalam `Can`) memakai konfirmasi dan `deleteAdminSetting(key)`, lalu panel diperbarui.
+  - **Navigasi:** `/admin/settings` ditambahkan ke `implementedAdminRoutes` agar menu Pengaturan yang sudah ada tampil di sidebar.
+- **File dibuat:**
+  - `frontend/app/(private)/(admin)/admin/settings/page.tsx`
+  - `frontend/features/settings/components/admin/SettingsGroupNav.tsx`
+  - `frontend/features/settings/components/admin/SettingsGroupForm.tsx`
+  - `frontend/features/settings/components/admin/SettingField.tsx`
+  - `frontend/features/settings/components/admin/HeroImageField.tsx`
+  - `frontend/features/settings/components/admin/UnknownKeysPanel.tsx`
+  - `frontend/features/settings/components/admin/SettingsPrimitives.tsx`
+  - `frontend/features/settings/components/admin/settings-utils.ts`
+- **File diubah:**
+  - `frontend/components/admin/shell/admin-navigation.tsx`
+  - `frontend/STRUCTURE.md`
+  - `docs/progress.md`
+- **Pemeriksaan yang dijalankan + hasil aktual:**
+  - `npx tsc --noEmit` di `frontend/` — lulus tanpa output.
+  - `npm run lint` di `frontend/` — lulus tanpa error/warning.
+  - `npm run build` di `frontend/` — sukses, 13 route termasuk `○ /admin/settings`; warning Turbopack tentang `pnpm-lock.yaml` di luar repository tetap muncul dan tidak menggagalkan build.
+- **Risiko/regresi yang diperiksa:**
+  - Halaman hanya memakai service `features/settings/admin-api.ts` dan helper media/error yang sudah ada; tidak mengubah kontrak API, auth/CSRF, atau backend.
+  - Data disimpan per grup sehingga kegagalan satu grup tidak menyentuh draft grup lain; draft tetap dipertahankan saat error 422.
+  - `updateAdminSetting` tidak dipakai di halaman karena simpan per grup memakai `patchAdminSettings`; reset dan pembersihan memakai `deleteAdminSetting`.
+  - Tanpa `media.manage`, `hero_image` tidak bisa diunggah/dihapus tetapi field lain tetap dapat disimpan.
+- **Blocker/keputusan yang diperlukan:** tidak ada blocker teknis.
+- **Konfirmasi batas scope:**
+  - Backend berubah: Tidak. Database/schema/migration berubah: Tidak.
+  - API contract/auth/CSRF/RBAC/cookie policy berubah: Tidak.
+  - Dependency, `.env*`, deployment, secret, atau konfigurasi environment berubah: Tidak.
+  - Halaman/komponen publik dan service lama tidak diubah.
+- **Langkah berikutnya:** pemilik meninjau dan meng-commit ADM-SET. **Berhenti.**
 
 ---
 

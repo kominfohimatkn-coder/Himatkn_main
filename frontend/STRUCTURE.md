@@ -77,7 +77,11 @@ frontend/
 │   │   ├── admin-api.ts
 │   │   ├── public-api.ts
 │   │   ├── types.ts
-│   │   └── links.ts
+│   │   ├── links.ts
+│   │   └── components/
+│   │       └── admin/            # SettingsGroupNav, SettingsGroupForm, SettingField,
+│   │                             # HeroImageField, UnknownKeysPanel, SettingsPrimitives,
+│   │                             # settings-utils
 │   └── visits/
 │       └── public-api.ts
 └── lib/
@@ -124,6 +128,19 @@ Foto anggota disimpan sebagai `storage_key` hasil `uploadImage()`
 `mediaPathFromStorageKey()` lalu `resolveMediaUrl()`; nilai lama berupa URL atau
 path tetap ditampilkan lewat `resolveMediaUrl()`. Pencarian anggota dilakukan di
 sisi klien dan tidak menambah parameter API.
+
+Halaman `/admin/settings` merangkai komponen di
+`features/settings/components/admin/`. `settings-utils.ts` menjadi satu tempat
+untuk urutan/label grup (mengikuti `group` dari backend), hint per key, dan
+validasi ringan klien (email, `https://`, host yang diizinkan); validasi akhir
+tetap backend, dan error `422` per key dari `ApiError.errors` ditampilkan pada
+field terkait. Setiap grup disimpan terpisah lewat
+`patchAdminSettings()` dengan hanya key yang berubah; `deleteAdminSetting()`
+dipakai untuk reset per field dan pembersihan `unknown_keys`. Foto hero memakai
+alur yang sama dengan foto anggota: `uploadImage()` menyimpan `storage_key` ke
+`hero_image`, pratinjau memakai `preview_url` backend atau
+`mediaPathFromStorageKey()` + `resolveMediaUrl()`, dan tanpa `media.manage`
+area unggah diganti pemberitahuan.
 
 ## Yang tetap di `lib/` dan `components/` (shared)
 
