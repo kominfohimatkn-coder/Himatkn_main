@@ -406,3 +406,220 @@ def test_change_password_revokes_other_sessions_only(client):
             assert B3C_NEW_PASSWORD not in (log.description or "")
     finally:
         client_b.close()
+
+
+# ---------------------------------------------------------------------------
+# SEC-2: login global bucket, change-password bucket, login audit
+# ---------------------------------------------------------------------------
+
+
+def _login(client, username: str, password: str):
+    return client.post(
+        "/api/v1/auth/login",
+        json={"username": username, "password": password},
+        headers=ORIGIN_HEADERS,
+    )
+
+
+def _logs(action: str):
+    with SessionLocal() as db:
+        return list(
+            db.scalars(
+                select(ActivityLog).where(ActivityLog.action == action)
+            ).all()
+        )
+
+
+def test_login_global_account_limit_blocks_across_ips(monkeypatch):
+    monkeypatch.setattr(settings, "login_account_global_limit", 3)
+    monkeypatch.setattr(
+        settings,
+        "login_account_global_window_seconds",
+        900,
+    )
+
+    username = "SEC2-GLOBAL"
+    password = "wrong-password"
+
+    for index in range(3):
+        other_ip = TestClient(
+            app,
+            client=(f"198.51.100.{index + 1}", 50000),
+        )
+
+        try:
+            response = _login(other_ip, username, password)
+        finally:
+            other_ip.close()
+
+        assert response.status_code == 401
+
+    blocked_ip = TestClient(app, client=("198.51.100.99", 50000))
+
+    try:
+        blocked = _login(blocked_ip, username, password)
+    finally:
+        blocked_ip.close()
+
+    assert blocked.status_code == 429
+    assert blocked.headers.get("Retry-After")
+    assert blocked.json()["detail"] == (
+        "Terlalu banyak percobaan login untuk akun ini."
+    )
+
+    unaffected_ip = TestClient(app, client=("198.51.100.100", 50000))
+
+    try:
+        unaffected = _login(
+            unaffected_ip,
+            "SEC2-GLOBAL-OTHER",
+            password,
+        )
+    finally:
+        unaffected_ip.close()
+
+    assert unaffected.status_code == 401
+
+
+def test_change_password_rate_limited_before_password_check(
+    client,
+    monkeypatch,
+):
+    monkeypatch.setattr(settings, "change_password_limit", 2)
+    monkeypatch.setattr(settings, "change_password_window_seconds", 900)
+
+    username = "SEC2-CHANGE-PASSWORD-LIMIT"
+    admin_id = _create_b3c_admin(username)
+    headers = _b3c_login(client, username, B3C_OLD_PASSWORD)
+
+    for _ in range(2):
+        response = _change_password(
+            client,
+            headers,
+            "wrong-current-password",
+            B3C_NEW_PASSWORD,
+        )
+        assert response.status_code == 400
+
+    blocked = _change_password(
+        client,
+        headers,
+        B3C_OLD_PASSWORD,
+        B3C_NEW_PASSWORD,
+    )
+
+    assert blocked.status_code == 429
+    assert blocked.headers.get("Retry-After")
+
+    with SessionLocal() as db:
+        admin_row = db.get(Admin, admin_id)
+        assert verify_password(
+            B3C_OLD_PASSWORD,
+            admin_row.password_hash,
+        )[0]
+
+
+def test_audit_login_success_writes_one_row(client):
+    username = "SEC2-AUDIT-SUCCESS"
+    admin_id = _create_b3c_admin(username)
+
+    _b3c_login(client, username, B3C_OLD_PASSWORD)
+
+    rows = [
+        row for row in _logs("auth.login.success")
+        if row.admin_id == admin_id
+    ]
+
+    assert len(rows) == 1
+    assert B3C_OLD_PASSWORD not in (rows[0].description or "")
+
+
+def test_audit_login_failure_for_existing_username(client):
+    username = "SEC2-AUDIT-FAIL-EXIST"
+    admin_id = _create_b3c_admin(username)
+
+    response = _login(client, username, "wrong-password")
+
+    assert response.status_code == 401
+
+    rows = [
+        row for row in _logs("auth.login.failure")
+        if row.admin_id == admin_id
+    ]
+
+    assert len(rows) == 1
+    assert rows[0].description == username
+    assert "wrong-password" not in (rows[0].description or "")
+
+
+def test_audit_login_failure_for_unknown_username(client):
+    username = "SEC2-AUDIT-UNKNOWN"
+
+    response = _login(client, username, "wrong-password")
+
+    assert response.status_code == 401
+
+    rows = [
+        row for row in _logs("auth.login.failure")
+        if row.admin_id is None and row.description == username
+    ]
+
+    assert len(rows) == 1
+
+
+def test_audit_login_failure_sanitizes_username(client):
+    username = "sec2\nbad\rname"
+
+    response = _login(client, username, "wrong-password")
+
+    assert response.status_code == 401
+
+    rows = [
+        row for row in _logs("auth.login.failure")
+        if row.description == "sec2badname"
+    ]
+
+    assert len(rows) == 1
+    assert rows[0].admin_id is None
+
+
+def test_audit_login_rate_limited_writes_one_row(client, monkeypatch):
+    monkeypatch.setattr(settings, "login_account_limit", 1)
+    monkeypatch.setattr(settings, "login_account_window_seconds", 900)
+
+    username = "SEC2-AUDIT-RATE-LIMIT"
+
+    first = _login(client, username, "wrong-password")
+    second = _login(client, username, "wrong-password")
+
+    assert first.status_code == 401
+    assert second.status_code == 429
+
+    rows = [
+        row for row in _logs("auth.login.rate_limited")
+        if username in (row.description or "")
+    ]
+
+    assert len(rows) == 1
+    assert rows[0].admin_id is None
+
+
+def test_audit_logout_writes_one_row(client):
+    username = "SEC2-AUDIT-LOGOUT"
+    admin_id = _create_b3c_admin(username)
+    headers = _b3c_login(client, username, B3C_OLD_PASSWORD)
+
+    response = client.post(
+        "/api/v1/auth/logout",
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+
+    rows = [
+        row for row in _logs("auth.logout")
+        if row.admin_id == admin_id
+    ]
+
+    assert len(rows) == 1
+    assert B3C_OLD_PASSWORD not in (rows[0].description or "")

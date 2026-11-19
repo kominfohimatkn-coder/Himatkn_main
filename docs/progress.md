@@ -1896,6 +1896,64 @@ Informasi ini berasal dari audit repo remote dan dapat berubah. Agent harus veri
 
 ---
 
+### Sesi 2026-11-19 — Batch SEC-2: IP klien, brute-force login, audit login, timeout database
+
+- **Status:** Selesai; **berhenti**. Tidak commit, push, deploy, atau menyambung ke TiDB/MySQL/Redis sungguhan.
+- **Branch/HEAD:** `feat/admin-ui-foundation`, HEAD `e8e07f7`. Working tree bersih sebelum batch dimulai.
+- **Tujuan batch:** menutup SEC-S1 (brute-force), SEC-S2 (IP klien), SEC-R5 (audit login), dan temuan operasional query menggantung saat koneksi TiDB putus.
+- **Satu sumber IP klien (`app/utils/ip.py`):**
+  - `resolve_client_ip(request)` menjadi satu-satunya sumber IP; `get_client_ip()` (audit) dan `RateLimiter.client_ip()` memanggilnya, sehingga rate limit dan audit selalu mencatat IP yang sama.
+  - Setting baru `CLIENT_IP_SOURCE` (default `direct`; nilai `direct`, `trusted_proxy`, `vercel`). Nilai lain ditolak validator Pydantic saat startup.
+  - `direct`: `request.client.host`. `vercel`: `x-vercel-forwarded-for` elemen pertama, lalu `x-real-ip`, lalu `request.client.host`; setiap kandidat divalidasi `ipaddress.ip_address` dan kandidat tidak valid dilewati. `trusted_proxy`: hanya bila peer ada di `TRUSTED_PROXY_IPS`, lalu `X-Forwarded-For` dibaca **dari kanan** dan hop pertama yang bukan proxy tepercaya dipakai (elemen kiri tidak dapat dipalsukan).
+  - `validate_runtime()` menolak startup bila `APP_ENV=production`, environment variable `VERCEL` ada, dan `CLIENT_IP_SOURCE != vercel`.
+- **Brute-force login:**
+  - Bucket baru `login-account-global:{username_casefold}` (casefold dipotong 100) dengan `LOGIN_ACCOUNT_GLOBAL_LIMIT` default **20** dan `LOGIN_ACCOUNT_GLOBAL_WINDOW_SECONDS` default **900**. Berlaku untuk semua username (ada maupun tidak) sehingga tidak membocorkan keberadaan akun. 429 memakai pesan dan `Retry-After` yang sama dengan bucket akun yang ada.
+  - Bucket per-IP dan per-IP+username tidak diubah.
+- **Brute-force ganti password:**
+  - `POST /auth/change-password` sekarang `async` dan memakai bucket `change-password:{admin_id}` dengan `CHANGE_PASSWORD_LIMIT` default **5** dan `CHANGE_PASSWORD_WINDOW_SECONDS` default **900**. Dicek **sebelum** verifikasi kata sandi lama; 429 + `Retry-After`. Pesan error login seragam tidak diubah.
+- **Trade-off bucket global:** penyerang dapat sengaja mengirim 20 percobaan gagal untuk satu username dan memicu 429 bagi pemilik akun (denial-of-service sementara, maksimal 15 menit). Tanpa bucket ini, brute force terdistribusi dari banyak IP hanya dibatasi bucket per-IP sehingga efektif tak terbatas. Default 20/900 dipilih agar pengguna wajar (salah ketik, NAT kantor bersama) tidak mudah terkena, sementara laju tebakan lintas IP dibatasi; nilainya jauh di atas batas per-IP (5/60 detik) sehingga pengguna tunggal normal tidak pernah mencapainya. Bucket ganti password 5/900 cukup untuk beberapa kesalahan, tetapi membatasi penggunaan sesi yang dicuri sebagai oracle kata sandi lama karena pengecekan dilakukan sebelum verifikasi.
+- **Audit login (`log_activity`, tanpa password/token, IP dari `get_client_ip`):**
+  - `auth.login.success` (admin_id terisi) ditulis dalam transaksi yang sama dengan sesi login.
+  - `auth.login.failure`: `admin_id` terisi bila username ada, `None` bila tidak; `description` berisi username yang dicoba, CR/LF dibuang, dipotong 100 karakter.
+  - `auth.login.rate_limited` untuk setiap 429 login (per-IP, per-akun, atau global), tanpa `admin_id`.
+  - `auth.logout` ditulis bersama pencabutan sesi.
+  - Jalur gagal/429 menulis audit lalu `commit` sebelum `HTTPException` dikirim; kegagalan audit di-rollback tanpa mengubah respons error login.
+- **Timeout database (`app/database/connection.py`):**
+  - Helper murni `build_db_connect_args(url)` mengembalikan `connect_timeout`/`read_timeout`/`write_timeout` hanya untuk backend `mysql`/`mariadb` (TiDB memakai MySQL). SQLite mengembalikan `{}`.
+  - Default `DB_CONNECT_TIMEOUT=10`, `DB_READ_TIMEOUT=30`, `DB_WRITE_TIMEOUT=30`. `pool_pre_ping`, `pool_recycle=300`, dan `NullPool` produksi tidak diubah.
+- **Kebersihan config:** duplikasi `general_read_limit`, `general_read_window_seconds`, `general_write_limit`, `general_write_window_seconds` dihapus; hanya versi `Field(..., ge=1)` yang dipertahankan. Nilai default efektif tidak berubah: read **120/60 detik**, write **60/60 detik**.
+- **Dokumentasi:** `Backend/.env.example` (semua setting baru + komentar + contoh produksi Vercel `CLIENT_IP_SOURCE=vercel`, `RATE_LIMIT_BACKEND=redis`, `REDIS_URL=rediss://...`), `Backend/README.md` bagian Security (sumber IP, bucket, audit, timeout), dan entri ini.
+- **File yang diubah/ditambah:**
+  - `Backend/app/utils/ip.py` (ditulis ulang)
+  - `Backend/app/core/config.py`, `Backend/app/core/rate_limit.py`
+  - `Backend/app/routers/auth.py`, `Backend/app/database/connection.py`
+  - `Backend/.env.example`, `Backend/README.md`
+  - `Backend/tests/test_client_ip.py` (baru), `Backend/tests/test_db_connection.py` (baru), `Backend/tests/test_config.py`, `Backend/tests/test_auth.py`
+  - `docs/progress.md`
+- **Test yang ditambahkan (+27):**
+  - IP: `vercel` memakai `x-vercel-forwarded-for`, fallback `x-real-ip`, kandidat tidak valid dilewati; `direct` mengabaikan header forwarded; `trusted_proxy` mengambil hop kanan pertama non-proxy dan mengabaikan elemen kiri yang dipalsukan; peer tidak tepercaya diabaikan; audit dan rate limiter menghasilkan IP yang sama.
+  - Config: `CLIENT_IP_SOURCE` tidak valid → error; normalisasi nilai; default general limit tetap; produksi + `VERCEL` + sumber bukan `vercel` → error; `vercel` diterima; tanpa `VERCEL` sumber `direct` diterima.
+  - Login: setelah limit global tercapai dari IP berbeda untuk username yang sama → 429 + `Retry-After`; username lain tidak terpengaruh.
+  - Change password: percobaan ke-(limit+1) → 429 walaupun kata sandi lama benar, dan hash lama tidak berubah.
+  - Audit: sukses, gagal (username ada dan tidak ada), sanitasi CR/LF, rate limited, dan logout masing-masing satu baris dengan aksi benar; tidak memuat kata sandi.
+  - Engine: `connect_args` hanya untuk URL MySQL dan mengikuti setting; SQLite/URL tidak dikenal tanpa `connect_args`.
+- **Pemeriksaan yang dijalankan + hasil:**
+  - `python -m compileall app` → lulus.
+  - `pytest -q` → **224 passed** (baseline) → **251 passed**, 37 warning deprecation dari dependency.
+  - `alembic upgrade head` + `alembic check` pada SQLite sementara `alembic_sec2_check.sqlite3` → `No new upgrade operations detected`; file sementara dihapus.
+- **Risiko/regresi yang diperiksa:**
+  - Tidak ada perubahan model, migration, atau `frontend/`.
+  - Bucket global hanya menambah pengecekan; pesan error 401 tetap seragam dan tidak membedakan username ada/tidak.
+  - `trusted_proxy` membaca dari kanan, sehingga elemen `X-Forwarded-For` paling kiri tidak lagi dipercaya.
+  - Timeout hanya dipasang untuk MySQL/TiDB; test SQLite tidak terpengaruh.
+- **Blocker/keputusan yang diperlukan:** tidak ada untuk batch ini. Produksi Vercel wajib menyetel `CLIENT_IP_SOURCE=vercel`.
+- **Konfirmasi batas scope:**
+  - Hanya `Backend/` dan `docs/progress.md` diubah; `frontend/` tidak disentuh.
+  - Tidak membaca/mencetak `.env*`; tidak install/upgrade paket; tidak commit/push/deploy.
+- **Langkah berikutnya:** pemilik meninjau dan meng-commit SEC-2. **Berhenti.**
+
+---
+
 ## 4. Template Catatan Sesi
 
 Salin bagian ini dan isi dengan fakta aktual setiap selesai satu batch. Jangan mengklaim check/test berhasil jika tidak dijalankan.

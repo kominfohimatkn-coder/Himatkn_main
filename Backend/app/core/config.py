@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from functools import lru_cache
 
 from pydantic import Field, field_validator
@@ -8,6 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 ALLOWED_APP_ENVS = {"development", "test", "production"}
+CLIENT_IP_SOURCES = {"direct", "trusted_proxy", "vercel"}
 APP_ENV_ALIASES = {
     "dev": "development",
     "prod": "production",
@@ -55,8 +57,10 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: list[str] = Field(default_factory=list)
 
-    # Proxy
+    # Proxy / client IP
     trusted_proxy_ips: str = ""
+    # direct | trusted_proxy | vercel
+    client_ip_source: str = "direct"
 
     # Rate limiting
     rate_limit_backend: str = "memory"
@@ -67,11 +71,11 @@ class Settings(BaseSettings):
     login_ip_window_seconds: int = 60
     login_account_limit: int = 5
     login_account_window_seconds: int = 60
+    login_account_global_limit: int = Field(20, ge=1)
+    login_account_global_window_seconds: int = Field(900, ge=1)
 
-    general_read_limit: int = 120
-    general_read_window_seconds: int = 60
-    general_write_limit: int = 60
-    general_write_window_seconds: int = 60
+    change_password_limit: int = Field(5, ge=1)
+    change_password_window_seconds: int = Field(900, ge=1)
 
     global_read_limit: int = Field(360, ge=1)
     global_write_limit: int = Field(120, ge=1)
@@ -81,6 +85,11 @@ class Settings(BaseSettings):
 
     general_write_limit: int = Field(60, ge=1)
     general_write_window_seconds: int = Field(60, ge=1)
+
+    # Database timeouts (MySQL/TiDB only; ignored for SQLite)
+    db_connect_timeout: int = Field(10, ge=1)
+    db_read_timeout: int = Field(30, ge=1)
+    db_write_timeout: int = Field(30, ge=1)
 
     # Request / upload limits
     max_request_body_bytes: int = 4_300_000
@@ -130,6 +139,19 @@ class Settings(BaseSettings):
         if normalized != "superadmin":
             raise ValueError(
                 "ADMIN_DEFAULT_ROLE hanya mendukung superadmin."
+            )
+
+        return normalized
+
+    @field_validator("client_ip_source", mode="before")
+    @classmethod
+    def normalize_client_ip_source(cls, value: str) -> str:
+        normalized = str(value).strip().lower()
+
+        if normalized not in CLIENT_IP_SOURCES:
+            raise ValueError(
+                "CLIENT_IP_SOURCE harus salah satu dari "
+                "direct, trusted_proxy, atau vercel."
             )
 
         return normalized
@@ -190,6 +212,13 @@ class Settings(BaseSettings):
 
     def validate_runtime(self) -> None:
         if self.production:
+            if "VERCEL" in os.environ and self.client_ip_source != "vercel":
+                raise RuntimeError(
+                    "CLIENT_IP_SOURCE=vercel wajib dipakai saat aplikasi "
+                    "berjalan di Vercel (APP_ENV=production + env VERCEL). "
+                    "request.client.host di Vercel bukan IP pengunjung."
+                )
+
             if len(self.jwt_secret_key) < 32:
                 raise RuntimeError(
                     "JWT_SECRET_KEY minimal 32 karakter pada production."

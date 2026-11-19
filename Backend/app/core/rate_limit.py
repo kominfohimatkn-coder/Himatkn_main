@@ -4,11 +4,11 @@ import asyncio
 import hashlib
 import time
 from collections import defaultdict, deque
-from ipaddress import ip_address, ip_network
 
 from fastapi import HTTPException, Request
 
 from app.core.config import settings
+from app.utils.ip import resolve_client_ip
 
 try:
     from redis.asyncio import Redis
@@ -65,14 +65,6 @@ SPECIAL_WRITE_PATHS = {
 
 def _matches_prefix(path: str, prefix: str) -> bool:
     return path == prefix or path.startswith(f"{prefix}/")
-
-
-def _valid_net(value: str) -> bool:
-    try:
-        ip_network(value, strict=False)
-        return True
-    except ValueError:
-        return False
 
 
 def _semantic_scope(
@@ -141,36 +133,8 @@ class RateLimiter:
             else None
         )
 
-    def _trusted_proxy(self, request: Request) -> bool:
-        if not request.client:
-            return False
-
-        try:
-            client = ip_address(request.client.host)
-        except ValueError:
-            return False
-
-        return any(
-            client in ip_network(net, strict=False)
-            for net in settings.trusted_proxy_ip_list
-            if _valid_net(net)
-        )
-
     def client_ip(self, request: Request) -> str:
-        if self._trusted_proxy(request):
-            candidate = (
-                request.headers.get("x-forwarded-for", "")
-                .split(",")[0]
-                .strip()
-            )
-
-            try:
-                ip_address(candidate)
-                return candidate
-            except ValueError:
-                pass
-
-        return request.client.host if request.client else "unknown"
+        return resolve_client_ip(request)
 
     async def allow(
         self,

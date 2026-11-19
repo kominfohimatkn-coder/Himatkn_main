@@ -112,3 +112,59 @@ def test_app_env_is_normalized(value, expected):
     )
 
     assert settings.app_env == expected
+
+
+def _base_settings(**overrides) -> Settings:
+    values = {
+        "app_env": "test",
+        "database_url": "sqlite:///./test.sqlite3",
+        "jwt_secret_key": "test-secret-" + "x" * 40,
+        "admin_default_password": "not-used-outside-production",
+    }
+    values.update(overrides)
+    return Settings(**values)
+
+
+def test_client_ip_source_rejects_unknown_value():
+    with pytest.raises(ValidationError, match="CLIENT_IP_SOURCE"):
+        _base_settings(client_ip_source="cloudflare")
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("direct", "direct"),
+        (" TRUSTED_PROXY ", "trusted_proxy"),
+        ("Vercel", "vercel"),
+    ],
+)
+def test_client_ip_source_is_normalized(value, expected):
+    assert _base_settings(client_ip_source=value).client_ip_source == expected
+
+
+def test_general_limit_defaults_are_preserved():
+    settings = _base_settings()
+
+    assert settings.general_read_limit == 120
+    assert settings.general_read_window_seconds == 60
+    assert settings.general_write_limit == 60
+    assert settings.general_write_window_seconds == 60
+
+
+def test_production_on_vercel_requires_vercel_source(monkeypatch):
+    monkeypatch.setenv("VERCEL", "1")
+
+    with pytest.raises(RuntimeError, match="CLIENT_IP_SOURCE"):
+        production_settings().validate_runtime()
+
+
+def test_production_on_vercel_accepts_vercel_source(monkeypatch):
+    monkeypatch.setenv("VERCEL", "1")
+
+    production_settings(client_ip_source="vercel").validate_runtime()
+
+
+def test_production_off_vercel_accepts_direct_source(monkeypatch):
+    monkeypatch.delenv("VERCEL", raising=False)
+
+    production_settings(client_ip_source="direct").validate_runtime()
