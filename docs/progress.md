@@ -1312,6 +1312,78 @@ Entri sesi sejak 11 November 2026. Append-only: tambahkan entri baru di bawah; j
 
 ---
 
+### Sesi 2026-11-19 — Batch STORAGE-VB: backend penyimpanan Vercel Blob
+
+- **Status:** Selesai di working tree; tidak commit, push, atau deploy.
+- **Branch:** `feat/admin-ui-foundation`. Tree bersih sebelum batch.
+- **Tujuan:** menambah `STORAGE_BACKEND=vercel_blob` sebagai penyimpanan gambar
+  sementara di Vercel Hobby, tanpa mengubah kontrak database (tetap menyimpan
+  storage key) dan tanpa mengubah perilaku `local`/`s3`.
+- **Yang selesai:**
+  - `app/services/storage.py`: nilai `vercel_blob` pada `_store`,
+    `public_image_response`, `private_document_response`, dan `delete_file`.
+    Upload memakai API sinkron SDK (`vercel.blob.sync.put_blob`) dengan
+    `pathname` = storage key, `access="public"`,
+    `add_random_suffix=False`, `content_type` sesuai file, dan
+    `cache_control_max_age=31536000` untuk `images/`. Error SDK dipetakan ke
+    `502 "Penyimpanan file tidak tersedia"`. Hapus memakai
+    `delete_blob(base + "/" + key)`; blob yang sudah tidak ada diabaikan.
+  - Gambar publik `vercel_blob` membalas redirect `307` ke
+    `BLOB_PUBLIC_BASE_URL + "/" + key`; base URL kosong → `503`. Key divalidasi
+    dengan `_SAFE_KEY` (plus allowlist ekstensi gambar) sebelum operasi.
+  - Dokumen pada `vercel_blob`: `save_document` dan
+    `private_document_response` membalas `503 "Dokumen belum didukung pada
+    penyimpanan ini"`; tidak ada upload dokumen sebagai blob publik.
+  - `app/core/config.py`: setting `BLOB_READ_WRITE_TOKEN` dan
+    `BLOB_PUBLIC_BASE_URL`; `storage_backend` divalidasi
+    `local|s3|vercel_blob`; validasi produksi mewajibkan token dan base URL
+    `https://` dengan host `*.public.blob.vercel-storage.com`, tanpa path,
+    query, fragment, atau slash di akhir. Pesan error tidak mencetak token.
+  - Dependency: `vercel==0.13.0` (menarik `vercel-blob` 0.6.0) ditambahkan ke
+    `requirements.txt` dan `pyproject.toml`; terpasang di `Backend/.venv`.
+  - `.env.example`, `Backend/README.md`, dan entri ini diperbarui.
+- **File diubah:**
+  - `Backend/app/services/storage.py`
+  - `Backend/app/core/config.py`
+  - `Backend/.env.example`
+  - `Backend/requirements.txt`
+  - `Backend/pyproject.toml`
+  - `Backend/README.md`
+  - `Backend/tests/test_storage.py`
+  - `Backend/tests/test_config.py`
+  - `Backend/tests/test_media.py`
+  - `docs/progress.md`
+- **SDK yang dipakai (nama persis):**
+  - `vercel.blob.sync.put_blob(pathname, body, *, access, content_type,
+    add_random_suffix, cache_control_max_age)`
+  - `vercel.blob.sync.delete_blob(url_or_pathname)`
+  - Token dibaca SDK dari environment `BLOB_READ_WRITE_TOKEN`.
+- **Pemeriksaan yang dijalankan + hasil aktual:**
+  - `python -m compileall app` → lulus.
+  - `pytest -q` → baseline **251 passed** → **283 passed**, 36 warning dari
+    dependency.
+  - `alembic upgrade head` + `alembic check` pada SQLite sementara
+    `alembic_storage_vb_check.sqlite3` → `No new upgrade operations detected`;
+    file sementara dihapus.
+- **Risiko/regresi yang diperiksa:**
+  - `local` dan `s3` tidak berubah; test lama tetap lulus.
+  - Tidak ada perubahan model, migration, `frontend/`, atau perilaku dokumen
+    pada `local`/`s3`.
+  - Pemasangan `vercel` menarik dependency transitif dan menurunkan
+    `websockets` 17.1 → 16.1.1 (batas `vercel`), tidak ada paket lain yang
+    ditambahkan langsung.
+- **Blocker/keputusan yang diperlukan:** tidak ada untuk batch ini. Produksi
+  Vercel perlu menyambungkan Blob store agar `BLOB_READ_WRITE_TOKEN` terisi,
+  lalu mengisi `BLOB_PUBLIC_BASE_URL`.
+- **Konfirmasi batas scope:**
+  - Hanya `Backend/` dan `docs/progress.md` diubah; `frontend/` tidak disentuh.
+  - Tidak membaca/mencetak `.env*`; tidak menyambung ke Vercel Blob, database,
+    atau Redis sungguhan; tidak commit/push/deploy.
+- **Langkah berikutnya:** pemilik meninjau dan meng-commit STORAGE-VB.
+  **Berhenti.**
+
+---
+
 ## 3. Historical Archive
 
 > **Arsip historis.** Entri di bawah ini dibuat sebelum 11 November 2026 dan memakai referensi desain yang sudah deprecated. Keputusan visual di dalamnya (token, font, layout, komposisi) **tidak berlaku**. Fakta teknis (dependency, kontrak API, hasil validasi, konfigurasi) hanya berlaku jika masih sesuai dengan source code terkini; verifikasi ulang sebelum dipakai. Jangan melanjutkan tugas atau "langkah berikutnya" dari entri ini tanpa konfirmasi. Untuk koreksi yang sudah diketahui, lihat Current Project State bagian Koreksi.

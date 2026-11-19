@@ -168,3 +168,57 @@ def test_production_off_vercel_accepts_direct_source(monkeypatch):
     monkeypatch.delenv("VERCEL", raising=False)
 
     production_settings(client_ip_source="direct").validate_runtime()
+
+
+@pytest.mark.parametrize("backend", ["local", "s3", "vercel_blob"])
+def test_storage_backend_accepts_known_values(backend):
+    assert _base_settings(storage_backend=backend).storage_backend == backend
+
+
+def test_storage_backend_rejects_unknown_value():
+    with pytest.raises(ValidationError, match="STORAGE_BACKEND"):
+        _base_settings(storage_backend="r2")
+
+
+def _vercel_blob_settings(**overrides) -> Settings:
+    values = {
+        "storage_backend": "vercel_blob",
+        "blob_read_write_token": "vercel_blob_rw_store_secret",
+        "blob_public_base_url": "https://store.public.blob.vercel-storage.com",
+    }
+    values.update(overrides)
+    return production_settings(**values)
+
+
+def test_production_vercel_blob_accepts_valid_configuration():
+    _vercel_blob_settings().validate_runtime()
+
+
+def test_production_vercel_blob_requires_token():
+    token = "vercel_blob_rw_store_secret"
+
+    with pytest.raises(RuntimeError, match="BLOB_READ_WRITE_TOKEN") as exc_info:
+        _vercel_blob_settings(blob_read_write_token="").validate_runtime()
+
+    assert token not in str(exc_info.value)
+
+
+def test_production_vercel_blob_requires_base_url():
+    with pytest.raises(RuntimeError, match="BLOB_PUBLIC_BASE_URL"):
+        _vercel_blob_settings(blob_public_base_url="").validate_runtime()
+
+
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        "http://store.public.blob.vercel-storage.com",
+        "https://store.example.com",
+        "https://store.public.blob.vercel-storage.com/images",
+        "https://store.public.blob.vercel-storage.com/",
+        "https://public.blob.vercel-storage.com",
+        "https://store.public.blob.vercel-storage.com?x=1",
+    ],
+)
+def test_production_vercel_blob_rejects_invalid_base_url(base_url):
+    with pytest.raises(RuntimeError, match="BLOB_PUBLIC_BASE_URL"):
+        _vercel_blob_settings(blob_public_base_url=base_url).validate_runtime()

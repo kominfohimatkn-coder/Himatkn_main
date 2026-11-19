@@ -28,6 +28,42 @@ Swagger: `http://localhost:8000/docs`.
 
 `api/index.py` mengekspor `app` FastAPI. Pada production serverless, gunakan Redis untuk rate limiting dan object storage untuk file. Jangan menggunakan local filesystem sebagai storage permanen. Set secret melalui Vercel Environment Variables.
 
+## Penyimpanan
+
+`STORAGE_BACKEND` mendukung tiga nilai:
+
+| Nilai | Keterangan | Environment |
+| --- | --- | --- |
+| `local` | Filesystem lokal. Hanya untuk development/test; ditolak di production. | `STORAGE_LOCAL_DIR` |
+| `s3` | S3-compatible object storage (termasuk Cloudflare R2). | `S3_ENDPOINT_URL`, `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_PUBLIC_BASE_URL` |
+| `vercel_blob` | Vercel Blob (public store). | `BLOB_READ_WRITE_TOKEN`, `BLOB_PUBLIC_BASE_URL` |
+
+Database hanya menyimpan **storage key** (contoh `images/<hex>.jpg`), bukan URL
+penuh. Semua gambar publik disajikan lewat
+`GET /api/v1/media/images/{key}`, yang membalas redirect `307` ke URL publik
+penyedia aktif. Dengan begitu, URL publik tidak ikut tersimpan di data domain
+dan berpindah penyedia cukup mengubah environment.
+
+Catatan `vercel_blob`:
+
+- `BLOB_READ_WRITE_TOKEN` ditambahkan otomatis oleh Vercel saat Blob store
+  disambungkan ke project (Project > Storage > Blob).
+- `BLOB_PUBLIC_BASE_URL` adalah base URL publik store, tanpa path dan tanpa
+  slash di akhir, contoh
+  `https://<store-id>.public.blob.vercel-storage.com`. Ambil dari URL blob
+  pertama yang diunggah atau dari dashboard store, lalu pakai bagian sebelum
+  pathname.
+- Upload gambar memakai akses public, pathname = storage key, tanpa random
+  suffix, dan `cache_control_max_age` satu tahun untuk `images/`.
+- Modul Dokumen ditunda: upload dan penyajian dokumen privat pada
+  `vercel_blob` membalas `503`; dokumen tidak pernah diunggah sebagai blob
+  publik.
+
+Pindah dari Vercel Blob ke R2 nanti: salin objek dengan pathname yang sama
+(`images/...`) ke bucket R2, lalu set `STORAGE_BACKEND=s3` dan variabel `S3_*`.
+Storage key di database tidak berubah, sehingga tidak perlu migration atau
+menulis ulang data.
+
 ## API
 
 Semua route memiliki root `/api/v1`:

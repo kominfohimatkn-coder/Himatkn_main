@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
@@ -387,5 +388,121 @@ def test_private_document_with_auth(client, monkeypatch, tmp_path):
     assert response.status_code == 200
     assert response.content == _pdf_bytes()
     assert response.headers["cache-control"] == "private, no-store"
+
+
+BLOB_BASE_URL = "https://demo.public.blob.vercel-storage.com"
+
+
+def _use_vercel_blob(monkeypatch, base_url: str = BLOB_BASE_URL):
+    monkeypatch.setattr(
+        storage.settings,
+        "storage_backend",
+        "vercel_blob",
+        raising=False,
+    )
+    monkeypatch.setattr(
+        storage.settings,
+        "blob_public_base_url",
+        base_url,
+        raising=False,
+    )
+
+
+def test_vercel_blob_public_image_redirects(client, monkeypatch):
+    _use_vercel_blob(monkeypatch)
+
+    response = client.get(
+        "/api/v1/media/images/abc123.jpg",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 307
+    assert response.headers["location"] == f"{BLOB_BASE_URL}/images/abc123.jpg"
+
+
+def test_vercel_blob_public_image_without_base_url_returns_503(
+    client,
+    monkeypatch,
+):
+    _use_vercel_blob(monkeypatch, base_url="")
+
+    response = client.get(
+        "/api/v1/media/images/abc123.jpg",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 503
+
+
+@pytest.mark.parametrize(
+    "filename",
+    [
+        "Photo.JPG",
+        "photo.jpg.php",
+        "photo",
+    ],
+)
+def test_vercel_blob_public_image_rejects_invalid_key(
+    client,
+    monkeypatch,
+    filename,
+):
+    _use_vercel_blob(monkeypatch)
+    monkeypatch.setattr(
+        storage,
+        "_blob_client",
+        lambda: pytest.fail("SDK tidak boleh dipanggil untuk key tidak valid"),
+    )
+
+    response = client.get(
+        f"/api/v1/media/images/{filename}",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 400
+
+
+def test_vercel_blob_document_upload_returns_503(client, monkeypatch):
+    _use_vercel_blob(monkeypatch)
+
+    csrf = _login(client)
+
+    response = client.post(
+        "/api/v1/admin/documents",
+        data={"title": "Dokumen Blob"},
+        files={
+            "file": (
+                "document.pdf",
+                _pdf_bytes(),
+                "application/pdf",
+            )
+        },
+        headers={
+            "X-CSRF-Token": csrf,
+            "Origin": "http://localhost:3000",
+        },
+    )
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == (
+        "Dokumen belum didukung pada penyimpanan ini"
+    )
+
+
+def test_vercel_blob_private_document_returns_503(client, monkeypatch):
+    _use_vercel_blob(monkeypatch)
+
+    _login(client)
+
+    response = client.get(
+        "/api/v1/media/documents/private-test.pdf",
+        headers={"Origin": "http://localhost:3000"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == (
+        "Dokumen belum didukung pada penyimpanan ini"
+    )
 
     

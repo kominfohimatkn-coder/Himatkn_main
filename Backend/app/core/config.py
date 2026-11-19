@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 from functools import lru_cache
+from urllib.parse import urlsplit
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -10,6 +11,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ALLOWED_APP_ENVS = {"development", "test", "production"}
 CLIENT_IP_SOURCES = {"direct", "trusted_proxy", "vercel"}
+STORAGE_BACKENDS = {"local", "s3", "vercel_blob"}
+VERCEL_BLOB_PUBLIC_HOST_SUFFIX = ".public.blob.vercel-storage.com"
 APP_ENV_ALIASES = {
     "dev": "development",
     "prod": "production",
@@ -111,6 +114,9 @@ class Settings(BaseSettings):
     s3_secret_access_key: str = ""
     s3_public_base_url: str = ""
 
+    blob_read_write_token: str = ""
+    blob_public_base_url: str = ""
+
     # Bootstrap admin
     # Username and role are not secrets, but password is.
     admin_default_username: str = "admin"
@@ -152,6 +158,19 @@ class Settings(BaseSettings):
             raise ValueError(
                 "CLIENT_IP_SOURCE harus salah satu dari "
                 "direct, trusted_proxy, atau vercel."
+            )
+
+        return normalized
+
+    @field_validator("storage_backend", mode="before")
+    @classmethod
+    def normalize_storage_backend(cls, value: str) -> str:
+        normalized = str(value).strip().lower()
+
+        if normalized not in STORAGE_BACKENDS:
+            raise ValueError(
+                "STORAGE_BACKEND harus salah satu dari local, s3, "
+                "atau vercel_blob."
             )
 
         return normalized
@@ -209,6 +228,34 @@ class Settings(BaseSettings):
             for x in self.trusted_proxy_ips.split(",")
             if x.strip()
         ]
+
+    def _validate_blob_public_base_url(self) -> None:
+        base_url = self.blob_public_base_url.strip()
+
+        if not base_url:
+            raise RuntimeError(
+                "BLOB_PUBLIC_BASE_URL wajib diisi saat "
+                "STORAGE_BACKEND=vercel_blob pada production."
+            )
+
+        parsed = urlsplit(base_url)
+        host = (parsed.hostname or "").lower()
+        valid = (
+            parsed.scheme == "https"
+            and parsed.netloc.lower() == host
+            and host.endswith(VERCEL_BLOB_PUBLIC_HOST_SUFFIX)
+            and len(host) > len(VERCEL_BLOB_PUBLIC_HOST_SUFFIX)
+            and parsed.path == ""
+            and not parsed.query
+            and not parsed.fragment
+        )
+
+        if not valid:
+            raise RuntimeError(
+                "BLOB_PUBLIC_BASE_URL harus URL https dengan host "
+                "berakhiran .public.blob.vercel-storage.com, tanpa "
+                "path, dan tanpa slash di akhir."
+            )
 
     def validate_runtime(self) -> None:
         if self.production:
@@ -298,6 +345,15 @@ class Settings(BaseSettings):
                 raise RuntimeError(
                     "Konfigurasi S3 belum lengkap."
                 )
+
+            if self.storage_backend == "vercel_blob":
+                if not self.blob_read_write_token.strip():
+                    raise RuntimeError(
+                        "BLOB_READ_WRITE_TOKEN wajib diisi saat "
+                        "STORAGE_BACKEND=vercel_blob pada production."
+                    )
+
+                self._validate_blob_public_base_url()
 
             if self.max_request_body_bytes > 4_500_000:
                 raise RuntimeError(

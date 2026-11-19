@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 from io import BytesIO
 from pathlib import Path
@@ -17,6 +18,8 @@ ALLOWED_IMAGE_MIME = {
     "image/webp": "jpg",
 }
 ALLOWED_DOCUMENT_MIME = {"application/pdf": "pdf"}
+_BLOB_IMAGE_CACHE_MAX_AGE = 31_536_000
+_BLOB_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
 _SAFE_KEY = re.compile(r"^[a-z0-9][a-z0-9/_-]*\.[a-z0-9]+$")
 
 
@@ -54,6 +57,56 @@ def _validate_s3_configuration() -> None:
         raise HTTPException(status_code=503, detail="Object storage belum dikonfigurasi")
 
 
+def _blob_client():
+    from vercel.blob import sync as blob_sync
+
+    return blob_sync
+
+
+def _ensure_blob_token_env() -> None:
+    """Expose the configured token to the SDK, which reads it from the env."""
+    token = settings.blob_read_write_token.strip()
+    if token and not os.environ.get("BLOB_READ_WRITE_TOKEN"):
+        os.environ["BLOB_READ_WRITE_TOKEN"] = token
+
+
+def _blob_public_base_url() -> str | None:
+    base_url = settings.blob_public_base_url.strip().rstrip("/")
+    return base_url or None
+
+
+def _validate_blob_key(key: str) -> str:
+    if not key or not _SAFE_KEY.fullmatch(key) or ".." in Path(key).parts:
+        raise HTTPException(status_code=400, detail="Path file tidak valid")
+    return key
+
+
+def _validate_blob_image_key(key: str) -> str:
+    _validate_blob_key(key)
+    extension = key.rsplit(".", 1)[-1]
+    if extension not in _BLOB_IMAGE_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Path file tidak valid")
+    return key
+
+
+def _save_blob(key: str, data: bytes, content_type: str) -> None:
+    _validate_blob_key(key)
+    _ensure_blob_token_env()
+    try:
+        _blob_client().put_blob(
+            key,
+            data,
+            access="public",
+            content_type=content_type,
+            add_random_suffix=False,
+            cache_control_max_age=(
+                _BLOB_IMAGE_CACHE_MAX_AGE if key.startswith("images/") else None
+            ),
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail="Penyimpanan file tidak tersedia") from exc
+
+
 def _save_local(key: str, data: bytes) -> None:
     target = _safe_local_path(Path(settings.storage_local_dir), key)
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -80,6 +133,9 @@ def _store(key: str, data: bytes, content_type: str) -> None:
         return
     if settings.storage_backend == "s3":
         _save_s3(key, data, content_type)
+        return
+    if settings.storage_backend == "vercel_blob":
+        _save_blob(key, data, content_type)
         return
     raise HTTPException(status_code=503, detail="Backend penyimpanan tidak didukung")
 
@@ -132,6 +188,12 @@ async def save_image(upload: UploadFile) -> tuple[str, int, int]:
 
 
 async def save_document(upload: UploadFile) -> tuple[str, int]:
+    if settings.storage_backend == "vercel_blob":
+        raise HTTPException(
+            status_code=503,
+            detail="Dokumen belum didukung pada penyimpanan ini",
+        )
+
     raw = await upload.read(settings.max_upload_bytes + 1)
     size = len(raw)
     if size > settings.max_upload_bytes:
@@ -163,6 +225,15 @@ def public_image_response(key: str):
         if url:
             return RedirectResponse(url, status_code=307)
         raise HTTPException(status_code=503, detail="URL public object storage belum dikonfigurasi")
+    if settings.storage_backend == "vercel_blob":
+        _validate_blob_image_key(key)
+        base_url = _blob_public_base_url()
+        if not base_url:
+            raise HTTPException(
+                status_code=503,
+                detail="URL public object storage belum dikonfigurasi",
+            )
+        return RedirectResponse(f"{base_url}/{key}", status_code=307)
     raise HTTPException(status_code=503, detail="Backend penyimpanan tidak didukung")
 
 
@@ -183,6 +254,11 @@ def private_document_response(key: str):
         except Exception as exc:
             raise HTTPException(status_code=502, detail="URL dokumen tidak dapat dibuat") from exc
         return RedirectResponse(url, status_code=307)
+    if settings.storage_backend == "vercel_blob":
+        raise HTTPException(
+            status_code=503,
+            detail="Dokumen belum didukung pada penyimpanan ini",
+        )
     raise HTTPException(status_code=503, detail="Backend penyimpanan tidak didukung")
 
 
@@ -199,4 +275,22 @@ def delete_file(key: str | None) -> None:
         try:
             _s3_client().delete_object(Bucket=settings.s3_bucket, Key=key)
         except Exception as exc:
+            raise HTTPException(status_code=502, detail="File tidak dapat dihapus") from exc
+        return
+    if settings.storage_backend == "vercel_blob":
+        _validate_blob_key(key)
+        base_url = _blob_public_base_url()
+        if not base_url:
+            raise HTTPException(
+                status_code=503,
+                detail="URL public object storage belum dikonfigurasi",
+            )
+        _ensure_blob_token_env()
+        try:
+            _blob_client().delete_blob(f"{base_url}/{key}")
+        except FileNotFoundError:
+            return
+        except Exception as exc:
+            if getattr(exc, "status_code", None) == 404:
+                return
             raise HTTPException(status_code=502, detail="File tidak dapat dihapus") from exc
