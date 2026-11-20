@@ -178,7 +178,7 @@ export default async function HomePage() {
             key={settings.hero_image || "static-hero"}
             src={settings.hero_image}
             alt={heroImageAlt}
-            className="size-full object-cover object-center"
+            className="size-full! object-cover object-center"
             />
         </div>
         <div
