@@ -1,25 +1,20 @@
 import Link from "next/link";
-import { ExternalLink } from "lucide-react";
 
 import { PUBLIC_SETTINGS_FALLBACK } from "@/features/settings/fallback";
-import type { PublicLink } from "@/features/settings/links";
 
 type FooterItem = {
   label: string;
   href: string;
-  /** Link keluar situs (mis. Bank Soal) memakai <a>, bukan <Link>. */
-  external?: boolean;
-  target?: "_blank";
-  rel?: "noopener noreferrer";
 };
 
-const baseFooterNavigation: FooterItem[] = [
+const footerNavigation: FooterItem[] = [
   { label: "Beranda", href: "/" },
   { label: "Tentang", href: "/#tentang" },
-  // Sementara: route /kegiatan belum ada. Target diganti saat route tersedia.
-  { label: "Kegiatan", href: "/#program" },
-  // Sementara: route /publikasi belum ada. Target diganti saat route tersedia.
-  { label: "Publikasi", href: "/#publikasi" },
+  // TODO(kegiatan-page): route /kegiatan belum ada.
+  { label: "Kegiatan", href: "/#program-kerja" },
+  // TODO(publikasi-page): route /publikasi belum ada.
+  { label: "Berita", href: "/#publikasi" },
+  { label: "Struktur", href: "/struktur" },
 ];
 
 const footerLinkClass =
@@ -30,8 +25,9 @@ type SiteFooterProps = {
   brandSubtitle?: string;
   footerCopyright?: string;
   footerInstitution?: string;
-  /** `null` menyembunyikan tautan Bank Soal. */
-  bankSoal?: PublicLink | null;
+  mapsUrl?: string;
+  mapsEmbedUrl?: string;
+  address?: string;
 };
 
 export function SiteFooter({
@@ -39,26 +35,16 @@ export function SiteFooter({
   brandSubtitle = PUBLIC_SETTINGS_FALLBACK.brand_subtitle,
   footerCopyright = PUBLIC_SETTINGS_FALLBACK.footer_copyright,
   footerInstitution = PUBLIC_SETTINGS_FALLBACK.footer_institution,
-  bankSoal = null,
+  mapsUrl = PUBLIC_SETTINGS_FALLBACK.maps_url,
+  mapsEmbedUrl = PUBLIC_SETTINGS_FALLBACK.maps_embed_url,
+  address = PUBLIC_SETTINGS_FALLBACK.secretariat_address,
 }: SiteFooterProps = {}) {
-  const year = new Date().getFullYear();
-  const copyright = footerCopyright.trim() || `© ${year} ${brandName}`;
-
-  const footerNavigation: FooterItem[] = [
-    ...baseFooterNavigation,
-    ...(bankSoal
-      ? [
-          {
-            label: bankSoal.label,
-            href: bankSoal.href,
-            external: true,
-            target: bankSoal.target,
-            rel: bankSoal.rel,
-          },
-        ]
-      : []),
-    { label: "Struktur", href: "/struktur" },
-  ];
+  const copyright = footerCopyright.trim();
+  const institution = footerInstitution.trim();
+  const mapsHref = mapsUrl.trim();
+  const embedSrc = mapsEmbedUrl.trim();
+  const secretariat = address.trim();
+  const hasMap = Boolean(embedSrc || secretariat);
 
   return (
     <footer className="border-t border-line-on-dark bg-green-950 pt-14 text-white">
@@ -77,51 +63,74 @@ export function SiteFooter({
 
           <nav
             aria-label="Navigasi footer"
-            className="grid w-full grid-cols-2 gap-x-6 gap-y-3 min-[641px]:flex min-[641px]:w-auto min-[641px]:gap-6.5"
+            className="grid w-full grid-cols-2 gap-x-6 gap-y-3 min-[641px]:flex min-[641px]:w-auto min-[641px]:gap-[26px]"
           >
-            {footerNavigation.map((item) => {
-              if (item.external) {
-                return (
-                  <a
-                    key={item.href}
-                    href={item.href}
-                    target={item.target ?? "_blank"}
-                    rel={item.rel ?? "noopener noreferrer"}
-                    className={`${footerLinkClass} inline-flex items-center gap-1`}
-                  >
-                    {item.label}
-                    <ExternalLink className="size-3" aria-hidden="true" />
-                    <span className="sr-only">
-                      (membuka Google Drive di tab baru)
-                    </span>
-                  </a>
-                );
-              }
-
-              return (
-                <Link key={item.href} href={item.href} className={footerLinkClass}>
-                  {item.label}
-                </Link>
-              );
-            })}
+            {footerNavigation.map((item) => (
+              <Link key={item.href} href={item.href} className={footerLinkClass}>
+                {item.label}
+              </Link>
+            ))}
           </nav>
         </div>
 
-        <div className="flex flex-col gap-3 pt-5.5 pb-7.5 text-xs text-on-dark-soft min-[641px]:flex-row min-[641px]:items-center min-[641px]:justify-between">
-          <div>
-            <p>{copyright}</p>
-            {footerInstitution.trim() ? (
-              <p className="mt-1">{footerInstitution}</p>
-            ) : null}
-          </div>
+        {hasMap ? (
+          <div className="py-[34px] pb-[26px]">
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <p className="text-xs font-semibold tracking-[0.1em] text-on-dark-soft uppercase">
+                Lokasi Kami
+              </p>
+              {mapsHref ? (
+                <a
+                  href={mapsHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[11px] font-semibold tracking-[0.08em] text-white uppercase underline underline-offset-[3px]"
+                >
+                  Buka Google Maps <span aria-hidden="true">↗</span>
+                </a>
+              ) : null}
+            </div>
 
-          <a
-            href="#top"
-            className="w-fit py-1.5 transition-colors hover:text-white"
-          >
-            Kembali ke atas
-          </a>
-        </div>
+            {embedSrc ? (
+              <div className="relative h-[220px] overflow-hidden rounded-[4px] border border-[#2A4A3D] bg-[#E5E3DF] max-[640px]:h-[180px]">
+                <iframe
+                  src={embedSrc}
+                  title={`Peta lokasi ${brandName}`}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="size-full border-0"
+                />
+              </div>
+            ) : (
+              <div className="flex h-[220px] flex-col items-center justify-center gap-2 rounded-[4px] border border-[#2A4A3D] bg-[#0B3125] px-5 text-center max-[640px]:h-[180px]">
+                <span className="text-xs font-semibold tracking-[0.1em] text-on-dark-soft uppercase">
+                  Peta tidak dapat dimuat
+                </span>
+                <strong className="font-serif text-base font-bold">
+                  {brandName}
+                </strong>
+                <p className="text-[13px] text-on-dark-soft">{secretariat}</p>
+                {mapsHref ? (
+                  <a
+                    href={mapsHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1 inline-flex min-h-11 items-center justify-center rounded-[4px] border border-white/55 px-[22px] py-[15px] text-xs font-semibold tracking-[0.08em] text-white uppercase transition-colors hover:border-white hover:bg-white/10"
+                  >
+                    Buka di Google Maps
+                  </a>
+                ) : null}
+              </div>
+            )}
+          </div>
+        ) : null}
+
+        {copyright || institution ? (
+          <div className="flex flex-col gap-3 py-[22px] pb-[30px] text-xs text-on-dark-soft min-[641px]:flex-row min-[641px]:justify-between">
+            {copyright ? <span>{copyright}</span> : null}
+            {institution ? <span>{institution}</span> : null}
+          </div>
+        ) : null}
       </div>
     </footer>
   );

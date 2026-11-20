@@ -252,3 +252,35 @@ URL hardcoded). Label Instagram memakai `instagram_label` dengan teks netral
 Foto hero memakai `PublicHeroImage` (komponen klien kecil): nilai `hero_image`
 dari setting diubah lewat `resolveMediaUrl()`; bila kosong atau gagal dimuat,
 komponen jatuh ke aset statis `/images/hero-group.jpg`.
+
+## Chrome publik dan beranda (Batch D-HOME)
+
+`app/(public)/layout.tsx` tetap menjadi satu-satunya tempat pemuatan settings
+untuk chrome publik. Batch D-HOME hanya mengubah tampilan; data tetap mengalir
+dari server component.
+
+- `SiteHeader` (Client Component) menerima `brandName`, `brandSubtitle`,
+  `bankSoal`, dan `instagram`. Urutan navigasi desktop dan mobile: Beranda,
+  Tentang, Kegiatan (`/#program-kerja`), Publikasi (`/#publikasi`), Bank Soal
+  (hanya bila `bankSoal` tidak `null`), lalu Struktur. Kegiatan dan Publikasi
+  masih menuju section beranda dengan komentar `TODO` sampai route halamannya
+  dibuat. Tombol Instagram hanya muncul di menu mobile bila `instagram` tidak
+  `null`. Tombol menu memakai tiga garis beranimasi; panel menutup lewat Escape,
+  klik di luar, atau tautan, dengan focus trap sederhana dan scroll body terkunci.
+- `SiteFooter` (Server Component) menerima `brandName`, `brandSubtitle`,
+  `footerCopyright`, `footerInstitution`, `mapsUrl`, `mapsEmbedUrl`, dan
+  `address`. Footer memakai teks brand tanpa logo, nav Beranda/Tentang/Kegiatan/
+  Berita/Struktur, peta dari `mapsEmbedUrl` (dengan `loading="lazy"` dan
+  `referrerPolicy="no-referrer-when-downgrade"`), tautan "Buka Google Maps" dari
+  `mapsUrl`, serta fallback alamat `address` bila embed kosong. Baris copyright
+  dan institusi hanya dirender bila nilainya terisi.
+- `PublicationsSection` menerima `items`, `hasError`, `eyebrow`, `title`,
+  `emptyText`, dan `instagram` (tanpa `moreLabel`). Beranda menampilkan maksimal
+  dua publikasi, excerpt ±150 karakter, dan gambar rasio 3/2 grayscale yang
+  berubah saat hover. Tombol "Lihat Semua Publikasi" belum dirender karena route
+  daftar publikasi belum ada (`TODO`).
+- `OrganizationSection` menerima `data`, `hasError`, `eyebrow`, `title`,
+  `description`, `note`, dan `buttonLabel`. Section memakai `id="kepengurusan"`
+  bergaya gelap, kartu divisi dua kolom di desktop, statistik periode/divisi di
+  mobile, kartu tautan `/struktur?view=semua` bila jumlah divisi ganjil, dan
+  tombol "Selengkapnya" ke `/struktur`.

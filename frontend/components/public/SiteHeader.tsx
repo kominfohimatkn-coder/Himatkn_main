@@ -3,9 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ExternalLink, Menu, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { PublicButtonAnchor } from "@/components/public/PublicButton";
 import { PUBLIC_SETTINGS_FALLBACK } from "@/features/settings/fallback";
 import type { PublicLink } from "@/features/settings/links";
 
@@ -21,9 +21,11 @@ type NavItem = {
 const baseNavigation: NavItem[] = [
   { label: "Beranda", href: "/" },
   { label: "Tentang", href: "/#tentang" },
-  // Sementara: route /kegiatan belum ada. Target diganti saat route tersedia.
-  { label: "Kegiatan", href: "/#program" },
-  // Sementara: route /publikasi belum ada. Target diganti saat route tersedia.
+  // TODO(kegiatan-page): route /kegiatan belum ada. Arahkan ke section
+  // program kerja di beranda sampai halaman Kegiatan tersedia.
+  { label: "Kegiatan", href: "/#program-kerja" },
+  // TODO(publikasi-page): route /publikasi belum ada. Arahkan ke section
+  // publikasi di beranda sampai halaman Publikasi tersedia.
   { label: "Publikasi", href: "/#publikasi" },
 ];
 
@@ -32,23 +34,27 @@ type SiteHeaderProps = {
   brandSubtitle?: string;
   /** `null` menyembunyikan item Bank Soal di desktop dan menu mobile. */
   bankSoal?: PublicLink | null;
+  /** `null` menyembunyikan tombol Instagram di menu mobile. */
+  instagram?: PublicLink | null;
 };
 
-const desktopLinkBase = "border-b-2 py-1.5 text-sm transition-colors";
+const desktopLinkBase =
+  "relative py-1.5 text-sm transition-colors after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:origin-center after:bg-current after:transition-transform after:duration-200";
 const desktopLinkInactive =
-  "border-transparent text-muted hover:text-green-900";
-const desktopLinkActive = "border-green-800 text-green-800";
+  "text-muted after:scale-x-0 hover:text-green-900 hover:after:scale-x-[0.6]";
+const desktopLinkActive = "text-green-800 after:scale-x-100";
 
 const mobileLinkBase =
   "flex min-h-12 items-center border-b border-line py-3.5 font-serif text-[17px] font-semibold transition-colors";
 const mobileLinkInactive = "text-green-900 hover:text-green-800";
 const mobileLinkActive =
-  "border-l-[3px] border-l-green-800 pl-3 text-green-800";
+  "pl-3 text-green-800 shadow-[inset_3px_0_0_#0f4d36]";
 
 export function SiteHeader({
   brandName = PUBLIC_SETTINGS_FALLBACK.brand_name,
   brandSubtitle = PUBLIC_SETTINGS_FALLBACK.brand_subtitle,
   bankSoal = null,
+  instagram = null,
 }: SiteHeaderProps = {}) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
@@ -184,10 +190,7 @@ export function SiteHeader({
       className="sticky top-0 z-50 h-(--header-h) border-b border-line bg-paper"
     >
       <div className="site-container flex h-full items-center justify-between gap-6">
-        <Link
-          href="/"
-          className="flex items-center gap-3 text-green-900"
-        >
+        <Link href="/" className="flex items-center gap-3 text-green-900">
           <Image
             src="/favicon.png"
             alt={`Logo ${brandName}`}
@@ -223,7 +226,6 @@ export function SiteHeader({
                   className={`${desktopLinkBase} ${desktopLinkInactive} inline-flex items-center gap-1`}
                 >
                   {item.label}
-                  <ExternalLink className="size-3" aria-hidden="true" />
                   <span className="sr-only">
                     (membuka Google Drive di tab baru)
                   </span>
@@ -251,13 +253,26 @@ export function SiteHeader({
           aria-expanded={isOpen}
           aria-controls="public-mobile-navigation"
           aria-label={isOpen ? "Tutup menu" : "Buka menu"}
-          className="-mr-2.5 flex size-11 shrink-0 items-center justify-center text-green-900 min-[961px]:hidden"
+          className="-mr-2.5 flex size-11 shrink-0 flex-col items-center justify-center gap-1 text-green-900 min-[961px]:hidden"
         >
-          {isOpen ? (
-            <X className="size-6" aria-hidden="true" />
-          ) : (
-            <Menu className="size-6" aria-hidden="true" />
-          )}
+          <span
+            className={`block h-0.5 w-5 bg-current transition-transform duration-200 ${
+              isOpen ? "translate-y-[6px] rotate-45" : ""
+            }`}
+            aria-hidden="true"
+          />
+          <span
+            className={`block h-0.5 w-5 bg-current transition-opacity duration-200 ${
+              isOpen ? "opacity-0" : ""
+            }`}
+            aria-hidden="true"
+          />
+          <span
+            className={`block h-0.5 w-5 bg-current transition-transform duration-200 ${
+              isOpen ? "-translate-y-[6px] -rotate-45" : ""
+            }`}
+            aria-hidden="true"
+          />
         </button>
       </div>
 
@@ -289,7 +304,6 @@ export function SiteHeader({
                     <span className="sr-only">
                       (membuka Google Drive di tab baru)
                     </span>
-                    <ExternalLink className="size-4" aria-hidden="true" />
                   </span>
                 </a>
               );
@@ -307,6 +321,19 @@ export function SiteHeader({
               </Link>
             );
           })}
+
+          {instagram ? (
+            <PublicButtonAnchor
+              href={instagram.href}
+              target={instagram.target}
+              rel={instagram.rel}
+              tone="solid"
+              onClick={() => setIsOpen(false)}
+              className="mt-[18px] flex w-full justify-center border-b-0"
+            >
+              {instagram.label}
+            </PublicButtonAnchor>
+          ) : null}
         </nav>
       </div>
     </header>

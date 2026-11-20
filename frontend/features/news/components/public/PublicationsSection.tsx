@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { ArrowRight, ExternalLink, FileText } from "lucide-react";
+import { ExternalLink, FileText, TriangleAlert } from "lucide-react";
 
 import { PublicImage } from "@/components/public/PublicImage";
 import { PublicButtonAnchor } from "@/components/public/PublicButton";
@@ -15,7 +14,6 @@ type PublicationsSectionProps = {
   eyebrow: string;
   title: string;
   emptyText: string;
-  moreLabel: string;
   instagram: PublicLink | null;
 };
 
@@ -42,26 +40,41 @@ function getImage(item: PublicNewsItem): string | null {
   return item.images.find((image) => image.url?.trim())?.url ?? null;
 }
 
+function newsExcerpt(value: string, maxLength = 150): string | null {
+  const text = value.replace(/\s+/g, " ").trim();
+
+  if (!text) return null;
+  if (text.length <= maxLength) return text;
+
+  const slice = text.slice(0, maxLength);
+  const lastSpace = slice.lastIndexOf(" ");
+  const cut = lastSpace > maxLength * 0.6 ? slice.slice(0, lastSpace) : slice;
+
+  return `${cut.trimEnd()}…`;
+}
+
 export function PublicationsSection({
   items,
   hasError,
   eyebrow,
   title,
   emptyText,
-  moreLabel,
   instagram,
 }: PublicationsSectionProps) {
+  // Beranda mengikuti `#home-news` pada prototype: maksimal dua publikasi.
+  const visibleItems = items.slice(0, 2);
+
   return (
     <section
       id="publikasi"
       className="border-t border-line bg-paper py-24 max-[640px]:py-18"
-      aria-labelledby="publications-title"
+      aria-labelledby="pub-title"
     >
       <div className="site-container">
-        <div className="max-w-140">
+        <div>
           {eyebrow ? <PublicLabel>{eyebrow}</PublicLabel> : null}
           <h2
-            id="publications-title"
+            id="pub-title"
             className="mt-3.5 font-serif text-[clamp(26px,2.6vw,34px)] leading-tight font-bold text-green-900"
           >
             {title}
@@ -71,15 +84,15 @@ export function PublicationsSection({
         {hasError ? (
           <PublicStateBox
             tone="error"
-            icon={<FileText className="size-5.5" />}
+            icon={<TriangleAlert className="size-5.5" />}
             label="Gagal memuat"
             title="Publikasi tidak dapat ditampilkan"
             action={<RefreshButton />}
           >
-            Terjadi gangguan saat mengambil data publikasi. Periksa koneksi
-            internet, lalu coba lagi.
+            Terjadi gangguan saat mengambil data. Periksa koneksi internet,
+            lalu coba lagi.
           </PublicStateBox>
-        ) : items.length === 0 ? (
+        ) : visibleItems.length === 0 ? (
           <PublicStateBox
             icon={<FileText className="size-5.5" />}
             label="Publikasi"
@@ -101,49 +114,49 @@ export function PublicationsSection({
               ) : undefined
             }
           >
-            Dokumentasi dan kabar kegiatan akan diunggah di sini.
+            Dokumentasi dan kabar kegiatan HIMATKN akan diunggah di sini.
           </PublicStateBox>
         ) : (
           <>
-            <div className="mt-10 border-t border-line">
-              {items.map((item) => (
-                <article
-                  key={item.id}
-                  className="grid gap-4 border-b border-line py-7.5 min-[901px]:grid-cols-[180px_1fr] min-[901px]:gap-6"
-                >
-                  <PublicImage
-                    src={getImage(item)}
-                    alt={item.title}
-                    className="aspect-3/2 w-45 max-w-full rounded-sm grayscale"
-                  />
+            <ul className="mt-10 border-t border-line">
+              {visibleItems.map((item) => {
+                const excerpt = newsExcerpt(item.excerpt);
 
-                  <div>
-                    <h3 className="font-serif text-[17px] font-semibold text-green-900">
-                      {item.title}
-                    </h3>
+                return (
+                  <li
+                    key={item.id}
+                    className="grid grid-cols-[180px_1fr] gap-6 border-b border-line py-[30px] max-[640px]:grid-cols-1 max-[640px]:gap-3.5"
+                  >
+                    <PublicImage
+                      src={getImage(item)}
+                      alt={item.title}
+                      className="group aspect-3/2 w-[180px] max-w-full rounded-[4px] [&_img]:grayscale [&_img]:transition [&_img]:duration-500 [&_img]:ease-out group-hover:[&_img]:scale-105 group-hover:[&_img]:grayscale-[0.2]"
+                    />
 
-                    <div className="mt-3.5 flex flex-wrap items-center justify-between gap-4 text-xs text-muted">
-                      <time dateTime={item.published_at ?? undefined}>
-                        {formatPublishedAt(item.published_at)}
-                      </time>
-                      <span>Detail segera hadir</span>
+                    <div>
+                      <h3 className="font-serif text-[17px] font-bold text-green-900">
+                        {item.title}
+                      </h3>
+                      {excerpt ? (
+                        <p className="mt-2 text-[15px] leading-6 text-muted">
+                          {excerpt}
+                        </p>
+                      ) : null}
+                      <div className="mt-3.5 flex flex-wrap items-center gap-4 text-xs text-muted">
+                        <time dateTime={item.published_at ?? undefined}>
+                          {formatPublishedAt(item.published_at)}
+                        </time>
+                        {/* TODO(news-detail): tautan "Baca Selengkapnya →"
+                            ditampilkan setelah route detail publikasi tersedia. */}
+                      </div>
                     </div>
-                  </div>
-                </article>
-              ))}
-            </div>
+                  </li>
+                );
+              })}
+            </ul>
 
-            {moreLabel ? (
-              <div className="mt-8">
-                <Link
-                  href="/publikasi"
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-[0.08em] text-green-800 uppercase transition-colors hover:text-green-700"
-                >
-                  {moreLabel}
-                  <ArrowRight className="size-4" aria-hidden="true" />
-                </Link>
-              </div>
-            ) : null}
+            {/* TODO(news-list): tampilkan tombol "Lihat Semua Publikasi →"
+                setelah route daftar publikasi tersedia. */}
           </>
         )}
       </div>

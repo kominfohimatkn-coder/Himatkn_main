@@ -25,6 +25,7 @@ export default async function PublicLayout({
         brandName={settings.brand_name}
         brandSubtitle={settings.brand_subtitle}
         bankSoal={links.bankSoal}
+        instagram={links.instagram}
       />
       <main id="main-content">{children}</main>
       <SiteFooter
@@ -32,7 +33,9 @@ export default async function PublicLayout({
         brandSubtitle={settings.brand_subtitle}
         footerCopyright={settings.footer_copyright}
         footerInstitution={settings.footer_institution}
-        bankSoal={links.bankSoal}
+        mapsUrl={settings.maps_url}
+        mapsEmbedUrl={settings.maps_embed_url}
+        address={settings.secretariat_address}
       />
     </div>
   );
