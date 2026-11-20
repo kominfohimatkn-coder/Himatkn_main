@@ -170,7 +170,7 @@ export default async function HomePage() {
     <>
       <section
         id="beranda"
-        className="relative flex min-h-[654px] flex-col justify-center overflow-hidden bg-[#2F3D36] max-[640px]:min-h-[620px]"
+        className="relative flex min-h-163.5 flex-col justify-center overflow-hidden bg-[#2F3D36] max-[640px]:min-h-155"
         aria-labelledby="hero-title"
       >
         <div className="absolute inset-0">
@@ -178,8 +178,8 @@ export default async function HomePage() {
             key={settings.hero_image || "static-hero"}
             src={settings.hero_image}
             alt={heroImageAlt}
-            className="size-full object-cover object-[center_70%]"
-          />
+            className="size-full object-cover object-center"
+            />
         </div>
         <div
           className="absolute inset-0 bg-[rgba(15,40,30,0.55)] max-[640px]:bg-[linear-gradient(180deg,rgba(15,40,30,0.38)_0%,rgba(15,40,30,0.66)_45%,rgba(15,40,30,0.42)_100%)]"

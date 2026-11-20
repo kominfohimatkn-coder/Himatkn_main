@@ -3,11 +3,11 @@ export default function PublicLoading() {
     <div aria-busy="true" aria-live="polite">
       <span className="sr-only">Memuat halaman...</span>
 
-      <section className="relative flex min-h-[654px] flex-col justify-center overflow-hidden bg-green-950 max-[640px]:min-h-[620px]">
-        <div className="site-container relative z-10 pt-[120px] pb-10 max-[640px]:pt-[140px] max-[640px]:pb-[150px]">
-          <div className="h-12 w-full max-w-[560px] animate-pulse rounded-[4px] bg-white/10 max-[640px]:mx-auto" />
-          <div className="mt-3 h-12 w-4/5 max-w-[460px] animate-pulse rounded-[4px] bg-white/10 max-[640px]:mx-auto" />
-          <div className="mt-[18px] h-4 w-72 max-w-full animate-pulse rounded-[4px] bg-white/10 max-[640px]:mx-auto" />
+      <section className="relative flex min-h-163.5 flex-col justify-center overflow-hidden bg-green-950 max-[640px]:min-h-155">
+        <div className="site-container relative z-10 pt-30 pb-10 max-[640px]:pt-35 max-[640px]:pb-37.5">
+          <div className="h-12 w-full max-w-[560px] animate-pulse rounded-sm bg-white/10 max-[640px]:mx-auto" />
+          <div className="mt-3 h-12 w-4/5 max-w-[460px] animate-pulse rounded-sm bg-white/10 max-[640px]:mx-auto" />
+          <div className="mt-[18px] h-4 w-72 max-w-full animate-pulse rounded-sm bg-white/10 max-[640px]:mx-auto" />
           <div className="mt-[26px] flex gap-3 max-[640px]:justify-center">
             <div className="h-11 w-44 animate-pulse rounded-[4px] bg-white/20" />
             <div className="h-11 w-36 animate-pulse rounded-[4px] bg-white/10" />
