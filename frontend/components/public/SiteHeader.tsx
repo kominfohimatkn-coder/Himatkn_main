@@ -6,29 +6,33 @@ import { usePathname } from "next/navigation";
 import { ExternalLink, Menu, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { PUBLIC_LINKS } from "@/features/settings/links";
+import { PUBLIC_SETTINGS_FALLBACK } from "@/features/settings/fallback";
+import type { PublicLink } from "@/features/settings/links";
 
 type NavItem = {
   label: string;
   href: string;
   /** Link keluar situs (mis. Bank Soal) memakai <a>, bukan <Link>. */
   external?: boolean;
+  target?: "_blank";
+  rel?: "noopener noreferrer";
 };
 
-const navigation: NavItem[] = [
+const baseNavigation: NavItem[] = [
   { label: "Beranda", href: "/" },
   { label: "Tentang", href: "/#tentang" },
   // Sementara: route /kegiatan belum ada. Target diganti saat route tersedia.
   { label: "Kegiatan", href: "/#program" },
   // Sementara: route /publikasi belum ada. Target diganti saat route tersedia.
   { label: "Publikasi", href: "/#publikasi" },
-  {
-    label: PUBLIC_LINKS.bankSoal.label,
-    href: PUBLIC_LINKS.bankSoal.href,
-    external: true,
-  },
-  { label: "Struktur", href: "/struktur" },
 ];
+
+type SiteHeaderProps = {
+  brandName?: string;
+  brandSubtitle?: string;
+  /** `null` menyembunyikan item Bank Soal di desktop dan menu mobile. */
+  bankSoal?: PublicLink | null;
+};
 
 const desktopLinkBase = "border-b-2 py-1.5 text-sm transition-colors";
 const desktopLinkInactive =
@@ -41,12 +45,32 @@ const mobileLinkInactive = "text-green-900 hover:text-green-800";
 const mobileLinkActive =
   "border-l-[3px] border-l-green-800 pl-3 text-green-800";
 
-export function SiteHeader() {
+export function SiteHeader({
+  brandName = PUBLIC_SETTINGS_FALLBACK.brand_name,
+  brandSubtitle = PUBLIC_SETTINGS_FALLBACK.brand_subtitle,
+  bankSoal = null,
+}: SiteHeaderProps = {}) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  const navigation: NavItem[] = [
+    ...baseNavigation,
+    ...(bankSoal
+      ? [
+          {
+            label: bankSoal.label,
+            href: bankSoal.href,
+            external: true,
+            target: bankSoal.target,
+            rel: bankSoal.rel,
+          },
+        ]
+      : []),
+    { label: "Struktur", href: "/struktur" },
+  ];
 
   function isActive(item: NavItem): boolean {
     if (item.external) return false;
@@ -166,7 +190,7 @@ export function SiteHeader() {
         >
           <Image
             src="/favicon.png"
-            alt="Logo HIMATKN"
+            alt={`Logo ${brandName}`}
             width={29}
             height={36}
             priority
@@ -174,10 +198,10 @@ export function SiteHeader() {
           />
           <span>
             <span className="block font-serif text-[13px] leading-[1.1] font-bold tracking-[0.01em] text-green-900 uppercase min-[641px]:text-[15px]">
-              Hima Teknokimia Nuklir
+              {brandName}
             </span>
             <span className="mt-0.75 block text-[10px] leading-[1.3] font-medium tracking-[0.08em] text-muted uppercase min-[641px]:text-[11px]">
-              Politeknik Teknologi Nuklir
+              {brandSubtitle}
             </span>
           </span>
         </Link>
@@ -194,8 +218,8 @@ export function SiteHeader() {
                 <a
                   key={item.href}
                   href={item.href}
-                  target="_blank"
-                  rel={PUBLIC_LINKS.bankSoal.rel}
+                  target={item.target ?? "_blank"}
+                  rel={item.rel ?? "noopener noreferrer"}
                   className={`${desktopLinkBase} ${desktopLinkInactive} inline-flex items-center gap-1`}
                 >
                   {item.label}
@@ -255,8 +279,8 @@ export function SiteHeader() {
                 <a
                   key={item.href}
                   href={item.href}
-                  target="_blank"
-                  rel={PUBLIC_LINKS.bankSoal.rel}
+                  target={item.target ?? "_blank"}
+                  rel={item.rel ?? "noopener noreferrer"}
                   onClick={() => setIsOpen(false)}
                   className={`${mobileLinkBase} ${mobileLinkInactive} justify-between`}
                 >

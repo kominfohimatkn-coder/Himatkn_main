@@ -2076,6 +2076,61 @@ Informasi ini berasal dari audit repo remote dan dapat berubah. Agent harus veri
 
 ---
 
+### Sesi 2026-11-20 — Batch PUB-W: halaman publik tersambung ke pengaturan situs + program kerja
+
+- **Status:** Selesai di working tree; tidak commit, push, atau deploy. **Berhenti.**
+- **Branch/HEAD:** `feat/admin-ui-foundation`, HEAD `3358eae`. Working tree bersih sebelum batch.
+- **Tujuan batch:** menyambungkan header, footer, beranda, `/struktur`, publikasi, dan program kerja publik ke `GET /public/settings` serta `GET /public/programs` tanpa mengubah desain/admin/backend.
+- **Yang selesai:**
+  - **Sumber tunggal:** `app/(public)/layout.tsx` kini Server Component async; memanggil `loadPublicSettings()` + `resolvePublicSettings()` sekali lalu mengoper nilai efektif ke `SiteHeader`/`SiteFooter`. `SiteHeader` tetap Client Component dan tidak memanggil API. Beranda dan `/struktur` memakai helper yang sama (fetch Next.js dedupe). `PUBLIC_SETTINGS_FALLBACK` dipindah ke `features/settings/fallback.ts` agar header/footer (termasuk `app/not-found.tsx`) punya default tanpa menarik modul HTTP; `public-api.ts` tetap mengekspor ulang konstanta itu.
+  - **Resolusi kosong:** `resolvePublicSettings()` menggabungkan per key; nilai non-kosong backend menang. Key data (URL, email, alamat, footer, gambar) tetap kosong bila backend kosong; key copy berdefault non-kosong kembali ke default.
+  - **Tautan:** `PUBLIC_LINKS` dihapus. `getPublicLinks(settings)` mengembalikan `{ bankSoal, instagram }` dengan `null` bila URL kosong, label Instagram dari `instagram_label` (fallback "Instagram"), `target="_blank"`, dan `rel="noopener noreferrer"`. Header desktop/mobile, footer, empty state program, dan empty state publikasi memakainya.
+  - **Header/footer:** brand dari `brand_name`/`brand_subtitle`; footer memakai `footer_copyright` (fallback `© {tahun} {brand_name}`), `footer_institution` bila ada, dan tetap tanpa logo. Item Bank Soal hanya tampil bila `bank_soal_url` terisi.
+  - **Beranda:** hero (`hero_eyebrow`, `hero_title`, `hero_emphasis`, `hero_description`, label tombol, `hero_image` + `hero_image_alt`); tentang (`about_*`, tiga item `about_item_{1..3}_*` dengan item berjudul kosong disembunyikan); program (`program_eyebrow`, `program_title`, `program_empty_text`) memakai `getPublicPrograms` periode aktif limit 6 dengan timeout 5 detik dan state error; publikasi memakai `news_*` + tautan Instagram props; struktur memakai `structure_*`; section `#kontak` baru memakai `contact_*`, email, alamat, `maps_url`, dan iframe hanya bila `maps_embed_url` terisi. Metadata beranda dan `/struktur` memakai `brand_name`/`structure_title` lewat `generateMetadata`.
+  - **Foto hero:** komponen klien `PublicHeroImage` meresolve `hero_image` lewat `resolveMediaUrl()`; kosong atau gagal dimuat → `/images/hero-group.jpg`.
+  - **`/struktur`:** eyebrow, judul, dan deskripsi hero memakai `structure_*` lewat props dari page server; logika daftar anggota tidak berubah.
+- **File dibuat:**
+  - `frontend/components/public/PublicHeroImage.tsx`
+  - `frontend/features/settings/fallback.ts`
+- **File diubah:**
+  - `frontend/app/(public)/layout.tsx`
+  - `frontend/app/(public)/page.tsx`
+  - `frontend/app/(public)/struktur/page.tsx`
+  - `frontend/components/public/SiteHeader.tsx`
+  - `frontend/components/public/SiteFooter.tsx`
+  - `frontend/features/news/components/public/PublicationsSection.tsx`
+  - `frontend/features/organization/components/OrganizationSection.tsx`
+  - `frontend/features/organization/components/StructurePage.tsx`
+  - `frontend/features/settings/links.ts`
+  - `frontend/features/settings/public-api.ts`
+  - `frontend/STRUCTURE.md`
+  - `docs/progress.md`
+- **Perilaku saat setting kosong / API gagal:**
+  - API settings gagal/timeout → fallback penuh; halaman tetap tampil dengan brand default, tanpa Bank Soal/Instagram, hero memakai aset statis, dan section kontak tidak dirender bila semua data kontak kosong.
+  - `bank_soal_url`/`instagram_url` kosong → tautan disembunyikan (bukan URL hardcoded).
+  - `hero_image` kosong/gagal → aset statis; `hero_image_alt` kosong → "Mahasiswa berfoto bersama".
+  - Program kosong → `PublicStateBox` dengan `program_empty_text`; error/timeout → state error + `RefreshButton`. Program tanpa divisi menyembunyikan baris divisi; deskripsi dipecah menjadi teks polos maksimal ±160 karakter; kartu bukan link karena route detail belum ada.
+  - Semua data kontak kosong → section `#kontak` tidak dirender; baris email/alamat/tombol/iframe yang kosong masing-masing disembunyikan.
+- **Grep sisa hardcoded:** `PUBLIC_LINKS` tidak ditemukan. Tidak ada lagi `@himatknuklir`, `instagram.com`, `drive.google.com`, nama brand, atau alamat di `app/(public)`, `components/public`, dan komponen publik fitur. Sisa teks tanpa key dan sengaja dipertahankan: label navigasi (`Beranda`, `Tentang`, `Kegiatan`, `Publikasi`, `Struktur`), `Lewati ke konten`, `Kembali ke atas`, `Periode aktif`/`Anggota`, label state (`Gagal memuat`, `Publikasi`, `Program kerja`, `Kepengurusan`), salinan error/empty non-setting, `Detail segera hadir`, dan `(membuka … di tab baru)`.
+- **Pemeriksaan yang dijalankan + hasil aktual:**
+  - `npx tsc --noEmit` di `frontend/` — lulus tanpa output.
+  - `npm run lint` di `frontend/` — lulus tanpa error/warning.
+  - `npm run build` di `frontend/` — sukses, 13 route; warning Turbopack tentang `pnpm-lock.yaml` di luar repository tetap muncul dan tidak menggagalkan build.
+- **Risiko/regresi yang diperiksa:**
+  - Hanya `frontend/app/(public)/`, `frontend/components/public/`, `frontend/features/{settings,programs,news/components/public,organization/components}/`, `frontend/STRUCTURE.md`, dan `docs/progress.md` yang berubah. Backend, admin, dependency, `.env*`, dan konfigurasi tidak disentuh.
+  - `SiteHeader`/`SiteFooter` diberi default dari `PUBLIC_SETTINGS_FALLBACK` agar `app/not-found.tsx` tetap berfungsi tanpa perubahan di luar scope.
+  - `getPublicPrograms()` dipanggil tanpa `period_id` sehingga backend memakai periode aktif; limit 6 dan urutan backend dipertahankan.
+  - Tautan "Lihat semua" publikasi mengarah ke `/publikasi`; route daftar publikasi belum ada dan dijadwalkan pada batch lain.
+- **Blocker/keputusan yang diperlukan:** tidak ada blocker teknis. Route `/publikasi` dan detail program masih menunggu batch route.
+- **Konfirmasi batas scope:**
+  - Backend berubah: Tidak. Database/schema/migration berubah: Tidak.
+  - API contract/auth/CSRF/RBAC/cookie policy berubah: Tidak.
+  - Dependency, `.env*`, deployment, secret, atau konfigurasi environment berubah: Tidak.
+  - Halaman admin tidak diubah.
+- **Langkah berikutnya:** pemilik meninjau dan meng-commit PUB-W. **Berhenti.**
+
+---
+
 ## 4. Template Catatan Sesi
 
 Salin bagian ini dan isi dengan fakta aktual setiap selesai satu batch. Jangan mengklaim check/test berhasil jika tidak dijalankan.

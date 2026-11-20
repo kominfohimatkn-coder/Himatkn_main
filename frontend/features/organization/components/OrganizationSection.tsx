@@ -9,11 +9,21 @@ import type { PublicOrganizationResponse } from "../types";
 type OrganizationSectionProps = {
   data: PublicOrganizationResponse | null;
   hasError: boolean;
+  eyebrow: string;
+  title: string;
+  description: string;
+  note: string;
+  buttonLabel: string;
 };
 
 export function OrganizationSection({
   data,
   hasError,
+  eyebrow,
+  title,
+  description,
+  note,
+  buttonLabel,
 }: OrganizationSectionProps) {
   const period = data?.period ?? null;
   const members = data?.members ?? [];
@@ -26,17 +36,16 @@ export function OrganizationSection({
     >
       <div className="site-container">
         <div className="max-w-140">
-          <PublicLabel tone="dark">Susunan kepengurusan</PublicLabel>
+          {eyebrow ? <PublicLabel tone="dark">{eyebrow}</PublicLabel> : null}
           <h2
             id="structure-title"
             className="mt-3.5 font-serif text-[clamp(26px,2.6vw,34px)] leading-tight font-bold text-white"
           >
-            Satu kepengurusan, banyak peran.
+            {title}
           </h2>
-          <p className="mt-4.5 text-base text-on-dark-soft">
-            Kenali susunan pengurus, divisi, dan peran yang menjalankan HIMATKN
-            pada periode aktif.
-          </p>
+          {description ? (
+            <p className="mt-4.5 text-base text-on-dark-soft">{description}</p>
+          ) : null}
         </div>
 
         {hasError ? (
@@ -81,13 +90,13 @@ export function OrganizationSection({
             </dl>
 
             <div className="mt-8.5 flex flex-wrap items-center justify-between gap-5 text-[13px] text-on-dark-soft">
-              <p>
-                Struktur diperbarui tiap pergantian periode kepengurusan.
-              </p>
-              <PublicButtonLink href="/struktur" tone="white">
-                Selengkapnya
-                <ArrowRight className="size-4" aria-hidden="true" />
-              </PublicButtonLink>
+              {note ? <p>{note}</p> : null}
+              {buttonLabel ? (
+                <PublicButtonLink href="/struktur" tone="white">
+                  {buttonLabel}
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </PublicButtonLink>
+              ) : null}
             </div>
           </>
         )}

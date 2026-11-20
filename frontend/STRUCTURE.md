@@ -15,6 +15,7 @@ frontend/
 │   │   └── shared/               # Can, RequirePermission, ConfirmDialog, FormDialog
 │   ├── public/                   # Komponen publik lintas fitur
 │   │   ├── PublicButton.tsx
+│   │   ├── PublicHeroImage.tsx
 │   │   ├── PublicImage.tsx
 │   │   ├── PublicLabel.tsx
 │   │   ├── PublicStateBox.tsx
@@ -76,6 +77,7 @@ frontend/
 │   ├── settings/
 │   │   ├── admin-api.ts
 │   │   ├── public-api.ts
+│   │   ├── fallback.ts
 │   │   ├── types.ts
 │   │   ├── links.ts
 │   │   └── components/
@@ -229,7 +231,24 @@ Gerbang izin memakai `useAuth()` dan konstanta `PERMISSIONS` dari
 Gerbang ini hanya untuk tampilan. Backend tetap penentu akhir dan dapat
 mengembalikan 403.
 
-## Catatan batch wiring
+## Pengaturan situs dan tautan publik
 
-`features/settings/links.ts` masih berisi konstanta `PUBLIC_LINKS`. Pada batch
-wiring, sumber tautan publik akan diganti dengan `getPublicLinks(settings)`.
+Pengaturan situs dimuat **di Server Component** (layout atau page), bukan di
+komponen klien. `app/(public)/layout.tsx` memanggil `loadPublicSettings()` sekali,
+menggabungkannya dengan `PUBLIC_SETTINGS_FALLBACK` lewat
+`resolvePublicSettings()`, lalu mengoper nilai efektif ke `SiteHeader` dan
+`SiteFooter` sebagai props. Halaman yang butuh copy tambahan (beranda,
+`/struktur`) memanggil helper yang sama; fetch Next.js akan melakukan dedupe
+untuk request yang sama. Bila API gagal, resolver memakai fallback sehingga
+halaman tetap tampil.
+
+`features/settings/links.ts` mengekspor `getPublicLinks(settings)` yang
+mengembalikan `{ bankSoal, instagram }`. Setiap tautan bernilai `null` bila URL
+di setting kosong, sehingga pemanggil menyembunyikan elemennya (tidak memakai
+URL hardcoded). Label Instagram memakai `instagram_label` dengan teks netral
+"Instagram"; kedua tautan memakai `target="_blank"` dan
+`rel="noopener noreferrer"`.
+
+Foto hero memakai `PublicHeroImage` (komponen klien kecil): nilai `hero_image`
+dari setting diubah lewat `resolveMediaUrl()`; bila kosong atau gagal dimuat,
+komponen jatuh ke aset statis `/images/hero-group.jpg`.

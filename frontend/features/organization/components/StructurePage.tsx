@@ -6,9 +6,18 @@ import type { PublicOrganizationResponse } from "../types";
 type StructurePageProps = {
   data: PublicOrganizationResponse | null;
   hasError: boolean;
+  eyebrow: string;
+  title: string;
+  description: string;
 };
 
-export function StructurePage({ data, hasError }: StructurePageProps) {
+export function StructurePage({
+  data,
+  hasError,
+  eyebrow,
+  title,
+  description,
+}: StructurePageProps) {
   const period = data?.period ?? null;
   const divisions = data?.divisions ?? [];
   const members = data?.members ?? [];
@@ -21,9 +30,7 @@ export function StructurePage({ data, hasError }: StructurePageProps) {
         aria-labelledby="structure-page-title"
       >
         <div className="site-container text-center">
-          <p className="kicker kicker--dark">
-            Struktur kepengurusan
-          </p>
+          <p className="kicker kicker--dark">{eyebrow}</p>
 
           {period ? (
             <div className="structure-hero__meta justify-center">
@@ -40,13 +47,14 @@ export function StructurePage({ data, hasError }: StructurePageProps) {
             id="structure-page-title"
             className="mx-auto w-full text-center"
           >
-            Susunan Kepengurusan
+            {title}
           </h1>
 
-          <p className="structure-hero__copy mx-auto text-center">
-            Peran, divisi, dan anggota yang menjalankan HIMATKN pada
-            periode aktif.
-          </p>
+          {description ? (
+            <p className="structure-hero__copy mx-auto text-center">
+              {description}
+            </p>
+          ) : null}
         </div>
       </section>
 

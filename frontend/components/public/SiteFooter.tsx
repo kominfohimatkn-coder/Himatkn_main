@@ -1,35 +1,64 @@
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 
-import { PUBLIC_LINKS } from "@/features/settings/links";
+import { PUBLIC_SETTINGS_FALLBACK } from "@/features/settings/fallback";
+import type { PublicLink } from "@/features/settings/links";
 
 type FooterItem = {
   label: string;
   href: string;
   /** Link keluar situs (mis. Bank Soal) memakai <a>, bukan <Link>. */
   external?: boolean;
+  target?: "_blank";
+  rel?: "noopener noreferrer";
 };
 
-const footerNavigation: FooterItem[] = [
+const baseFooterNavigation: FooterItem[] = [
   { label: "Beranda", href: "/" },
   { label: "Tentang", href: "/#tentang" },
   // Sementara: route /kegiatan belum ada. Target diganti saat route tersedia.
   { label: "Kegiatan", href: "/#program" },
   // Sementara: route /publikasi belum ada. Target diganti saat route tersedia.
   { label: "Publikasi", href: "/#publikasi" },
-  {
-    label: PUBLIC_LINKS.bankSoal.label,
-    href: PUBLIC_LINKS.bankSoal.href,
-    external: true,
-  },
-  { label: "Struktur", href: "/struktur" },
 ];
 
 const footerLinkClass =
   "w-fit py-1.5 text-[13px] text-on-dark-soft transition-colors hover:text-white";
 
-export function SiteFooter() {
+type SiteFooterProps = {
+  brandName?: string;
+  brandSubtitle?: string;
+  footerCopyright?: string;
+  footerInstitution?: string;
+  /** `null` menyembunyikan tautan Bank Soal. */
+  bankSoal?: PublicLink | null;
+};
+
+export function SiteFooter({
+  brandName = PUBLIC_SETTINGS_FALLBACK.brand_name,
+  brandSubtitle = PUBLIC_SETTINGS_FALLBACK.brand_subtitle,
+  footerCopyright = PUBLIC_SETTINGS_FALLBACK.footer_copyright,
+  footerInstitution = PUBLIC_SETTINGS_FALLBACK.footer_institution,
+  bankSoal = null,
+}: SiteFooterProps = {}) {
   const year = new Date().getFullYear();
+  const copyright = footerCopyright.trim() || `© ${year} ${brandName}`;
+
+  const footerNavigation: FooterItem[] = [
+    ...baseFooterNavigation,
+    ...(bankSoal
+      ? [
+          {
+            label: bankSoal.label,
+            href: bankSoal.href,
+            external: true,
+            target: bankSoal.target,
+            rel: bankSoal.rel,
+          },
+        ]
+      : []),
+    { label: "Struktur", href: "/struktur" },
+  ];
 
   return (
     <footer className="border-t border-line-on-dark bg-green-950 pt-14 text-white">
@@ -38,10 +67,10 @@ export function SiteFooter() {
           <Link href="/" className="flex items-center gap-3">
             <span>
               <span className="block font-serif text-[13px] leading-[1.1] font-bold tracking-[0.01em] text-white uppercase min-[641px]:text-[15px]">
-                Hima Teknokimia Nuklir
+                {brandName}
               </span>
               <span className="mt-0.75 block text-[10px] leading-[1.3] font-medium tracking-[0.08em] text-on-dark-soft uppercase min-[641px]:text-[11px]">
-                Politeknik Teknologi Nuklir
+                {brandSubtitle}
               </span>
             </span>
           </Link>
@@ -56,8 +85,8 @@ export function SiteFooter() {
                   <a
                     key={item.href}
                     href={item.href}
-                    target="_blank"
-                    rel={PUBLIC_LINKS.bankSoal.rel}
+                    target={item.target ?? "_blank"}
+                    rel={item.rel ?? "noopener noreferrer"}
                     className={`${footerLinkClass} inline-flex items-center gap-1`}
                   >
                     {item.label}
@@ -79,9 +108,12 @@ export function SiteFooter() {
         </div>
 
         <div className="flex flex-col gap-3 pt-5.5 pb-7.5 text-xs text-on-dark-soft min-[641px]:flex-row min-[641px]:items-center min-[641px]:justify-between">
-          <p>
-            © {year} HIMATKN — Himpunan Mahasiswa Teknokimia Nuklir
-          </p>
+          <div>
+            <p>{copyright}</p>
+            {footerInstitution.trim() ? (
+              <p className="mt-1">{footerInstitution}</p>
+            ) : null}
+          </div>
 
           <a
             href="#top"
