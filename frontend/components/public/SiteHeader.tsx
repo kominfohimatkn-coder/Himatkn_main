@@ -157,7 +157,7 @@ export function SiteHeader() {
   return (
     <header
       ref={headerRef}
-      className="sticky top-0 z-50 h-[var(--header-h)] border-b border-line bg-paper"
+      className="sticky top-0 z-50 h-(--header-h) border-b border-line bg-paper"
     >
       <div className="site-container flex h-full items-center justify-between gap-6">
         <Link
@@ -176,7 +176,7 @@ export function SiteHeader() {
             <span className="block font-serif text-[13px] leading-[1.1] font-bold tracking-[0.01em] text-green-900 uppercase min-[641px]:text-[15px]">
               Hima Teknokimia Nuklir
             </span>
-            <span className="mt-[3px] block text-[10px] leading-[1.3] font-medium tracking-[0.08em] text-muted uppercase min-[641px]:text-[11px]">
+            <span className="mt-0.75 block text-[10px] leading-[1.3] font-medium tracking-[0.08em] text-muted uppercase min-[641px]:text-[11px]">
               Politeknik Teknologi Nuklir
             </span>
           </span>
@@ -240,7 +240,7 @@ export function SiteHeader() {
       <div
         ref={panelRef}
         id="public-mobile-navigation"
-        className={`fixed inset-x-0 top-[var(--header-h)] z-40 border-b border-line bg-paper px-6 pt-2 pb-6 shadow-[0_16px_30px_rgba(6,38,27,0.1)] transition-[opacity,transform,visibility] duration-200 motion-reduce:transition-none max-[640px]:px-4 min-[961px]:hidden ${
+        className={`fixed inset-x-0 top-(--header-h) z-40 border-b border-line bg-paper px-6 pt-2 pb-6 shadow-[0_16px_30px_rgba(6,38,27,0.1)] transition-[opacity,transform,visibility] duration-200 motion-reduce:transition-none max-[640px]:px-4 min-[961px]:hidden ${
           isOpen
             ? "visible translate-y-0 opacity-100"
             : "invisible -translate-y-2.5 opacity-0"
