@@ -10,8 +10,7 @@ type FooterItem = {
 const footerNavigation: FooterItem[] = [
   { label: "Beranda", href: "/" },
   { label: "Tentang", href: "/#tentang" },
-  // TODO(kegiatan-page): route /kegiatan belum ada.
-  { label: "Kegiatan", href: "/#program-kerja" },
+  { label: "Kegiatan", href: "/program" },
   // TODO(publikasi-page): route /publikasi belum ada.
   { label: "Berita", href: "/#publikasi" },
   { label: "Struktur", href: "/struktur" },

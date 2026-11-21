@@ -21,9 +21,7 @@ type NavItem = {
 const baseNavigation: NavItem[] = [
   { label: "Beranda", href: "/" },
   { label: "Tentang", href: "/#tentang" },
-  // TODO(kegiatan-page): route /kegiatan belum ada. Arahkan ke section
-  // program kerja di beranda sampai halaman Kegiatan tersedia.
-  { label: "Kegiatan", href: "/#program-kerja" },
+  { label: "Kegiatan", href: "/program" },
   // TODO(publikasi-page): route /publikasi belum ada. Arahkan ke section
   // publikasi di beranda sampai halaman Publikasi tersedia.
   { label: "Publikasi", href: "/#publikasi" },
@@ -81,7 +79,11 @@ export function SiteHeader({
   function isActive(item: NavItem): boolean {
     if (item.external) return false;
     if (item.href === "/") return pathname === "/";
-    return item.href === pathname;
+
+    const path = item.href.split("#")[0];
+    if (!path || path === "/") return false;
+
+    return pathname === path || pathname.startsWith(`${path}/`);
   }
 
   // Escape menutup panel, klik di luar header juga menutup, dan fokus

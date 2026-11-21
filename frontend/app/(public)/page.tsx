@@ -15,10 +15,7 @@ import {
 } from "@/features/settings/public-api";
 import { getPublicNews } from "@/features/news/public-api";
 import { getPublicPrograms } from "@/features/programs/public-api";
-import {
-  normalizeProgramStatus,
-  programStatusLabel,
-} from "@/features/programs/status";
+import { ProgramList } from "@/features/programs/components/public/ProgramList";
 import { loadPublicOrganization } from "@/features/organization/public-api";
 import type { PublicNewsItem } from "@/features/news/types";
 import type { PublicProgram } from "@/features/programs/types";
@@ -32,42 +29,6 @@ export async function generateMetadata(): Promise<Metadata> {
     title: "Beranda",
     description: `Website resmi ${settings.brand_name}.`,
   };
-}
-
-function plainTextExcerpt(
-  value: string | null,
-  maxLength = 118,
-): string | null {
-  if (!value) return null;
-
-  const text = value
-    .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (!text) return null;
-  if (text.length <= maxLength) return text;
-
-  const slice = text.slice(0, maxLength);
-  const lastSpace = slice.lastIndexOf(" ");
-  const cut = lastSpace > maxLength * 0.6 ? slice.slice(0, lastSpace) : slice;
-
-  return `${cut.trimEnd()}…`;
-}
-
-function programStatusBadgeClass(value: unknown): string {
-  switch (normalizeProgramStatus(value)) {
-    case "planned":
-      return "border border-amber bg-white text-amber";
-    case "ongoing":
-      return "bg-mint text-green-900";
-    case "completed":
-      return "bg-green-800 text-white";
-    case "cancelled":
-      return "border border-danger/30 bg-danger/5 text-danger";
-    default:
-      return "border border-line bg-white text-muted";
-  }
 }
 
 async function loadLatestNews(): Promise<{
@@ -204,9 +165,9 @@ export default async function HomePage() {
           <div className="mt-[26px] flex flex-wrap gap-3 max-[640px]:mt-[22px] max-[640px]:flex-nowrap max-[640px]:justify-center max-[640px]:gap-2">
             {settings.hero_primary_label ? (
               <PublicButtonLink
-                href="#program-kerja"
+                href="/program"
                 tone="white"
-                className="max-[640px]:max-w-[165px] max-[640px]:flex-1 max-[640px]:whitespace-nowrap"
+                className="max-[640px]:max-w-[165px] max-[640px]:flex-1 max-[640px]:px-3.5 max-[640px]:py-[13px] max-[640px]:text-[10.5px] max-[640px]:tracking-[0.06em] max-[640px]:whitespace-nowrap"
               >
                 {settings.hero_primary_label}
                 <span aria-hidden="true" className="max-[640px]:hidden">
@@ -218,7 +179,7 @@ export default async function HomePage() {
               <PublicButtonLink
                 href="/struktur"
                 tone="outlineWhite"
-                className="max-[640px]:max-w-[165px] max-[640px]:flex-1 max-[640px]:whitespace-nowrap"
+                className="max-[640px]:max-w-[165px] max-[640px]:flex-1 max-[640px]:px-3.5 max-[640px]:py-[13px] max-[640px]:text-[10.5px] max-[640px]:tracking-[0.06em] max-[640px]:whitespace-nowrap"
               >
                 {settings.hero_secondary_label}
               </PublicButtonLink>
@@ -329,55 +290,19 @@ export default async function HomePage() {
               dipublikasikan.
             </PublicStateBox>
           ) : (
-            <ul className="mt-10 border-t border-line max-[640px]:grid max-[640px]:gap-3.5 max-[640px]:border-0">
-              {programs.items.map((program) => {
-                const excerpt = plainTextExcerpt(program.description);
-                const status = normalizeProgramStatus(program.status);
-                const divisionName =
-                  program.division?.name?.trim() || "HIMATKN";
-
-                return (
-                  <li
-                    key={program.id}
-                    className="grid grid-cols-[160px_1fr_140px] gap-x-6 border-b border-line pt-[26px] pb-[22px] transition-colors hover:bg-mint/35 max-[640px]:grid-cols-1 max-[640px]:gap-0 max-[640px]:rounded-[4px] max-[640px]:border max-[640px]:border-line max-[640px]:bg-white max-[640px]:p-[18px] max-[640px]:hover:bg-white"
-                  >
-                    <span
-                      className={`inline-flex h-[26px] w-fit items-center gap-1.5 self-start rounded-[3px] px-3 text-[11px] leading-none font-semibold tracking-[0.08em] whitespace-nowrap uppercase ${programStatusBadgeClass(program.status)}`}
-                    >
-                      {status === "ongoing" ? (
-                        <span
-                          className="size-1.5 rounded-full bg-green-800"
-                          aria-hidden="true"
-                        />
-                      ) : null}
-                      {programStatusLabel(program.status)}
-                    </span>
-
-                    <div>
-                      <h3 className="mt-2 font-serif text-[17px] leading-snug font-bold text-green-900 max-[640px]:mt-3">
-                        {program.name}
-                      </h3>
-                      {excerpt ? (
-                        <p className="mt-2 max-w-[62ch] text-[15px] leading-6 text-muted">
-                          {excerpt}
-                        </p>
-                      ) : null}
-                      {/* TODO(program-pages): tambahkan tautan "Baca Selengkapnya →"
-                          ke /program/[slug] setelah route halaman program tersedia. */}
-                    </div>
-
-                    <div className="pt-2 text-right text-xs leading-normal text-muted max-[640px]:hidden">
-                      {divisionName}
-                      <br />
-                      {program.period.name}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            <ProgramList
+              programs={programs.items}
+              brandName={settings.brand_name}
+            />
           )}
-          {/* TODO(program-pages): tampilkan tombol "Lihat Semua Program Kerja →"
-              ke /program setelah route halaman program tersedia. */}
+
+          {programs.hasError ? null : (
+            <div className="mt-10 flex justify-center">
+              <PublicButtonLink href="/program" tone="outline">
+                Lihat Semua Program Kerja →
+              </PublicButtonLink>
+            </div>
+          )}
         </div>
       </section>
 
