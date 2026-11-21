@@ -18,7 +18,7 @@ export default async function PublicLayout({
 
   return (
     <div id="top" className="public-site">
-      <a href="#main-content" className="skip-link">
+      <a href="#main-content" className="sr-only focus:not-sr-only absolute top-3 left-3 z-50 px-4 py-2.5 bg-green-800 text-white text-xs font-bold transition-all duration-150 ease-in">
         Lewati ke konten
       </a>
       <SiteHeader

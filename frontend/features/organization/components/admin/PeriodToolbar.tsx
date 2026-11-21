@@ -162,7 +162,7 @@ export default function PeriodToolbar({
                   onClick={() => onEdit(selectedPeriod)}
                   className={organizationActionClass}
                 >
-                  Ubah periode
+                  Edit periode
                 </button>
 
                 {!selectedPeriod.is_active && (
