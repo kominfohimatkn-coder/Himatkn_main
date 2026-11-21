@@ -3,7 +3,7 @@
    proker / news / struktur / dokumen = filled | empty | loading | error
    loading = all  → seluruh bagian web dalam keadaan memuat
    delay = <ms>   → lama simulasi jaringan (default 650, 0 = tanpa jeda)
-   map = ok | error · menu = open · header = scrolled · panel = off · q = kata kunci */
+   map = ok | error · menu = open · info = open (dropdown Informasi) · header = scrolled · panel = off · q = kata kunci */
 
 const LOREM = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
 
@@ -354,6 +354,20 @@ function initChrome() {
   $$(".mobile-nav a").forEach((a) => a.addEventListener("click", () => set(false)));
   addEventListener("keydown", (e) => e.key === "Escape" && set(false));
   if (params.get("menu") === "open") set(true);
+
+  // Dropdown "Informasi": buka saat hover (desktop) atau klik/Enter (sentuh & keyboard)
+  $$(".nav__group").forEach((g) => {
+    const t = g.querySelector(".nav__trigger");
+    const open = (o) => { g.classList.toggle("is-open", o); t.setAttribute("aria-expanded", o); };
+    t.addEventListener("click", () => open(!g.classList.contains("is-open")));
+    g.addEventListener("mouseenter", () => open(true));
+    g.addEventListener("mouseleave", () => open(false));
+    g.addEventListener("focusout", (e) => { if (!g.contains(e.relatedTarget)) open(false); });
+    document.addEventListener("click", (e) => { if (!g.contains(e.target)) open(false); });
+    addEventListener("keydown", (e) => { if (e.key === "Escape" && g.classList.contains("is-open")) { open(false); t.focus(); } });
+    if (g.querySelector('[aria-current="page"]')) t.classList.add("is-current");
+    if (params.get("info") === "open") open(true);
+  });
 
   const map = $(".map");
   if (map) {

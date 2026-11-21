@@ -75,6 +75,28 @@ p { margin: 0; }
 .nav a { text-decoration: none; font-size: 14px; color: var(--muted); padding: 6px 0; border-bottom: 2px solid transparent; transition: color .15s, border-color .15s; }
 .nav a:hover { color: var(--green-900); }
 .nav a[aria-current="page"] { color: var(--green-800); border-color: var(--green-800); }
+/* Dropdown Informasi (Bank Soal + Dokumen) */
+.nav { align-items: center; }
+.nav__group { position: relative; }
+.nav__trigger { display: inline-flex; align-items: center; gap: 6px; font: 400 14px var(--sans); color: var(--muted); background: none; border: 0; padding: 6px 0; cursor: pointer; position: relative; }
+.nav__trigger:hover, .nav__group.is-open .nav__trigger { color: var(--green-900); }
+.nav__trigger.is-current { color: var(--green-800); }
+.nav__trigger::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: currentColor; transform: scaleX(0); transition: transform .25s var(--ease); }
+.nav__trigger.is-current::after { transform: scaleX(1); }
+.nav__chev { transition: transform .2s var(--ease); }
+.nav__group.is-open .nav__chev { transform: rotate(180deg); }
+.nav__menu { position: absolute; top: calc(100% + 20px); right: -12px; min-width: 264px; padding: 6px; background: var(--white); border: 1px solid var(--line); border-radius: 4px; box-shadow: 0 16px 30px rgba(6,38,27,.1); opacity: 0; visibility: hidden; transform: translateY(-4px); transition: opacity .15s, transform .15s, visibility .15s; z-index: 60; }
+.nav__menu::before { content: ""; position: absolute; left: 0; right: 0; top: -21px; height: 21px; }
+.nav__group.is-open .nav__menu { opacity: 1; visibility: visible; transform: none; }
+.nav .nav__menu a { display: block; padding: 10px 12px; border-radius: 3px; border: 0; }
+.nav .nav__menu a::after { display: none; }
+.nav .nav__menu a:hover, .nav .nav__menu a:focus-visible { background: var(--mint); }
+.nav__menu strong { display: block; font: 600 14px var(--sans); color: var(--green-900); }
+.nav__menu strong span { font-weight: 500; color: var(--muted); }
+.nav__menu small { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); }
+.nav .nav__menu a[aria-current="page"] { box-shadow: inset 3px 0 0 var(--green-800); }
+.nav .nav__menu a[aria-current="page"] strong { color: var(--green-800); }
+.mobile-nav__label { margin: 0; padding: 22px 0 6px; font: 600 11px var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--muted-light); }
 .menu-btn { display: none; width: 44px; height: 44px; margin-right: -10px; border: 0; background: none; cursor: pointer; color: var(--green-900); }
 .menu-btn span { display: block; width: 20px; height: 2px; background: currentColor; margin: 4px auto; transition: transform .2s, opacity .2s; }
 .menu-open .menu-btn span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
@@ -402,6 +424,7 @@ body.is-leaving main, body.is-leaving .site-footer { opacity: 0; transform: tran
   .menu-open .mobile-nav > :nth-child(5) { transition-delay: .12s; }
   .menu-open .mobile-nav > :nth-child(6) { transition-delay: .15s; }
   .menu-open .mobile-nav > :nth-child(7) { transition-delay: .18s; }
+  .menu-open .mobile-nav > :nth-child(n+8) { transition-delay: .21s; }
 }
 
 /* Mikro-interaksi */

@@ -18,7 +18,7 @@ lalu buka http://localhost:8000. Untuk melihat semua state sekaligus, buka **`st
 | `kegiatan.html` | Semua program kerja dengan filter status (Semua/Berjalan/Terencana/Selesai) |
 | `publikasi.html` | Daftar publikasi + pagination |
 | `artikel.html` | Detail berita/program kerja (`?type=berita\|proker&id=...`) |
-| `dokumen.html` | Dokumen resmi (4 kartu PDF dengan tombol Lihat dan Unduh), menggantikan Bank Soal di navigasi |
+| `dokumen.html` | Dokumen resmi (4 kartu PDF dengan tombol Lihat dan Unduh). Bersama Bank Soal (tautan Google Drive) ada di dropdown **Informasi** pada header |
 | `404.html` | Halaman tidak ditemukan |
 | `states.html` | Galeri semua state dalam versi desktop + mobile |
 
@@ -39,6 +39,7 @@ Panel **State UI** ada di pojok kanan bawah. State juga bisa diatur lewat URL:
 | `dokumen` | filled, empty, loading, error | dokumen |
 | `map` | error | semua halaman (footer) |
 | `menu` | open | semua halaman (mobile) |
+| `info` | open | semua halaman (dropdown Informasi di header desktop) |
 | `header` | scrolled | semua halaman |
 | `view`, `div` | `view=semua`, `div=reaksi` | struktur |
 | `filter` | berjalan, terencana, selesai | kegiatan |
