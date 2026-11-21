@@ -18,7 +18,7 @@ lalu buka http://localhost:8000. Untuk melihat semua state sekaligus, buka **`st
 | `kegiatan.html` | Semua program kerja dengan filter status (Semua/Berjalan/Terencana/Selesai) |
 | `publikasi.html` | Daftar publikasi + pagination |
 | `artikel.html` | Detail berita/program kerja (`?type=berita\|proker&id=...`) |
-| `bank-soal.html` | Bank soal: pencarian + filter semester (halaman baru, ada di navigasi) |
+| `dokumen.html` | Dokumen resmi (4 kartu PDF dengan tombol Lihat dan Unduh), menggantikan Bank Soal di navigasi |
 | `404.html` | Halaman tidak ditemukan |
 | `states.html` | Galeri semua state dalam versi desktop + mobile |
 
@@ -36,13 +36,13 @@ Panel **State UI** ada di pojok kanan bawah. State juga bisa diatur lewat URL:
 | `proker` | filled, empty, loading, error | beranda, kegiatan |
 | `news` | filled, empty, loading, error | beranda, publikasi |
 | `struktur` | filled, empty, loading, error | beranda, struktur |
-| `soal` | filled, empty, loading, error | bank soal |
+| `dokumen` | filled, empty, loading, error | dokumen |
 | `map` | error | semua halaman (footer) |
 | `menu` | open | semua halaman (mobile) |
 | `header` | scrolled | semua halaman |
 | `view`, `div` | `view=semua`, `div=reaksi` | struktur |
 | `filter` | berjalan, terencana, selesai | kegiatan |
-| `q` | kata kunci | kegiatan, publikasi, bank soal (contoh: `kegiatan.html?q=podcast`) |
+| `q` | kata kunci | kegiatan, publikasi (contoh: `kegiatan.html?q=podcast`) |
 | `loading` | all | seluruh bagian halaman dalam keadaan memuat |
 | `delay` | angka ms | lama simulasi loading (default 650, 0 = tanpa jeda) |
 | `panel` | off | sembunyikan panel state |
@@ -62,5 +62,5 @@ Gaya visualnya dipertahankan. Hanya bug yang kemarin ditemukan yang diperbaiki:
 - [ ] **Foto**: taruh `hero.jpg` dan `pelantikan.jpg` di `assets/img/`. `pelantikan-2.jpg` diambil dari screenshot, jadi resolusinya rendah.
 - [ ] **Data pengurus divisi selain BPH** di `assets/app.js` (`DATA.divisions[].members`). Format: `{ role: "Kepala Divisi", name: "..." }`. Foto opsional lewat `photo: "assets/img/nama.jpg"`.
 - [ ] **Isi program kerja dan berita**: masih lorem ipsum seperti di desain.
-- [ ] **Bank soal**: daftar mata kuliah dan file di `DATA.soal` masih **contoh**. Tautan unduhannya juga belum ada.
+- [ ] **Dokumen**: judul, keterangan, ukuran, dan file di `DATA.dokumen` masih **contoh**. Ganti dengan 4 dokumen asli.
 - [ ] Sebelum dirilis, hapus `initPanel()` dan set `DELAY` ke 0 di `app.js`. Jeda loading hanya simulasi; di produksi, skeleton cukup tampil selama fetch API berjalan.
