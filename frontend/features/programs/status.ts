@@ -1,3 +1,5 @@
+import type { BadgeTone } from "@/components/admin/shared/Badge";
+
 import {
   PROGRAM_STATUSES,
   type ProgramStatus,
@@ -46,3 +48,11 @@ export function programStatusLabel(value: unknown): string {
     ? PROGRAM_STATUS_LABELS[normalized]
     : "Status lain";
 }
+
+/** Warna badge admin, mengikuti `PROG_STATUS` di Design/admin/assets/admin.js. */
+export const PROGRAM_STATUS_BADGE: Record<ProgramStatus, { tone: BadgeTone; dot?: boolean }> = {
+  planned: { tone: "amber" },
+  ongoing: { tone: "mint", dot: true },
+  completed: { tone: "green" },
+  cancelled: { tone: "cancel" },
+};

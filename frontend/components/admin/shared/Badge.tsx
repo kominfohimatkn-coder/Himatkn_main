@@ -7,7 +7,8 @@ export type BadgeTone =
   | "grey"
   | "red"
   | "blue"
-  | "outline";
+  | "outline"
+  | "cancel";
 
 /** `.badge` + `.badge--*` di Design/admin/assets/admin.css. */
 const toneClasses: Record<BadgeTone, string> = {
@@ -18,6 +19,8 @@ const toneClasses: Record<BadgeTone, string> = {
   red: "border-[#ebcfc6] bg-danger-bg text-danger",
   blue: "border-transparent bg-info-bg text-info",
   outline: "border-line-strong bg-white text-muted",
+  /** `.badge--cancel`: dicoret, untuk program yang dibatalkan. */
+  cancel: "border-line-strong bg-transparent text-muted line-through decoration-1",
 };
 
 export function Badge({
