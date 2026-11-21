@@ -94,7 +94,7 @@ export default function PeriodFormDialog({
     <FormDialog
       open
       eyebrow="Struktur organisasi"
-      title={period ? `Edit periode ${period.name}` : "Buat periode baru"}
+      title={period ? `Ubah periode ${period.name}` : "Buat periode baru"}
       description="Nama periode harus unik dan tanggal selesai tidak boleh sebelum tanggal mulai."
       size="md"
       busy={isSaving}
