@@ -22,8 +22,8 @@ export default function AdminLayout({
 
   if (isLoading) {
     return (
-      <main className="admin-theme flex min-h-screen items-center justify-center bg-zinc-50">
-        <p className="text-sm text-zinc-500">Memuat...</p>
+      <main className="admin-theme flex min-h-screen items-center justify-center">
+        <p className="text-sm text-muted">Memuat...</p>
       </main>
     );
   }

@@ -55,13 +55,13 @@ export function FormField({
 
   return (
     <div
-      className={["space-y-1.5", className]
+      className={["grid gap-1.5", className]
         .filter(Boolean)
         .join(" ")}
     >
       <label
         htmlFor={controlId}
-        className="block text-sm font-medium text-ink"
+        className="block text-[11px] font-semibold tracking-[0.08em] text-green-900 uppercase"
       >
         {label}
 
@@ -78,7 +78,7 @@ export function FormField({
       {control}
 
       {hint ? (
-        <p id={hintId} className="text-xs leading-5 text-ink-soft">
+        <p id={hintId} className="text-xs leading-5 text-muted">
           {hint}
         </p>
       ) : null}

@@ -40,7 +40,7 @@ export function Checkbox({
         id={controlId}
         type="checkbox"
         aria-describedby={describedBy}
-        className="mt-0.5 size-4 shrink-0 cursor-pointer accent-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/30 disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-0.5 size-4 shrink-0 cursor-pointer accent-green-800 disabled:cursor-not-allowed disabled:opacity-60"
       />
 
       <span className="min-w-0">
@@ -49,7 +49,7 @@ export function Checkbox({
         {description ? (
           <span
             id={descriptionId}
-            className="mt-0.5 block text-xs leading-5 text-ink-soft"
+            className="mt-0.5 block text-xs leading-5 text-muted"
           >
             {description}
           </span>

@@ -6,7 +6,7 @@ export type SelectProps = ComponentProps<"select"> & {
 };
 
 const selectBaseClasses =
-  "min-h-11 w-full appearance-none rounded-[3px] border border-paper-line bg-bg-light px-3 py-2 pr-9 text-sm text-ink outline-none transition-[border-color,box-shadow] duration-200 hover:border-gold/60 focus-visible:border-gold focus-visible:ring-2 focus-visible:ring-gold/20 disabled:cursor-not-allowed disabled:border-paper-line disabled:bg-bg-light-2 disabled:text-ink-soft disabled:opacity-60 aria-invalid:border-danger aria-invalid:focus-visible:border-danger aria-invalid:focus-visible:ring-danger/20";
+  "min-h-10 appearance-none px-3 py-2.5 pr-8 w-full rounded-[4px] border border-line bg-white text-sm text-ink outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-muted-light hover:border-line-strong focus-visible:border-green-800 focus-visible:shadow-[0_0_0_3px_rgba(15,77,54,0.1)] disabled:cursor-not-allowed disabled:bg-mint-50 disabled:text-muted disabled:opacity-70 aria-invalid:border-danger aria-invalid:shadow-[0_0_0_3px_rgba(163,58,34,0.08)]";
 
 export function Select({
   invalid = false,
@@ -39,7 +39,7 @@ export function Select({
         fill="none"
         stroke="currentColor"
         strokeWidth="1.8"
-        className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-ink-soft"
+        className="pointer-events-none absolute top-1/2 right-3 size-3.5 -translate-y-1/2 text-muted"
       >
         <path d="m6 9 6 6 6-6" />
       </svg>

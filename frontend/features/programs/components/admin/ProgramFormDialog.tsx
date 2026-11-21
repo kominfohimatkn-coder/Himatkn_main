@@ -1,435 +1,271 @@
-
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 
 import FormDialog from "@/components/admin/shared/FormDialog";
+import { Button } from "@/components/ui/Button";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import { getAdminDivisions } from "@/features/organization/admin-api";
-import {
-  normalizeProgramStatus,
-  programStatusLabel,
-} from "../../status";
-
-import { PROGRAM_STATUSES } from "../../types";
-import type {
-  AdminProgram,
-  CreateProgramPayload,
-} from "../../types";
+import { ApiError } from "@/lib/api/errors";
 import type { AdminDivision, AdminPeriod } from "@/features/organization/types";
 
-interface ProgramFormDialogProps {
-  program?: AdminProgram;
-  periods: AdminPeriod[];
-  periodsError: string;
-  onClose: () => void;
-  onSubmit: (payload: CreateProgramPayload) => Promise<void>;
+import { createAdminProgram, updateAdminProgram } from "../../admin-api";
+import { normalizeProgramStatus, programStatusLabel } from "../../status";
+import { PROGRAM_STATUSES, type AdminProgram, type ProgramStatus } from "../../types";
+
+const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
-interface ProgramFormState {
-  period_id: string;
-  division_id: string;
-  name: string;
-  slug: string;
-  description: string;
-  status: string;
-  start_date: string;
-  end_date: string;
-}
+type Field = "name" | "slug" | "period_id" | "status" | "end_date";
 
-interface DivisionLoadState {
-  periodId: number;
-  items: AdminDivision[];
-  error: string;
-}
-
+/**
+ * Panel tambah/edit program kerja, mengikuti `programForm()` di Design/admin.
+ */
 export default function ProgramFormDialog({
   program,
   periods,
-  periodsError,
+  divisions,
+  defaultPeriodId,
   onClose,
-  onSubmit,
-}: ProgramFormDialogProps) {
-  const [form, setForm] = useState<ProgramFormState>(() => ({
-    period_id: String(program?.period_id ?? periods[0]?.id ?? ""),
-    division_id:
-      program?.division_id == null ? "" : String(program.division_id),
-    name: program?.name ?? "",
-    slug: program?.slug ?? "",
-    description: program?.description ?? "",
-    status: program?.status ?? "planned",
-    start_date: program?.start_date?.slice(0, 10) ?? "",
-    end_date: program?.end_date?.slice(0, 10) ?? "",
-  }));
+  onSaved,
+}: {
+  program?: AdminProgram;
+  periods: AdminPeriod[];
+  /** Semua divisi dari semua periode; disaring sesuai periode terpilih. */
+  divisions: AdminDivision[];
+  defaultPeriodId?: number;
+  onClose: () => void;
+  onSaved: (program: AdminProgram, isNew: boolean) => void;
+}) {
+  const isNew = !program;
+  const [name, setName] = useState(program?.name ?? "");
+  const [slug, setSlug] = useState(program?.slug ?? "");
+  const [slugTouched, setSlugTouched] = useState(!isNew);
+  const [periodId, setPeriodId] = useState(
+    String(program?.period_id ?? defaultPeriodId ?? periods.find((p) => p.is_active)?.id ?? ""),
+  );
+  const [divisionId, setDivisionId] = useState(
+    program?.division_id == null ? "" : String(program.division_id),
+  );
+  const [status, setStatus] = useState<ProgramStatus | "">(
+    program ? (normalizeProgramStatus(program.status) ?? "") : "planned",
+  );
+  const [startDate, setStartDate] = useState(program?.start_date ?? "");
+  const [endDate, setEndDate] = useState(program?.end_date ?? "");
+  const [description, setDescription] = useState(program?.description ?? "");
+  const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
+  const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const [divisionState, setDivisionState] =
-    useState<DivisionLoadState | null>(null);
-
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState("");
-
-  const selectedPeriodId = Number(form.period_id);
-
-  useEffect(() => {
-    if (
-      !Number.isInteger(selectedPeriodId) ||
-      selectedPeriodId <= 0
-    ) {
-      return;
-    }
-
-    const controller = new AbortController();
-
-    void getAdminDivisions(selectedPeriodId, {
-      signal: controller.signal,
-    })
-      .then((result) => {
-        setDivisionState({
-          periodId: selectedPeriodId,
-          items: result.items,
-          error: "",
-        });
-      })
-      .catch((err: unknown) => {
-        if (controller.signal.aborted) return;
-
-        setDivisionState({
-          periodId: selectedPeriodId,
-          items: [],
-          error:
-            err instanceof Error
-              ? err.message
-              : "Daftar divisi gagal dimuat.",
-        });
-      });
-
-    return () => controller.abort();
-  }, [selectedPeriodId]);
-
-  const isDivisionDataReady =
-    divisionState?.periodId === selectedPeriodId;
-
-  const divisions = isDivisionDataReady
-    ? divisionState.items
-    : [];
-
-  const divisionError = isDivisionDataReady
-    ? divisionState.error
-    : "";
-
-  const selectedStatus = normalizeProgramStatus(form.status);
-
-  const hasLegacyStatus =
-    form.status.trim().length > 0 && selectedStatus === null;
-
-  function updateField(
-    field: keyof ProgramFormState,
-    value: string,
-  ) {
-    setForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
-  }
+  const periodDivisions = divisions
+    .filter((division) => String(division.period_id) === periodId)
+    .sort((a, b) => a.sort_order - b.sort_order || a.id - b.id);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError("");
+    setFormError("");
 
-    const periodId = Number(form.period_id);
+    const found: Partial<Record<Field, string>> = {};
+    const cleanName = name.trim();
+    const cleanSlug = slug.trim();
 
-    if (!Number.isInteger(periodId) || periodId <= 0) {
-      setError("Pilih periode yang valid.");
-      return;
-    }
+    if (!cleanName) found.name = "Wajib diisi.";
+    else if (cleanName.length < 2) found.name = "Minimal 2 karakter.";
+    if (!cleanSlug) found.slug = "Wajib diisi.";
+    else if (!SLUG_PATTERN.test(cleanSlug))
+      found.slug = "Gunakan huruf kecil, angka, dan tanda hubung saja.";
+    if (!periodId) found.period_id = "Wajib diisi.";
+    if (!status) found.status = "Pilih salah satu status.";
+    if (startDate && endDate && endDate < startDate)
+      found.end_date = "Tanggal selesai tidak boleh sebelum tanggal mulai.";
 
-    if (
-      form.start_date &&
-      form.end_date &&
-      form.end_date < form.start_date
-    ) {
-      setError("Tanggal selesai tidak boleh sebelum tanggal mulai.");
-      return;
-    }
+    setErrors(found);
+    if (Object.keys(found).length || !status) return;
 
-    const status = normalizeProgramStatus(form.status);
-
-    if (!status) {
-      setError(
-        "Pilih salah satu dari empat status program yang valid.",
-      );
-      return;
-    }
-
-    const payload: CreateProgramPayload = {
-      period_id: periodId,
-      division_id: form.division_id
-        ? Number(form.division_id)
-        : null,
-      name: form.name.trim(),
-      slug: form.slug.trim(),
-      description: form.description.trim() || null,
+    const payload = {
+      period_id: Number(periodId),
+      division_id: divisionId ? Number(divisionId) : null,
+      name: cleanName,
+      slug: cleanSlug,
+      description: description.trim() || null,
       status,
-      start_date: form.start_date || null,
-      end_date: form.end_date || null,
+      start_date: startDate || null,
+      end_date: endDate || null,
     };
 
-    setIsSaving(true);
-
+    setSaving(true);
     try {
-      await onSubmit(payload);
-      onClose();
+      const saved = program
+        ? await updateAdminProgram(program.id, payload)
+        : await createAdminProgram(payload);
+      onSaved(saved, isNew);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Program kerja gagal disimpan.",
-      );
+      if (err instanceof ApiError && err.status === 409) {
+        setErrors({ slug: "Alamat ini sudah dipakai program lain." });
+      } else {
+        setFormError(err instanceof Error ? err.message : "Program kerja gagal disimpan.");
+      }
     } finally {
-      setIsSaving(false);
+      setSaving(false);
     }
   }
 
   return (
     <FormDialog
       open
-      eyebrow="Manajemen program"
-      title={
-        program ? "Edit program kerja" : "Tambah program kerja"
-      }
-      description="Lengkapi informasi program sesuai periode organisasi."
-      size="lg"
-      busy={isSaving}
+      eyebrow="Program kerja"
+      title={isNew ? "Tambah program kerja" : "Edit program kerja"}
+      busy={saving}
       onClose={onClose}
     >
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-5 p-5 sm:p-7"
-      >
-        {periodsError && (
-          <div
-            role="alert"
-            className="border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-800"
-          >
-            Daftar periode gagal dimuat: {periodsError}
-          </div>
-        )}
+      <form noValidate onSubmit={handleSubmit} className="flex min-h-full flex-col">
+        <div className="grid flex-1 content-start gap-4 px-6 py-[22px]">
+          <FormField label="Nama program" required error={errors.name}>
+            <Input
+              value={name}
+              maxLength={255}
+              onChange={(event) => {
+                setName(event.target.value);
+                if (!slugTouched) setSlug(slugify(event.target.value));
+              }}
+            />
+          </FormField>
 
-        {periods.length === 0 && !program && (
-          <div
-            role="alert"
-            className="border border-gold/40 bg-gold/10 p-3 text-sm leading-6 text-ink"
-          >
-            Periode belum tersedia atau akun tidak memiliki izin untuk
-            membacanya. Program baru belum bisa dibuat.
-          </div>
-        )}
-
-        <FormField label="Nama program" required>
-          <Input
-            id="program-name"
-            name="name"
-            value={form.name}
-            onChange={(event) =>
-              updateField("name", event.target.value)
-            }
-            minLength={2}
-            maxLength={255}
+          <FormField
+            label="Alamat halaman"
             required
-            placeholder="Contoh: Seminar Nasional"
-          />
-        </FormField>
-
-        <FormField
-          label="Slug"
-          hint="Gunakan format singkat tanpa spasi, misalnya seminar-nasional."
-          required
-        >
-          <Input
-            id="program-slug"
-            name="slug"
-            value={form.slug}
-            onChange={(event) =>
-              updateField("slug", event.target.value)
-            }
-            minLength={2}
-            maxLength={255}
-            required
-            placeholder="seminar-nasional"
-          />
-        </FormField>
-
-        <FormField label="Periode organisasi" required>
-          <Select
-            id="program-period"
-            name="period_id"
-            value={form.period_id}
-            onChange={(event) => {
-              setForm((current) => ({
-                ...current,
-                period_id: event.target.value,
-                division_id: "",
-              }));
-            }}
-            placeholder="Pilih periode"
-            required
+            hint="Terisi otomatis dari nama. Harus unik."
+            error={errors.slug}
           >
-            {program &&
-              !periods.some(
-                (period) => period.id === program.period_id,
-              ) && (
-                <option value={String(program.period_id)}>
-                  Periode #{program.period_id} (saat ini)
-                </option>
-              )}
+            <SlugInput
+              value={slug}
+              onChange={(value) => {
+                setSlugTouched(true);
+                setSlug(value);
+              }}
+            />
+          </FormField>
 
-            {periods.map((period) => (
-              <option key={period.id} value={String(period.id)}>
-                {period.name}
-                {period.is_active ? " (aktif)" : ""}
-              </option>
-            ))}
-          </Select>
-        </FormField>
-
-        <FormField
-          label="Divisi"
-          error={
-            divisionError
-              ? `Daftar divisi gagal dimuat: ${divisionError}`
-              : undefined
-          }
-        >
-          <Select
-            id="program-division"
-            name="division_id"
-            value={form.division_id}
-            onChange={(event) =>
-              updateField("division_id", event.target.value)
-            }
-            disabled={!form.period_id || Boolean(divisionError)}
-          >
-            <option value="">Tidak terkait divisi tertentu</option>
-
-            {form.division_id &&
-              !divisions.some(
-                (division) =>
-                  division.id === Number(form.division_id),
-              ) && (
-                <option value={form.division_id}>
-                  Divisi #{form.division_id} (saat ini)
-                </option>
-              )}
-
-            {divisions.map((division) => (
-              <option
-                key={division.id}
-                value={String(division.id)}
+          <div className="grid items-start gap-3.5 min-[641px]:grid-cols-2">
+            <FormField label="Periode" required error={errors.period_id}>
+              <Select
+                value={periodId}
+                onChange={(event) => {
+                  setPeriodId(event.target.value);
+                  setDivisionId("");
+                }}
               >
-                {division.name}
-              </option>
-            ))}
-          </Select>
-        </FormField>
+                {!periodId ? <option value="">Pilih periode</option> : null}
+                {periods.map((period) => (
+                  <option key={period.id} value={period.id}>
+                    {period.name}
+                    {period.is_active ? " (aktif)" : ""}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
+            <FormField label="Divisi" hint="Pilihan mengikuti periode.">
+              <Select value={divisionId} onChange={(event) => setDivisionId(event.target.value)}>
+                <option value="">Tanpa divisi</option>
+                {periodDivisions.map((division) => (
+                  <option key={division.id} value={division.id}>
+                    {division.name}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
+          </div>
 
-        <FormField label="Deskripsi">
-          <Textarea
-            id="program-description"
-            name="description"
-            value={form.description}
-            onChange={(event) =>
-              updateField("description", event.target.value)
-            }
-            rows={4}
-            placeholder="Jelaskan tujuan program kerja..."
-          />
-        </FormField>
+          <FormField label="Status" required error={errors.status}>
+            <Select
+              value={status}
+              onChange={(event) => setStatus(event.target.value as ProgramStatus)}
+            >
+              {!status ? (
+                <option value="" disabled>
+                  {`Status lain (${program?.status ?? "-"})`}
+                </option>
+              ) : null}
+              {PROGRAM_STATUSES.map((value) => (
+                <option key={value} value={value}>
+                  {programStatusLabel(value)}
+                </option>
+              ))}
+            </Select>
+          </FormField>
 
-        <FormField label="Status" required>
-          <Select
-            id="program-status"
-            name="status"
-            value={selectedStatus ?? ""}
-            onChange={(event) =>
-              updateField("status", event.target.value)
-            }
-            required
-          >
-            <option value="" disabled>
-              {hasLegacyStatus
-                ? `Status lain (${form.status.trim()})`
-                : "Pilih status"}
-            </option>
+          <div className="grid items-start gap-3.5 min-[641px]:grid-cols-2">
+            <FormField label="Tanggal mulai">
+              <Input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
+            </FormField>
+            <FormField label="Tanggal selesai" error={errors.end_date}>
+              <Input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
+            </FormField>
+          </div>
 
-            {PROGRAM_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {programStatusLabel(status)}
-              </option>
-            ))}
-          </Select>
-        </FormField>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label="Tanggal mulai">
-            <Input
-              id="program-start-date"
-              name="start_date"
-              type="date"
-              value={form.start_date}
-              onChange={(event) =>
-                updateField("start_date", event.target.value)
-              }
+          <FormField label="Deskripsi" hint="Ditampilkan di halaman Program Kerja situs.">
+            <Textarea
+              rows={5}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
             />
           </FormField>
 
-          <FormField label="Tanggal selesai">
-            <Input
-              id="program-end-date"
-              name="end_date"
-              type="date"
-              value={form.end_date}
-              onChange={(event) =>
-                updateField("end_date", event.target.value)
-              }
-            />
-          </FormField>
+          {formError ? (
+            <p role="alert" className="rounded-[4px] border border-[#ebcfc6] bg-danger-bg px-3.5 py-3 text-[13px] text-danger">
+              {formError}
+            </p>
+          ) : null}
         </div>
 
-        {error && (
-          <div
-            role="alert"
-            className="border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-800"
-          >
-            {error}
-          </div>
-        )}
-
-        <footer className="flex flex-col-reverse gap-2 border-t border-paper-line pt-5 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSaving}
-            className="min-h-11 border border-paper-line px-4 py-2 text-sm font-medium hover:bg-bg-light-2 disabled:opacity-50"
-          >
+        <footer className="sticky bottom-0 flex justify-end gap-2 border-t border-line bg-white px-6 py-3.5">
+          <Button variant="outline" onClick={onClose} disabled={saving}>
             Batal
-          </button>
-
-          <button
-            type="submit"
-            disabled={isSaving || (!program && periods.length === 0)}
-            className="min-h-11 border border-bg-dark bg-bg-dark px-4 py-2 text-sm font-medium text-white hover:bg-bg-dark/90 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isSaving
-              ? "Menyimpan..."
-              : program
-                ? "Simpan perubahan"
-                : "Simpan program"}
-          </button>
+          </Button>
+          <Button type="submit" disabled={saving}>
+            {saving ? "Menyimpan..." : isNew ? "Tambah program" : "Simpan perubahan"}
+          </Button>
         </footer>
       </form>
     </FormDialog>
+  );
+}
+
+/** Input slug dengan awalan `/program/` (`.input-group` + `.prefix`). */
+function SlugInput({
+  value,
+  onChange,
+  ...aria
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  id?: string;
+  required?: boolean;
+  "aria-describedby"?: string;
+  "aria-invalid"?: boolean | "true" | "false" | "grammar" | "spelling";
+}) {
+  return (
+    <div className="flex">
+      <span className="grid place-items-center rounded-l-[4px] border border-r-0 border-line bg-mint-50 px-2.5 text-xs whitespace-nowrap text-muted">
+        /program/
+      </span>
+      <input
+        {...aria}
+        value={value}
+        maxLength={255}
+        onChange={(event) => onChange(event.target.value)}
+        className="min-h-10 w-full min-w-0 rounded-r-[4px] border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none hover:border-line-strong focus-visible:border-green-800 focus-visible:shadow-[0_0_0_3px_rgba(15,77,54,0.1)] aria-invalid:border-danger"
+      />
+    </div>
   );
 }

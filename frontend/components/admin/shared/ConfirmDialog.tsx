@@ -1,9 +1,9 @@
-
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
+import { TriangleAlert } from "lucide-react";
 
-import FormDialog from "@/components/admin/shared/FormDialog";
+import { Button } from "@/components/ui/Button";
 
 type ConfirmTone = "danger" | "default";
 
@@ -21,11 +21,15 @@ interface ConfirmDialogProps {
   onConfirm: () => void;
 }
 
+/**
+ * Dialog konfirmasi di tengah layar, mengikuti `.modal` + `confirmDialog()`
+ * di Design/admin. Props tetap sama dengan versi lama.
+ */
 export default function ConfirmDialog({
   open,
   title,
   description,
-  eyebrow = "Konfirmasi tindakan",
+  eyebrow,
   confirmLabel = "Konfirmasi",
   busyLabel = "Memproses...",
   busy = false,
@@ -34,54 +38,95 @@ export default function ConfirmDialog({
   onCancel,
   onConfirm,
 }: ConfirmDialogProps) {
-  const confirmButtonStyle =
-    tone === "danger"
-      ? "border-red-700 bg-red-700 text-white hover:bg-red-800"
-      : "border-bg-dark bg-bg-dark text-white hover:bg-bg-dark/90";
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+
+    if (!dialog) return;
+
+    if (open && !dialog.open) {
+      dialog.showModal();
+    } else if (!open && dialog.open) {
+      dialog.close();
+    }
+  }, [open]);
 
   return (
-    <FormDialog
-      open={open}
-      title={title}
-      eyebrow={eyebrow}
-      size="sm"
-      busy={busy}
-      onClose={onCancel}
+    <dialog
+      ref={dialogRef}
+      aria-labelledby={titleId}
+      onCancel={(event) => {
+        event.preventDefault();
+
+        if (!busy) {
+          onCancel();
+        }
+      }}
+      onClick={(event) => {
+        if (event.target === dialogRef.current && !busy) {
+          onCancel();
+        }
+      }}
+      className="m-auto w-[min(440px,calc(100%-32px))] max-w-none overflow-hidden rounded-[6px] border-0 bg-white p-0 text-ink shadow-[0_30px_70px_rgba(6,38,27,0.25)] transition-[opacity,scale] duration-200 backdrop:bg-[rgba(6,38,27,0.42)] starting:open:scale-95 starting:open:opacity-0"
     >
-      <div className="space-y-5 p-5 sm:p-6">
-        <div className="text-sm leading-6 text-ink-soft">
-          {description}
-        </div>
+      {open && (
+        <>
+          <div className="px-[26px] pt-[26px] pb-5">
+            <div
+              className={`mb-3.5 grid size-11 place-items-center rounded-full ${
+                tone === "danger"
+                  ? "bg-danger-bg text-danger"
+                  : "bg-mint text-green-800"
+              }`}
+              aria-hidden="true"
+            >
+              <TriangleAlert className="size-5" />
+            </div>
 
-        {error && (
-          <div
-            role="alert"
-            className="border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-800"
-          >
-            {error}
+            {eyebrow && (
+              <p className="text-[11px] leading-[1.2] font-semibold tracking-[0.1em] text-muted-light uppercase">
+                {eyebrow}
+              </p>
+            )}
+
+            <h2
+              id={titleId}
+              className="mt-1 font-serif text-[19px] leading-[1.25] font-bold text-green-900"
+            >
+              {title}
+            </h2>
+
+            <div className="mt-2 text-sm leading-[1.55] text-muted">
+              {description}
+            </div>
+
+            {error && (
+              <div
+                role="alert"
+                className="mt-4 rounded-[4px] border border-[#ebcfc6] bg-danger-bg px-3.5 py-3 text-[13px] text-danger"
+              >
+                {error}
+              </div>
+            )}
           </div>
-        )}
 
-        <footer className="flex flex-col-reverse gap-2 border-t border-paper-line pt-4 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={busy}
-            className="min-h-11 border border-paper-line px-4 py-2 text-sm font-medium transition-colors hover:bg-bg-light-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Batal
-          </button>
+          <footer className="flex justify-end gap-2 border-t border-line bg-mint-50 px-5 py-3.5">
+            <Button variant="outline" onClick={onCancel} disabled={busy}>
+              Batal
+            </Button>
 
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={busy}
-            className={`min-h-11 border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold disabled:cursor-not-allowed disabled:opacity-50 ${confirmButtonStyle}`}
-          >
-            {busy ? busyLabel : confirmLabel}
-          </button>
-        </footer>
-      </div>
-    </FormDialog>
+            <Button
+              variant={tone === "danger" ? "danger" : "solid"}
+              onClick={onConfirm}
+              disabled={busy}
+            >
+              {busy ? busyLabel : confirmLabel}
+            </Button>
+          </footer>
+        </>
+      )}
+    </dialog>
   );
 }

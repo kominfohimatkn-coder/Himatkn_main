@@ -1,200 +1,95 @@
 import type { ReactNode } from "react";
+import {
+  BarChart3,
+  FileText,
+  History,
+  LayoutGrid,
+  ListChecks,
+  Settings,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 
 import {
   PERMISSIONS,
   type PermissionName,
 } from "@/features/auth/permissions";
 
+export type NavGroup = "Utama" | "Konten" | "Organisasi" | "Sistem";
+
 export interface NavItem {
   href: string;
   label: string;
   permission: PermissionName;
+  group: NavGroup;
   icon: ReactNode;
   exact?: boolean;
 }
 
-export function NavIcon({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  return (
-    <span
-      aria-hidden="true"
-      className="flex h-5 w-5 shrink-0 items-center justify-center [&>svg]:h-5 [&>svg]:w-5"
-    >
-      {children}
-    </span>
-  );
-}
+/** Urutan dan pengelompokan mengikuti `ROUTES` di Design/admin/assets/admin.js. */
+export const navGroups: NavGroup[] = ["Utama", "Konten", "Organisasi", "Sistem"];
 
-export const primaryNavItems: NavItem[] = [
+export const navItems: NavItem[] = [
   {
     href: "/admin/dashboard",
     label: "Dashboard",
     permission: PERMISSIONS.DASHBOARD_VIEW,
+    group: "Utama",
     exact: true,
-    icon: (
-      <NavIcon>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <rect x="3" y="3" width="7" height="7" />
-          <rect x="14" y="3" width="7" height="7" />
-          <rect x="3" y="14" width="7" height="7" />
-          <rect x="14" y="14" width="7" height="7" />
-        </svg>
-      </NavIcon>
-    ),
+    icon: <LayoutGrid />,
   },
   {
     href: "/admin/news",
     label: "Publikasi",
     permission: PERMISSIONS.NEWS_VIEW,
-    icon: (
-      <NavIcon>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <path d="M5 4h14v16H5z" />
-          <path d="M8 8h8M8 12h8M8 16h5" />
-        </svg>
-      </NavIcon>
-    ),
+    group: "Konten",
+    icon: <FileText />,
   },
   {
     href: "/admin/programs",
     label: "Program Kerja",
     permission: PERMISSIONS.PROGRAMS_VIEW,
-    icon: (
-      <NavIcon>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <rect x="3" y="5" width="18" height="15" />
-          <path d="M8 5V3h8v2M8 10h8M8 14h5" />
-        </svg>
-      </NavIcon>
-    ),
-  },
-  {
-    href: "/admin/agendas",
-    label: "Agenda",
-    permission: PERMISSIONS.AGENDAS_VIEW,
-    icon: (
-      <NavIcon>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <rect x="3" y="5" width="18" height="16" />
-          <path d="M8 3v4M16 3v4M3 10h18M8 14h3M8 17h6" />
-        </svg>
-      </NavIcon>
-    ),
+    group: "Konten",
+    icon: <ListChecks />,
   },
   {
     href: "/admin/organization",
     label: "Struktur Organisasi",
     permission: PERMISSIONS.ORGANIZATION_VIEW,
-    icon: (
-      <NavIcon>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <circle cx="12" cy="7" r="3" />
-          <path d="M5 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2" />
-          <path d="M5 10a3 3 0 0 0-2 3v2M19 10a3 3 0 0 1 2 3v2" />
-        </svg>
-      </NavIcon>
-    ),
-  },
-  {
-    href: "/admin/documents",
-    label: "Dokumen",
-    permission: PERMISSIONS.DOCUMENTS_VIEW,
-    icon: (
-      <NavIcon>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <path d="M6 3h9l4 4v14H6z" />
-          <path d="M14 3v5h5M9 13h6M9 17h6" />
-        </svg>
-      </NavIcon>
-    ),
-  },
-];
-
-export const managementNavItems: NavItem[] = [
-  {
-    href: "/admin/notifications",
-    label: "Notifikasi",
-    permission: PERMISSIONS.NOTIFICATIONS_VIEW,
-    icon: (
-      <NavIcon>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
-          <path d="M10 21h4" />
-        </svg>
-      </NavIcon>
-    ),
+    group: "Organisasi",
+    icon: <Users />,
   },
   {
     href: "/admin/accounts",
     label: "Administrator",
     permission: PERMISSIONS.ADMINS_VIEW,
-    icon: (
-      <NavIcon>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <circle cx="12" cy="8" r="3" />
-          <path d="M5 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2" />
-          <path d="M17 5h4M19 3v4" />
-        </svg>
-      </NavIcon>
-    ),
+    group: "Sistem",
+    icon: <ShieldCheck />,
   },
   {
     href: "/admin/activity-logs",
-    label: "Activity Logs",
+    label: "Log Aktivitas",
     permission: PERMISSIONS.ACTIVITY_LOGS_VIEW,
-    icon: (
-      <NavIcon>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <path d="M4 4h16v16H4z" />
-          <path d="M8 8h8M8 12h5M8 16h7" />
-        </svg>
-      </NavIcon>
-    ),
+    group: "Sistem",
+    icon: <History />,
   },
   {
     href: "/admin/visitor-logs",
-    label: "Visitor Logs",
+    label: "Statistik Pengunjung",
     permission: PERMISSIONS.VISITOR_LOGS_VIEW,
-    icon: (
-      <NavIcon>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <circle cx="12" cy="12" r="9" />
-          <path d="M3 12h18M12 3c2.2 2.4 3.3 5.4 3.3 9S14.2 18.6 12 21c-2.2-2.4-3.3-5.4-3.3-9S9.8 5.4 12 3Z" />
-        </svg>
-      </NavIcon>
-    ),
+    group: "Sistem",
+    icon: <BarChart3 />,
   },
   {
     href: "/admin/settings",
-    label: "Pengaturan",
+    label: "Pengaturan Situs",
     permission: PERMISSIONS.SETTINGS_VIEW,
-    icon: (
-      <NavIcon>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" />
-          <circle cx="12" cy="12" r="4" />
-        </svg>
-      </NavIcon>
-    ),
+    group: "Sistem",
+    icon: <Settings />,
   },
 ];
 
-export function isItemActive(
-  pathname: string,
-  item: NavItem,
-): boolean {
-  if (item.exact) {
-    return pathname === item.href;
-  }
-
-  return (
-    pathname === item.href ||
-    pathname.startsWith(`${item.href}/`)
-  );
-}
+/** Hanya route yang halamannya sudah ada yang tampil di menu. */
 export const implementedAdminRoutes = new Set([
   "/admin/dashboard",
   "/admin/news",
@@ -204,3 +99,32 @@ export const implementedAdminRoutes = new Set([
   "/admin/account",
   "/admin/settings",
 ]);
+
+export function isItemActive(pathname: string, item: NavItem): boolean {
+  if (item.exact) {
+    return pathname === item.href;
+  }
+
+  return pathname === item.href || pathname.startsWith(`${item.href}/`);
+}
+
+/** Judul halaman untuk breadcrumb topbar. */
+export function pageTitleFor(pathname: string): string {
+  if (pathname === "/admin/account") return "Akun Saya";
+  const item = navItems.find((nav) => isItemActive(pathname, nav));
+  return item?.label ?? "Admin";
+}
+
+/**
+ * Sub-halaman di bawah menu (mis. `/admin/news/new` atau `/admin/news/12`)
+ * untuk breadcrumb "Admin / Publikasi / Baru". `null` bila bukan sub-halaman.
+ */
+export function subPageFor(
+  pathname: string,
+): { parentHref: string; label: string } | null {
+  const item = navItems.find((nav) => isItemActive(pathname, nav));
+  if (!item || pathname === item.href) return null;
+
+  const rest = pathname.slice(item.href.length + 1);
+  return { parentHref: item.href, label: rest === "new" ? "Baru" : "Edit" };
+}
