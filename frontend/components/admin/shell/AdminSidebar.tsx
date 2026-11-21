@@ -1,118 +1,82 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
 
 import { useAuth } from "@/features/auth/AuthContext";
 
 import {
   implementedAdminRoutes,
   isItemActive,
-  managementNavItems,
-  NavIcon,
-  primaryNavItems,
+  navGroups,
+  navItems,
 } from "./admin-navigation";
 
-function getInitial(name: string): string {
-  return name.trim().charAt(0).toUpperCase() || "A";
+/** Logo garis dari `LOGO` di Design/admin/assets/admin.js. */
+export function AdminLogo({ className = "size-7.5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 40 40" aria-hidden="true" className={`shrink-0 ${className}`}>
+      <g fill="none" stroke="#C9D6CF" strokeWidth="2.2">
+        <path d="M20 21 C12 4, 2 8, 4 14 C6 20, 14 21, 20 21Z" />
+        <path d="M20 21 C28 4, 38 8, 36 14 C34 20, 26 21, 20 21Z" />
+        <path d="M20 21 C14 28, 16 38, 20 38 C24 38, 26 28, 20 21Z" />
+      </g>
+      <polygon
+        points="20,16.5 23.5,18.5 23.5,22.5 20,24.5 16.5,22.5 16.5,18.5"
+        fill="#06261B"
+        stroke="#C9D6CF"
+        strokeWidth="1.4"
+      />
+    </svg>
+  );
 }
 
+/** `.sidebar` di Design/admin/assets/admin.css. */
 export function AdminSidebar({
   pathname,
+  periodName,
   onNavigate,
 }: {
   pathname: string;
+  periodName: string | null;
   onNavigate?: () => void;
 }) {
-  const { admin, isSuperadmin, logout } = useAuth();
-  const router = useRouter();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [logoutError, setLogoutError] = useState<string | null>(null);
+  const { can } = useAuth();
 
-  const permissions = useMemo(
-    () => new Set(admin?.permissions ?? []),
-    [admin?.permissions],
+  const visibleItems = navItems.filter(
+    (item) => can(item.permission) && implementedAdminRoutes.has(item.href),
   );
-  
-const visiblePrimaryItems = primaryNavItems.filter(
-  (item) =>
-    permissions.has(item.permission) &&
-    implementedAdminRoutes.has(item.href),
-);
-
-const visibleManagementItems = managementNavItems.filter(
-  (item) =>
-    permissions.has(item.permission) &&
-    implementedAdminRoutes.has(item.href),
-);
-  
-  async function handleLogout() {
-    if (isLoggingOut) return;
-
-    setIsLoggingOut(true);
-    setLogoutError(null);
-
-    try {
-      await logout();
-      router.replace("/login");
-    } catch {
-      setLogoutError(
-        "Logout gagal. Sesi server belum dapat dipastikan berakhir. Silakan coba lagi.",
-      );
-    } finally {
-      setIsLoggingOut(false);
-    }
-  }
-
 
   return (
-    <div className="flex h-full flex-col bg-white">
-      <div className="border-b border-zinc-200 px-5 py-5">
-        <div className="text-sm font-semibold tracking-[0.18em] text-zinc-950">
-          HIMATKN
-        </div>
-        <div className="mt-1 text-[11px] uppercase tracking-[0.18em] text-zinc-400">
-          Admin Panel
-        </div>
-      </div>
+    <div className="flex h-full flex-col bg-green-950 text-white">
+      <Link
+        href="/admin/dashboard"
+        onClick={onNavigate}
+        className="flex items-center gap-3 border-b border-line-on-dark px-5 pt-5 pb-4.5 no-underline"
+      >
+        <AdminLogo />
+        <span>
+          <span className="block font-serif text-[13px] leading-[1.15] font-bold tracking-[0.02em] uppercase">
+            Hima Teknokimia Nuklir
+          </span>
+          <span className="mt-0.75 block text-[11px] leading-[1.3] font-medium tracking-widest text-on-dark-muted uppercase">
+            Panel Admin
+          </span>
+        </span>
+      </Link>
 
-      <div className="flex-1 overflow-y-auto px-3 py-4">
-        <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
-          Workspace
-        </p>
+      <nav aria-label="Navigasi admin" className="flex-1 px-3 pt-3.5 pb-5">
+        {navGroups.map((group) => {
+          const items = visibleItems.filter((item) => item.group === group);
 
-        <nav className="space-y-1">
-          {visiblePrimaryItems.map((item) => {
-            const active = isItemActive(pathname, item);
+          if (items.length === 0) return null;
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onNavigate}
-                className={[
-                  "flex min-h-11 items-center gap-3 border-l-2 px-3 py-2.5 text-sm transition-colors",
-                  active
-                    ? "border-zinc-950 bg-zinc-100 font-medium text-zinc-950"
-                    : "border-transparent text-zinc-500 hover:bg-zinc-50 hover:text-zinc-950",
-                ].join(" ")}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
+          return (
+            <div key={group} className="mt-4.5 first:mt-0">
+              <p className="px-2.5 pb-2 text-[11px] font-semibold tracking-widest text-[#93ACA0] uppercase">
+                {group}
+              </p>
 
-        {visibleManagementItems.length > 0 && (
-          <div className="mt-7">
-            <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400">
-              Management
-            </p>
-
-            <nav className="space-y-1">
-              {visibleManagementItems.map((item) => {
+              {items.map((item) => {
                 const active = isItemActive(pathname, item);
 
                 return (
@@ -120,80 +84,26 @@ const visibleManagementItems = managementNavItems.filter(
                     key={item.href}
                     href={item.href}
                     onClick={onNavigate}
-                    className={[
-                      "flex min-h-11 items-center gap-3 border-l-2 px-3 py-2.5 text-sm transition-colors",
+                    aria-current={active ? "page" : undefined}
+                    className={`relative flex h-9.5 items-center gap-2.75 rounded-sm px-2.5 text-[13.5px] no-underline transition-colors [&_svg]:size-4.25 [&_svg]:shrink-0 ${
                       active
-                        ? "border-zinc-950 bg-zinc-100 font-medium text-zinc-950"
-                        : "border-transparent text-zinc-500 hover:bg-zinc-50 hover:text-zinc-950",
-                    ].join(" ")}
+                        ? "bg-[rgba(227,238,232,0.1)] text-white before:absolute before:top-2 before:bottom-2 before:-left-3 before:w-0.75 before:rounded-r-xs before:bg-mint [&_svg]:opacity-100"
+                        : "text-[#C9D6CF] hover:bg-white/5 hover:text-white [&_svg]:opacity-80"
+                    }`}
                   >
                     {item.icon}
                     <span>{item.label}</span>
                   </Link>
                 );
               })}
-            </nav>
-          </div>
-        )}
-      </div>
+            </div>
+          );
+        })}
+      </nav>
 
-      <div className="border-t border-zinc-200 p-3">
-        <div className="flex items-center gap-3 px-2 py-2">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center bg-zinc-950 text-sm font-semibold text-white">
-            {getInitial(admin?.username ?? "")}
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <Link
-              href="/admin/account"
-              onClick={onNavigate}
-              className="block truncate text-sm font-medium text-zinc-950 underline-offset-4 hover:underline"
-              title="Akun saya"
-            >
-              {admin?.username ?? "Admin"}
-            </Link>
-            <p className="truncate text-xs text-zinc-400">
-              {isSuperadmin ? "Superadmin" : "Pengurus"}
-              <span aria-hidden="true"> · </span>
-              <Link
-                href="/admin/account"
-                onClick={onNavigate}
-                className="underline-offset-4 hover:text-zinc-700 hover:underline"
-              >
-                Akun saya
-              </Link>
-            </p>
-          </div>
-        </div>
-
-        {logoutError && (
-          <p
-            role="alert"
-            className="px-2 pt-2 text-xs leading-relaxed text-red-600"
-          >
-            {logoutError}
-          </p>
-        )}
-
-        <button
-          type="button"
-          onClick={handleLogout}
-          disabled={isLoggingOut}
-          className="mt-2 flex min-h-11 w-full items-center gap-3 px-3 text-sm transition-colors bg-red-700 hover:bg-red-800 text-white! rounded-b-sm disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <NavIcon>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-            >
-              <path d="M9 4H5v16h4M14 8l4 4-4 4M10 12h8" />
-            </svg>
-          </NavIcon>
-
-          <span>{isLoggingOut ? "Keluar..." : "Keluar"}</span>
-        </button>
+      <div className="border-t border-line-on-dark px-5 pt-3.5 pb-4.5 text-xs text-on-dark-muted">
+        Periode aktif{" "}
+        <strong className="text-white">{periodName ?? "belum ada"}</strong>
       </div>
     </div>
   );

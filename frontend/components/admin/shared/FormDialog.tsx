@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useId, useRef, type ReactNode } from "react";
@@ -17,20 +16,18 @@ interface FormDialogProps {
   children: ReactNode;
 }
 
+/**
+ * Panel geser dari kanan, mengikuti `.drawer` di Design/admin/assets/admin.css.
+ * Nama dan props tetap sama dengan dialog lama agar semua pemakai tidak berubah.
+ * Memakai <dialog> + showModal() sehingga fokus terkunci di dalam panel,
+ * Escape menutup, dan konten di belakang tidak bisa diklik.
+ */
 const sizeClasses: Record<DialogSize, string> = {
-  sm: "sm:max-w-md",
-  md: "sm:max-w-xl",
-  lg: "sm:max-w-3xl",
-  xl: "sm:max-w-5xl",
+  sm: "w-[min(440px,100%)]",
+  md: "w-[min(520px,100%)]",
+  lg: "w-[min(680px,100%)]",
+  xl: "w-[min(860px,100%)]",
 };
-
-const dialogBase =
-  "m-auto flex max-h-[calc(100dvh-1.5rem)] " +
-  "w-[calc(100%-1.5rem)] max-w-none flex-col " +
-  "overflow-hidden border border-paper-line " +
-  "bg-bg-light p-0 text-ink shadow-2xl " +
-  "backdrop:bg-bg-dark/50 " +
-  "sm:max-h-[90dvh] sm:w-[calc(100%-3rem)]";
 
 export default function FormDialog({
   open,
@@ -82,28 +79,25 @@ export default function FormDialog({
         }
       }}
       onClick={(event) => {
-        if (
-          event.target === dialogRef.current &&
-          !busy
-        ) {
+        if (event.target === dialogRef.current && !busy) {
           onClose();
         }
       }}
-      className={`${dialogBase} ${sizeClasses[size]}`}
+      className={`fixed inset-y-0 right-0 left-auto m-0 h-dvh max-h-none max-w-none flex-col overflow-hidden border-0 bg-[#fbfdfc] p-0 text-ink shadow-[-20px_0_50px_rgba(6,38,27,0.15)] transition-[translate] duration-300 ease-[cubic-bezier(.16,1,.3,1)] backdrop:bg-[rgba(6,38,27,0.42)] open:flex starting:open:translate-x-full ${sizeClasses[size]}`}
     >
       {open && (
         <>
-          <header className="flex shrink-0 items-start justify-between gap-4 border-b border-paper-line px-5 py-5 sm:px-7">
+          <header className="flex shrink-0 items-start justify-between gap-3 border-b border-line px-6 pt-[22px] pb-[18px]">
             <div className="min-w-0">
               {eyebrow && (
-                <p className="text-xs font-semibold uppercase tracking-widest text-gold">
+                <p className="text-[11px] leading-[1.2] font-semibold tracking-[0.1em] text-green-700 uppercase">
                   {eyebrow}
                 </p>
               )}
 
               <h2
                 id={titleId}
-                className="mt-1 font-serif text-xl font-semibold text-bg-dark sm:text-2xl"
+                className="mt-1.5 font-serif text-xl leading-[1.25] font-bold text-green-900"
               >
                 {title}
               </h2>
@@ -111,7 +105,7 @@ export default function FormDialog({
               {description && (
                 <p
                   id={descriptionId}
-                  className="mt-2 text-sm leading-6 text-ink-soft"
+                  className="mt-1.5 text-[13px] leading-[1.55] text-muted"
                 >
                   {description}
                 </p>
@@ -122,16 +116,14 @@ export default function FormDialog({
               type="button"
               onClick={onClose}
               disabled={busy}
-              aria-label="Tutup dialog"
-              className="inline-flex size-10 shrink-0 items-center justify-center border border-paper-line text-ink-soft transition-colors hover:bg-bg-light-2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Tutup panel"
+              className="grid size-[38px] shrink-0 cursor-pointer place-items-center rounded-[4px] text-muted transition-colors hover:bg-mint-50 hover:text-green-900 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <X aria-hidden="true" size={20} />
+              <X aria-hidden="true" className="size-[19px]" />
             </button>
           </header>
 
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            {children}
-          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
         </>
       )}
     </dialog>
