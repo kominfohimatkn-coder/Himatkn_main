@@ -1,45 +1,35 @@
 import type { Metadata } from "next";
-import Image from "next/image";
-import { ArrowRight, CalendarDays, ExternalLink } from "lucide-react";
+import { CalendarDays, TriangleAlert } from "lucide-react";
 
+import { PublicHeroImage } from "@/components/public/PublicHeroImage";
 import { OrganizationSection } from "@/features/organization/components/OrganizationSection";
 import { PublicationsSection } from "@/features/news/components/public/PublicationsSection";
-import {
-  PublicButtonAnchor,
-  PublicButtonLink,
-} from "@/components/public/PublicButton";
+import { PublicButtonLink } from "@/components/public/PublicButton";
 import { PublicLabel } from "@/components/public/PublicLabel";
 import { PublicStateBox } from "@/components/public/PublicStateBox";
-import { PUBLIC_LINKS } from "@/features/settings/links";
+import { RefreshButton } from "@/components/public/RefreshButton";
+import { getPublicLinks } from "@/features/settings/links";
+import {
+  loadPublicSettings,
+  resolvePublicSettings,
+} from "@/features/settings/public-api";
 import { getPublicNews } from "@/features/news/public-api";
+import { getPublicPrograms } from "@/features/programs/public-api";
+import { ProgramList } from "@/features/programs/components/public/ProgramList";
 import { loadPublicOrganization } from "@/features/organization/public-api";
 import type { PublicNewsItem } from "@/features/news/types";
+import type { PublicProgram } from "@/features/programs/types";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Beranda",
-  description:
-    "Website resmi HIMATKN, himpunan mahasiswa Teknokimia Nuklir.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = resolvePublicSettings(await loadPublicSettings());
 
-const pillars = [
-  {
-    title: "Akademik",
-    description:
-      "Ruang belajar bersama untuk memahami mata kuliah inti dan saling membantu antaranggota.",
-  },
-  {
-    title: "Riset",
-    description:
-      "Wadah untuk mengembangkan ide, mendokumentasikan proses, dan membagikan hasil karya.",
-  },
-  {
-    title: "Komunitas",
-    description:
-      "Kegiatan yang menghubungkan mahasiswa lintas angkatan dalam lingkungan yang inklusif.",
-  },
-];
+  return {
+    title: "Beranda",
+    description: `Website resmi ${settings.brand_name}.`,
+  };
+}
 
 async function loadLatestNews(): Promise<{
   items: PublicNewsItem[];
@@ -68,31 +58,89 @@ async function loadLatestNews(): Promise<{
   }
 }
 
+async function loadLatestPrograms(): Promise<{
+  items: PublicProgram[];
+  hasError: boolean;
+}> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+
+  try {
+    const response = await getPublicPrograms({
+      limit: 3,
+      signal: controller.signal,
+    });
+
+    return {
+      items: response.items.slice(0, 3),
+      hasError: false,
+    };
+  } catch {
+    return {
+      items: [],
+      hasError: true,
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export default async function HomePage() {
-  const [news, organization] = await Promise.all([
+  const [news, organization, programs, settingsResult] = await Promise.all([
     loadLatestNews(),
     loadPublicOrganization(),
+    loadLatestPrograms(),
+    loadPublicSettings(),
   ]);
 
+  const settings = resolvePublicSettings(settingsResult);
+  const links = getPublicLinks(settings);
   const period = organization.data?.period ?? null;
+  const divisionCount = organization.data?.divisions.length ?? 0;
   const memberCount = organization.data?.members.length ?? 0;
+  const heroImageAlt =
+    settings.hero_image_alt.trim() || "Mahasiswa berfoto bersama";
+
+  const heroStats = [
+    period ? { value: period.name, label: "Periode aktif" } : null,
+    divisionCount > 0
+      ? { value: String(divisionCount), label: "Divisi" }
+      : null,
+    memberCount > 0 ? { value: String(memberCount), label: "Anggota" } : null,
+  ].filter((stat): stat is { value: string; label: string } => stat !== null);
+
+  const pillars = [
+    {
+      tag: settings.about_item_1_tag,
+      title: settings.about_item_1_title,
+      description: settings.about_item_1_description,
+    },
+    {
+      tag: settings.about_item_2_tag,
+      title: settings.about_item_2_title,
+      description: settings.about_item_2_description,
+    },
+    {
+      tag: settings.about_item_3_tag,
+      title: settings.about_item_3_title,
+      description: settings.about_item_3_description,
+    },
+  ].filter((pillar) => pillar.title.trim() !== "");
 
   return (
     <>
       <section
         id="beranda"
         className="relative flex min-h-163.5 flex-col justify-center overflow-hidden bg-[#2F3D36] max-[640px]:min-h-155"
-        aria-labelledby="home-title"
+        aria-labelledby="hero-title"
       >
-        <div className="absolute inset-0" aria-hidden="true">
-          <Image
-            src="/images/hero-group.jpg"
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-[center_42%]"
-          />
+        <div className="absolute inset-0">
+          <PublicHeroImage
+            key={settings.hero_image || "static-hero"}
+            src={settings.hero_image}
+            alt={heroImageAlt}
+            className="size-full! object-cover object-center"
+            />
         </div>
         <div
           className="absolute inset-0 bg-[rgba(15,40,30,0.55)] max-[640px]:bg-[linear-gradient(180deg,rgba(15,40,30,0.38)_0%,rgba(15,40,30,0.66)_45%,rgba(15,40,30,0.42)_100%)]"
@@ -101,54 +149,55 @@ export default async function HomePage() {
 
         <div className="site-container relative z-10 pt-30 pb-10 text-white max-[640px]:pt-35 max-[640px]:pb-37.5 max-[640px]:text-center">
           <h1
-            id="home-title"
+            id="hero-title"
             className="font-serif text-[clamp(36px,3.6vw,56px)] leading-[1.12] font-bold text-white max-[640px]:text-[38px] max-[640px]:leading-[1.18]"
           >
-            Himpunan Mahasiswa{" "}
-            <em className="block italic">Teknokimia Nuklir</em>
+            {settings.hero_title}{" "}
+            {settings.hero_emphasis ? (
+              <em className="block italic">{settings.hero_emphasis}</em>
+            ) : null}
           </h1>
-          <p className="mt-4.5 text-base text-white/90 max-[640px]:mx-auto max-[640px]:mt-1.5 max-[640px]:max-w-[22ch] max-[640px]:text-[15px]">
-            {period?.name ?? "HIMATKN"} — Beyond Chemistry Into Energy
-          </p>
-          <div className="mt-6.5 flex flex-wrap gap-3 max-[640px]:mt-5.5 max-[640px]:flex-nowrap max-[640px]:justify-center max-[640px]:gap-2">
-            <PublicButtonLink
-              href="#program"
-              tone="white"
-              className="max-[640px]:max-w-41.25 max-[640px]:flex-1 max-[640px]:whitespace-nowrap"
-            >
-              Lihat program kerja
-              <ArrowRight
-                className="size-4 max-[640px]:hidden"
-                aria-hidden="true"
-              />
-            </PublicButtonLink>
-            <PublicButtonLink
-              href="/struktur"
-              tone="outlineWhite"
-              className="max-[640px]:max-w-41.25 max-[640px]:flex-1 max-[640px]:whitespace-nowrap"
-            >
-              Kenali pengurus
-            </PublicButtonLink>
+          {settings.hero_description ? (
+            <p className="mt-[18px] text-base text-white/[0.88] max-[640px]:mx-auto max-[640px]:mt-1.5 max-[640px]:max-w-[22ch] max-[640px]:text-[15px]">
+              {settings.hero_description}
+            </p>
+          ) : null}
+          <div className="mt-[26px] flex flex-wrap gap-3 max-[640px]:mt-[22px] max-[640px]:flex-nowrap max-[640px]:justify-center max-[640px]:gap-2">
+            {settings.hero_primary_label ? (
+              <PublicButtonLink
+                href="/program"
+                tone="white"
+                className="max-[640px]:max-w-[165px] max-[640px]:flex-1 max-[640px]:px-3.5 max-[640px]:py-[13px] max-[640px]:text-[10.5px] max-[640px]:tracking-[0.06em] max-[640px]:whitespace-nowrap"
+              >
+                {settings.hero_primary_label}
+                <span aria-hidden="true" className="max-[640px]:hidden">
+                  ↗
+                </span>
+              </PublicButtonLink>
+            ) : null}
+            {settings.hero_secondary_label ? (
+              <PublicButtonLink
+                href="/struktur"
+                tone="outlineWhite"
+                className="max-[640px]:max-w-[165px] max-[640px]:flex-1 max-[640px]:px-3.5 max-[640px]:py-[13px] max-[640px]:text-[10.5px] max-[640px]:tracking-[0.06em] max-[640px]:whitespace-nowrap"
+              >
+                {settings.hero_secondary_label}
+              </PublicButtonLink>
+            ) : null}
           </div>
 
-          {period ? (
-            <div className="mt-27.5 flex max-w-228.75 gap-14 border-t border-white/45 pt-4 max-[640px]:hidden">
-              <div>
-                <strong className="block font-serif text-[13px] font-bold tracking-[0.04em] uppercase">
-                  {period.name}
-                </strong>
-                <span className="mt-1 block text-[10px] font-medium tracking-[0.08em] text-white/75 uppercase">
-                  Periode aktif
-                </span>
-              </div>
-              <div>
-                <strong className="block font-serif text-[13px] font-bold tracking-[0.04em] uppercase">
-                  {memberCount}
-                </strong>
-                <span className="mt-1 block text-[10px] font-medium tracking-[0.08em] text-white/75 uppercase">
-                  Anggota
-                </span>
-              </div>
+          {heroStats.length > 0 ? (
+            <div className="mt-[110px] flex max-w-[915px] gap-14 border-t border-white/45 pt-4 max-[640px]:hidden">
+              {heroStats.map((stat) => (
+                <div key={stat.label}>
+                  <strong className="block font-serif text-[13px] font-bold tracking-[0.04em] uppercase">
+                    {stat.value}
+                  </strong>
+                  <span className="mt-1 block text-[10px] font-medium tracking-[0.08em] text-white/75 uppercase">
+                    {stat.label}
+                  </span>
+                </div>
+              ))}
             </div>
           ) : null}
         </div>
@@ -157,34 +206,45 @@ export default async function HomePage() {
       <section
         id="tentang"
         className="bg-mint py-24 max-[640px]:py-18"
-        aria-labelledby="about-title"
+        aria-labelledby="tentang-title"
       >
         <div className="site-container grid gap-10 min-[961px]:grid-cols-[1fr_1.25fr] min-[961px]:gap-16">
           <div>
-            <PublicLabel>Tentang kami</PublicLabel>
+            {settings.about_eyebrow ? (
+              <PublicLabel>{settings.about_eyebrow}</PublicLabel>
+            ) : null}
             <h2
-              id="about-title"
+              id="tentang-title"
               className="mt-3.5 font-serif text-[clamp(28px,2.6vw,34px)] leading-[1.32] font-bold text-green-900"
             >
-              Ruang untuk benar-benar paham apa yang kami pelajari.
+              {settings.about_title}
             </h2>
-            <p className="mt-5.5 max-w-[46ch] text-base text-muted">
-              HIMATKN adalah himpunan mahasiswa Teknokimia Nuklir. Kami
-              menghubungkan pembelajaran, riset, dan komunitas dalam satu ruang
-              gerak organisasi.
-            </p>
+            {settings.about_description ? (
+              <p className="mt-5.5 max-w-[46ch] text-base text-muted">
+                {settings.about_description}
+              </p>
+            ) : null}
           </div>
 
           <ul className="border-t border-[#C9D7CF]">
             {pillars.map((pillar) => (
               <li
-                key={pillar.title}
-                className="grid grid-cols-[110px_1fr] gap-4 border-b border-[#C9D7CF] py-6.5 max-[640px]:grid-cols-1 max-[640px]:gap-1.5 max-[640px]:py-5.5"
+                key={`${pillar.tag}-${pillar.title}`}
+                className="grid grid-cols-[110px_1fr] gap-4 border-b border-[#C9D7CF] py-[26px] max-[640px]:grid-cols-1 max-[640px]:gap-1.5 max-[640px]:py-[22px]"
               >
-                <PublicLabel className="pt-1.25 max-[640px]:pt-0">
-                  {pillar.title}
-                </PublicLabel>
-                <p className="text-sm text-muted">{pillar.description}</p>
+                <span className="text-[11px] font-medium tracking-[0.1em] text-green-700 uppercase">
+                  {pillar.tag}
+                </span>
+                <div>
+                  <h3 className="font-serif text-[17px] leading-snug font-bold text-green-900 max-[640px]:text-base">
+                    {pillar.title}
+                  </h3>
+                  {pillar.description ? (
+                    <p className="mt-2 text-sm text-muted">
+                      {pillar.description}
+                    </p>
+                  ) : null}
+                </div>
               </li>
             ))}
           </ul>
@@ -192,55 +252,77 @@ export default async function HomePage() {
       </section>
 
       <section
-        id="program"
+        id="program-kerja"
         className="border-t border-line bg-paper py-24 max-[640px]:py-18"
-        aria-labelledby="program-title"
+        aria-labelledby="proker-title"
       >
         <div className="site-container">
-          <div className="max-w-140">
-            <PublicLabel>Program kerja</PublicLabel>
+          <div>
+            {settings.program_eyebrow ? (
+              <PublicLabel>{settings.program_eyebrow}</PublicLabel>
+            ) : null}
             <h2
-              id="program-title"
+              id="proker-title"
               className="mt-3.5 font-serif text-[clamp(26px,2.6vw,34px)] leading-tight font-bold text-green-900"
             >
-              Inisiatif dan agenda strategis HIMATKN
+              {settings.program_title}
             </h2>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-ink-soft">
-              Program kerja resmi akan tampil di sini setelah daftar kegiatannya
-              siap dipublikasikan.
-            </p>
           </div>
 
-          <PublicStateBox
-            icon={<CalendarDays className="size-5.5" />}
-            label="Program kerja"
-            title="Belum ada program kerja"
-            action={
-              <PublicButtonAnchor
-                href={PUBLIC_LINKS.instagram.href}
-                target={PUBLIC_LINKS.instagram.target}
-                rel={PUBLIC_LINKS.instagram.rel}
-                tone="outline"
-              >
-                Buka Instagram
-                <ExternalLink className="size-4" aria-hidden="true" />
-                <span className="sr-only">
-                  (membuka Instagram di tab baru)
-                </span>
-              </PublicButtonAnchor>
-            }
-          >
-            Kami tidak menampilkan contoh agenda sebagai data resmi. Ikuti
-            Instagram @himatknuklir untuk kabar kegiatan terbaru.
-          </PublicStateBox>
+          {programs.hasError ? (
+            <PublicStateBox
+              tone="error"
+              icon={<TriangleAlert className="size-5.5" />}
+              label="Gagal memuat"
+              title="Program kerja tidak dapat ditampilkan"
+              action={<RefreshButton />}
+            >
+              Terjadi gangguan saat mengambil data. Periksa koneksi internet,
+              lalu coba lagi.
+            </PublicStateBox>
+          ) : programs.items.length === 0 ? (
+            <PublicStateBox
+              icon={<CalendarDays className="size-5.5" />}
+              label="Program kerja"
+              title={settings.program_empty_text}
+            >
+              Program kerja periode aktif akan tampil di sini setelah
+              dipublikasikan.
+            </PublicStateBox>
+          ) : (
+            <ProgramList
+              programs={programs.items}
+              brandName={settings.brand_name}
+            />
+          )}
+
+          {programs.hasError ? null : (
+            <div className="mt-10 flex justify-center">
+              <PublicButtonLink href="/program" tone="outline">
+                Lihat Semua Program Kerja →
+              </PublicButtonLink>
+            </div>
+          )}
         </div>
       </section>
 
-      <PublicationsSection items={news.items} hasError={news.hasError} />
+      <PublicationsSection
+        items={news.items}
+        hasError={news.hasError}
+        eyebrow={settings.news_eyebrow}
+        title={settings.news_title}
+        emptyText={settings.news_empty_text}
+        instagram={links.instagram}
+      />
 
       <OrganizationSection
         data={organization.data}
         hasError={organization.hasError}
+        eyebrow={settings.structure_eyebrow}
+        title={settings.structure_title}
+        description={settings.structure_description}
+        note={settings.structure_note}
+        buttonLabel={settings.structure_button_label}
       />
     </>
   );

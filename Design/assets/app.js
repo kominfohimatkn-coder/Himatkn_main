@@ -1,9 +1,9 @@
 /* HIMATKN — data + render state.
    Atur state lewat URL, contoh: index.html?proker=empty&news=loading&map=error
-   proker / news / struktur / soal = filled | empty | loading | error
+   proker / news / struktur / dokumen = filled | empty | loading | error
    loading = all  → seluruh bagian web dalam keadaan memuat
    delay = <ms>   → lama simulasi jaringan (default 650, 0 = tanpa jeda)
-   map = ok | error · menu = open · header = scrolled · panel = off · q = kata kunci */
+   map = ok | error · menu = open · info = open (dropdown Informasi) · header = scrolled · panel = off · q = kata kunci */
 
 const LOREM = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
 
@@ -34,14 +34,12 @@ const DATA = {
     { id: "minfo-sosmas", name: "Minfo & Sosmas", kind: "Divisi", desc: "Mengerjakan media informasi digital serta program pengabdian masyarakat.", members: [] },
     { id: "hubungan-alumni", name: "Hubungan Alumni", kind: "Divisi", desc: "Menghubungkan anggota aktif dengan jaringan alumni.", members: [] }
   ],
-  // CONTOH — ganti dengan daftar mata kuliah & file asli
-  soal: [
-    { id: "kimia-dasar", name: "Kimia Dasar", sem: 1, files: ["UTS 2025", "UAS 2025", "UAS 2024"] },
-    { id: "fisika-dasar", name: "Fisika Dasar", sem: 1, files: ["UTS 2025", "UAS 2025"] },
-    { id: "kalkulus", name: "Kalkulus", sem: 1, files: ["UTS 2025", "UAS 2024"] },
-    { id: "kimia-analitik", name: "Kimia Analitik", sem: 3, files: ["UTS 2025", "UAS 2025"] },
-    { id: "fisika-nuklir", name: "Fisika Nuklir Dasar", sem: 3, files: ["UTS 2025"] },
-    { id: "proteksi-radiasi", name: "Proteksi Radiasi", sem: 5, files: ["UTS 2025", "UAS 2024"] }
+  // CONTOH — judul, keterangan, dan ukuran masih dummy; ganti dengan dokumen asli
+  dokumen: [
+    { id: "ad", title: "Anggaran Dasar HIMATKN", category: "Konstitusi", desc: "Dasar organisasi: nama, asas, tujuan, keanggotaan, dan struktur himpunan.", size: "1,2 MB", updated: "2026-02-10", file: "#" },
+    { id: "art", title: "Anggaran Rumah Tangga HIMATKN", category: "Konstitusi", desc: "Aturan pelaksanaan Anggaran Dasar, termasuk hak dan kewajiban anggota.", size: "980 KB", updated: "2026-02-10", file: "#" },
+    { id: "gbho", title: "Garis Besar Haluan Organisasi", category: "Pedoman", desc: "Arah kerja dan program jangka panjang himpunan untuk setiap kepengurusan.", size: "1,6 MB", updated: "2026-03-02", file: "#" },
+    { id: "sop", title: "Pedoman Administrasi Kesekretariatan", category: "Pedoman", desc: "Tata naskah surat, penomoran, dan pengarsipan dokumen himpunan.", size: "2,4 MB", updated: "2026-03-15", file: "#" }
   ]
 };
 
@@ -264,26 +262,31 @@ function renderStruktur() {
   draw();
 }
 
-/* ---------- Bank soal ---------- */
-function renderSoal() {
-  const el = $("#soal-list"); if (!el) return;
-  const q = $("#soal-q"), sem = $("#soal-sem");
-  if (params.get("q")) q.value = params.get("q");
-  const skel = `<div class="soal-grid" aria-hidden="true">${'<div class="soal"><div class="skel" style="width:60%;height:16px"></div><div class="skel" style="width:30%;height:11px"></div><div class="skel" style="width:100%;height:50px;margin-top:8px"></div></div>'.repeat(6)}</div>`;
-  const draw = (delay = DELAY) => load(el, skel, () => {
-    const m = mode("soal");
-    if (m === "error") return (el.innerHTML = `<div style="margin-top:32px">${errorBox("Bank soal")}</div>`);
-    if (m === "empty") return (el.innerHTML = `<div style="margin-top:32px">${stateBox({ icon: "doc", label: "Bank soal", title: "Bank soal belum tersedia", text: "Divisi Reaksi sedang mengumpulkan arsip soal ujian. Punya soal tahun lalu? Kirimkan ke himatknuklir@gmail.com.", action: `<a class="btn btn--outline" href="mailto:himatknuklir@gmail.com">Kirim soal</a>` })}</div>`);
-    const term = q.value.trim(), s = sem.value;
-    const items = DATA.soal.filter((c) => (!term || norm(c.name).includes(norm(term))) && (s === "all" || String(c.sem) === s));
-    el.innerHTML = items.length
-      ? `<div class="soal-grid">${items.map((c) => `<article class="soal"><h3>${mark(c.name, term)}</h3><p class="meta">Semester ${c.sem} · ${c.files.length} berkas</p><ul class="soal__files">${c.files.map((f) => `<li><a href="#" download>${f} (PDF)</a></li>`).join("")}</ul></article>`).join("")}</div>`
-      : `<div style="margin-top:32px">${stateBox({ icon: "search", label: "Pencarian", title: `Tidak ada hasil untuk “${esc(term || "filter ini")}”`, text: "Periksa ejaan nama mata kuliah, atau pilih semester lain.", action: `<button class="btn btn--outline" type="button" id="soal-reset">Reset pencarian</button>` })}</div>`;
-    $("#soal-reset")?.addEventListener("click", () => { q.value = ""; sem.value = "all"; draw(220); });
-  }, { key: "soal", delay });
-  let t; q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => draw(220), 250); });
-  sem.addEventListener("change", () => draw(220));
-  draw();
+/* ---------- Dokumen ---------- */
+function docItem(d) {
+  return `<article class="doc">
+  <div class="doc__icon" aria-hidden="true">${ICON.doc}<span>PDF</span></div>
+  <div class="doc__body">
+    <p class="label">${esc(d.category)}</p>
+    <h3>${esc(d.title)}</h3>
+    <p class="doc__desc">${esc(d.desc)}</p>
+    <p class="doc__meta">PDF · ${esc(d.size)} · Diperbarui ${fmt(d.updated)}</p>
+    <div class="doc__actions">
+      <a class="btn btn--outline btn--sm" href="${d.file}" target="_blank" rel="noopener" aria-label="Lihat ${esc(d.title)} (PDF, tab baru)">Lihat <span aria-hidden="true">↗</span></a>
+      <a class="btn btn--solid btn--sm" href="${d.file}" download aria-label="Unduh ${esc(d.title)} (PDF, ${esc(d.size)})">Unduh</a>
+    </div>
+  </div>
+</article>`;
+}
+function renderDokumen() {
+  const el = $("#dokumen-list"); if (!el) return;
+  const skel = `<div class="docs" aria-hidden="true">${'<div class="doc"><div class="skel" style="width:44px;height:54px"></div><div class="doc__body"><div class="skel" style="width:30%;height:11px"></div><div class="skel" style="width:70%;height:18px;margin-top:10px"></div><div class="skel" style="width:100%;height:36px;margin-top:10px"></div><div class="skel" style="width:45%;height:11px;margin-top:10px"></div></div></div>'.repeat(4)}</div>`;
+  load(el, skel, () => {
+    const m = mode("dokumen");
+    if (m === "error") return (el.innerHTML = errorBox("Dokumen"));
+    if (m === "empty") return (el.innerHTML = stateBox({ icon: "doc", label: "Dokumen", title: "Belum ada dokumen", text: "Dokumen resmi HIMATKN akan tersedia di sini. Butuh dokumen tertentu? Hubungi himatknuklir@gmail.com.", action: `<a class="btn btn--outline" href="mailto:himatknuklir@gmail.com">Hubungi kami</a>` }));
+    el.innerHTML = `<div class="docs">${DATA.dokumen.map(docItem).join("")}</div>`;
+  }, { key: "dokumen" });
 }
 
 /* ---------- Artikel (detail proker / berita) ---------- */
@@ -330,7 +333,7 @@ function watchImages(root = document) {
 
 /* ---------- Reveal saat scroll ---------- */
 function initReveal() {
-  const targets = $$(".sec-head, .about > div, .pillar, .struct-head, .struct-stats, .struct-foot, .sec-foot, .page-title, .page-intro, .page-rule, .seg, .picker, .search, .toolbar, .footer-top, .footer-map");
+  const targets = $$(".sec-head, .about > div, .pillar, .struct-head, .struct-stats, .struct-foot, .sec-foot, .page-title, .page-intro, .page-rule, .seg, .picker, .search, .footer-top, .footer-map");
   if (!("IntersectionObserver" in window) || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const io = new IntersectionObserver((entries) => entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("is-in"); io.unobserve(e.target); } }), { rootMargin: "0px 0px -8% 0px" });
   targets.forEach((el) => {
@@ -351,6 +354,20 @@ function initChrome() {
   $$(".mobile-nav a").forEach((a) => a.addEventListener("click", () => set(false)));
   addEventListener("keydown", (e) => e.key === "Escape" && set(false));
   if (params.get("menu") === "open") set(true);
+
+  // Dropdown "Informasi": buka saat hover (desktop) atau klik/Enter (sentuh & keyboard)
+  $$(".nav__group").forEach((g) => {
+    const t = g.querySelector(".nav__trigger");
+    const open = (o) => { g.classList.toggle("is-open", o); t.setAttribute("aria-expanded", o); };
+    t.addEventListener("click", () => open(!g.classList.contains("is-open")));
+    g.addEventListener("mouseenter", () => open(true));
+    g.addEventListener("mouseleave", () => open(false));
+    g.addEventListener("focusout", (e) => { if (!g.contains(e.relatedTarget)) open(false); });
+    document.addEventListener("click", (e) => { if (!g.contains(e.target)) open(false); });
+    addEventListener("keydown", (e) => { if (e.key === "Escape" && g.classList.contains("is-open")) { open(false); t.focus(); } });
+    if (g.querySelector('[aria-current="page"]')) t.classList.add("is-current");
+    if (params.get("info") === "open") open(true);
+  });
 
   const map = $(".map");
   if (map) {
@@ -377,8 +394,8 @@ function initPanel() {
   if (params.get("panel") === "off" || document.body.dataset.panel === "off") return;
   const keys = (document.body.dataset.states || "").split(" ").filter(Boolean);
   const opts = { loading: ["off", "all"], proker: ["filled", "empty", "loading", "error"], news: ["filled", "empty", "loading", "error"], struktur: ["filled", "empty", "loading", "error"],
-    soal: ["filled", "empty", "loading", "error"], map: ["ok", "error"], menu: ["closed", "open"] };
-  const names = { loading: "Loading semua", proker: "Program kerja", news: "Publikasi", struktur: "Struktur", soal: "Bank soal", map: "Peta", menu: "Menu mobile" };
+    dokumen: ["filled", "empty", "loading", "error"], map: ["ok", "error"], menu: ["closed", "open"] };
+  const names = { loading: "Loading semua", proker: "Program kerja", news: "Publikasi", struktur: "Struktur", dokumen: "Dokumen", map: "Peta", menu: "Menu mobile" };
   const p = document.createElement("details");
   p.className = "state-panel";
   p.innerHTML = `<summary>State UI</summary><div class="body">${["loading", ...keys, "map", "menu"].map((k) => `<label>${names[k]}<select data-k="${k}">${opts[k].map((o) => `<option ${o === (params.get(k) || opts[k][0]) ? "selected" : ""}>${o}</option>`).join("")}</select></label>`).join("")}<small>Hanya untuk review. Sembunyikan: ?panel=off · tanpa jeda: ?delay=0</small></div>`;
@@ -394,7 +411,7 @@ document.addEventListener("DOMContentLoaded", () => {
   renderKegiatan();
   renderPublikasi();
   renderStruktur();
-  renderSoal();
+  renderDokumen();
   renderArtikel();
   initReveal();
   initPanel();

@@ -167,6 +167,7 @@
    GLOBAL RESET
    ========================================================= */
 
+@layer base {
 *,
 *::before,
 *::after {
@@ -267,6 +268,7 @@ textarea::placeholder {
   color: var(--ink-soft);
   opacity: 0.8;
 }
+} /* end @layer base */
 
 /* =========================================================
    PUBLIC SCOPE — TOKEN PROTOTYPE V1

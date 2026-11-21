@@ -14,11 +14,12 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 
 ## 1. Current Project State
 
-> Terakhir diperbarui: 18 November 2026 (Batch ACC — halaman Administrator dan Akun saya selesai di working tree). Perbarui bagian ini pada setiap batch.
+> Terakhir diperbarui: 20 November 2026 (Batch D-HOME — beranda, header, dan footer publik disamakan dengan prototype di working tree). Perbarui bagian ini pada setiap batch.
 
 ### a. Snapshot repository
 
 - Branch: `feat/admin-ui-foundation`.
+- HEAD terverifikasi saat Batch D-HOME: `3444ed4` (`feat(frontend): wire public pages to site settings and programs (PUB-W)`, sudah di-commit pemilik). Perubahan D-HOME berada di working tree dan belum di-commit.
 - HEAD terverifikasi saat Batch API-B3d: `4deb3f4` (`style(frontend): canonical tailwind classes`, sudah di-commit pemilik). B3c kemudian di-commit pemilik sebagai `7f13f03`; perubahan B3d masih berada di working tree dan belum di-commit.
 - HEAD terverifikasi saat Batch API-B3c: `4deb3f4`. B3c kemudian di-commit pemilik sebagai `7f13f03`.
 - HEAD terverifikasi saat Batch API-B3b: `f80ecfb` (B3a). B3b kemudian di-commit pemilik sebagai `35188af`.
@@ -41,17 +42,21 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 - Batch B3a (17 Nov) menambahkan `PUT` dan `DELETE /admin/organization/periods/{id}` serta validasi tanggal pada create/update periode. Sudah di-commit pemilik sebagai `f80ecfb`; **belum di-deploy**.
 - Batch B3b (17 Nov) menambahkan CRUD divisi (`POST`/`PUT`/`DELETE /admin/organization/divisions`), salin divisi antarperiode (`POST /admin/organization/periods/{id}/divisions/copy`), perbaikan bug audit CRUD anggota (`request=request` → `ip_address`/`user_agent`), dan pengurutan `GET /divisions` berdasarkan `sort_order` lalu `id`. Sudah di-commit pemilik sebagai `35188af`; **belum di-deploy**.
 - Batch B3c (17 Nov) menambahkan `POST /api/v1/auth/change-password` (login + CSRF, tanpa permission tambahan) yang memverifikasi kata sandi lama, menyimpan hash baru, mencabut semua sesi lain milik admin yang sama, mempertahankan sesi saat ini, dan menulis audit `admin.password_change` tanpa menyimpan kata sandi. Sudah di-commit pemilik sebagai `7f13f03`; **belum di-deploy**.
-- Batch B3d (17 Nov) menambahkan setting `hero_image` (tipe `image`) dan `hero_image_alt` (text 200) sehingga registry menjadi **47 key**; validasi storage key gambar V2 + normalisasi path media, `preview_url` di admin settings hanya untuk tipe image, `GET /public/settings` mengirim `hero_image` sebagai path media, dokumentasi `Backend/docs/ORGANIZATION_API.md`, dan regenerasi `Backend/routes.txt` (71 baris). Perubahan berada di working tree; **belum di-commit dan belum di-deploy**.
+- Batch B3d (17 Nov) menambahkan setting `hero_image` (tipe `image`) dan `hero_image_alt` (text 200) sehingga registry menjadi **47 key**; validasi storage key gambar V2 + normalisasi path media, `preview_url` di admin settings hanya untuk tipe image, `GET /public/settings` mengirim `hero_image` sebagai path media, dokumentasi `Backend/docs/ORGANIZATION_API.md`, dan regenerasi `Backend/routes.txt` (71 baris). Sudah di-commit pemilik sebagai `b034d45`; **belum di-deploy**.
 - **API-B3 selesai** (B3a–B3d). Frontend kini sinkron sejak F2b: 47 key termasuk `hero_image`/`hero_image_alt`; hero homepage tetap memakai aset statis sampai R3.
 - **Batch B4a** (18 Nov) mengganti model izin menjadi izin langsung per akun: tabel `admin_permissions`, role `admin`/`editor` dihapus, katalog izin + implikasi, dan migrasi `20261118_0002`. Sudah di-commit pemilik sebagai `8ea1771`.
 - **Batch B4b** (18 Nov) menambahkan endpoint kelola akun berbasis superadmin (`GET /admin/admins/permissions`, `POST`/`PUT`/`DELETE /admin/admins`), guard maksimal 2 superadmin dan minimal 1 superadmin aktif, audit spesifik, dokumentasi `Backend/docs/ADMIN_API.md`, serta regenerasi `Backend/routes.txt` (71 baris). Sudah di-commit pemilik sebagai `2af22db`; **belum di-deploy**.
 - **Batch F2a** (18 Nov) melengkapi service & type admin organisasi (`frontend/types/organization.ts`, `frontend/lib/admin/organization.ts`) untuk seluruh endpoint `ORGANIZATION_API.md` (periode, divisi + copy, posisi, anggota) serta upload & kompresi gambar (`frontend/lib/media/compress.ts`, `frontend/lib/api/media.ts`, `frontend/types/media.ts`). Sudah di-commit pemilik sebagai `fd60056`.
-- **Batch F2b** (18 Nov) menyelesaikan API-F2 di frontend: `Admin.is_superadmin` + `changePassword()`, helper izin `frontend/lib/auth/permissions.ts`, `can()`/`isSuperadmin` di `AuthContext`, service/type akun admin + katalog izin + `applyPermissionImplications`, sinkronisasi settings **47 key** (`hero_image`, `hero_image_alt`, tipe `image`, `preview_url`), dan kompresi `uploadAdminNewsImage`. Perubahan berada di working tree; **belum di-commit**. Frontend siap untuk halaman admin, tetapi UI-nya belum dibuat.
-- **Batch UI-0** (18 Nov) menambahkan primitif form `components/ui/` (`Input`, `Textarea`, `Select`, `Checkbox`, `FormField`) dan gerbang izin `components/admin/shared/` (`Can`, `RequirePermission`); form program, filter berita, serta halaman dashboard/news/programs sudah memakainya, dan navigasi memakai `PERMISSIONS`. Perubahan berada di working tree; **belum di-commit**.
-- **Batch ORG-A** (18 Nov) menambahkan halaman admin `/admin/organization` ("Struktur Organisasi") dengan pemilih periode, buat/ubah/aktifkan/hapus periode, checklist periode baru, daftar divisi untuk periode terpilih, CRUD divisi, dan salin divisi antarperiode. Mode baca saja untuk akun tanpa `organization.manage` memakai banner dan `Can`; pesan `409` backend ditampilkan dari `ApiError.detail`. Perbaikan kecil: kartu dashboard mengikuti izin `news.view`/`programs.view`/`organization.view`/`visitor_logs.view`, kartu Agenda dihapus, label akun sidebar menjadi "Superadmin"/"Pengurus", dan menu "News" menjadi "Publikasi". Perubahan berada di working tree; **belum di-commit**.
-- **Batch ORG-B** (18 Nov) melengkapi halaman admin `/admin/organization` dengan bagian **Anggota** di bawah divisi: daftar anggota periode terpilih dikelompokkan per divisi (`sort_order` divisi) lalu "Tanpa divisi", urut `sort_order` anggota lalu nama, dengan foto/inisial, nama, dan jabatan dari `GET /positions`; pencarian nama di sisi klien. Form anggota memakai `FormDialog` (nama, jabatan, divisi periode terpilih atau tanpa divisi, urutan, foto) dan tombol "Tambah anggota" per grup mengisi divisi otomatis. Foto diunggah lewat `uploadImage()` (`POST /media/images`, kompresi browser), `storage_key` disimpan ke `photo_url`; pratinjau memakai `mediaPathFromStorageKey()` + `resolveMediaUrl()` dan nilai lama URL/path tetap lewat `resolveMediaUrl()`. Tanpa `media.manage`, area unggah diganti pemberitahuan. Hapus anggota memakai `ConfirmDialog` dengan nama dan periode, dan checklist periode kini memakai jumlah anggota sebenarnya. Perubahan berada di working tree; **belum di-commit**.
-- **Batch ACC** (18 Nov) menambahkan halaman superadmin `/admin/accounts` (daftar akun, tambah/ubah, checklist izin per modul dengan implikasi otomatis, reset password, hapus) dan halaman `/admin/account` untuk semua akun yang login (profil ringkas + ganti kata sandi sendiri). Menu "Administrator" memakai izin `admins.view` dan mengarah ke `/admin/accounts`; blok akun sidebar menaut ke `/admin/account`. Helper pesan error dipindahkan ke `getApiErrorMessage` di `lib/api/errors.ts` dan `features/organization/errors.ts` dihapus. Perubahan berada di working tree; **belum di-commit**.
-- URL Instagram `https://www.instagram.com/himatknuklir` **dikonfirmasi pemilik** pada 16 Nov. Konstanta dipertahankan sebagai utang teknis (lihat e.8); parameter share `rpxt` pada URL yang dikirim pemilik dibuang agar tautan stabil.
+- **Batch F2b** (18 Nov) menyelesaikan API-F2 di frontend: `Admin.is_superadmin` + `changePassword()`, helper izin `frontend/lib/auth/permissions.ts`, `can()`/`isSuperadmin` di `AuthContext`, service/type akun admin + katalog izin + `applyPermissionImplications`, sinkronisasi settings **47 key** (`hero_image`, `hero_image_alt`, tipe `image`, `preview_url`), dan kompresi `uploadAdminNewsImage`. Sudah di-commit pemilik sebagai `48131ec`. Frontend siap untuk halaman admin, tetapi UI-nya belum dibuat.
+- **Batch UI-0** (18 Nov) menambahkan primitif form `components/ui/` (`Input`, `Textarea`, `Select`, `Checkbox`, `FormField`) dan gerbang izin `components/admin/shared/` (`Can`, `RequirePermission`); form program, filter berita, serta halaman dashboard/news/programs sudah memakainya, dan navigasi memakai `PERMISSIONS`. Sudah di-commit pemilik sebagai `6d21625`.
+- **Batch ORG-A** (18 Nov) menambahkan halaman admin `/admin/organization` ("Struktur Organisasi") dengan pemilih periode, buat/ubah/aktifkan/hapus periode, checklist periode baru, daftar divisi untuk periode terpilih, CRUD divisi, dan salin divisi antarperiode. Mode baca saja untuk akun tanpa `organization.manage` memakai banner dan `Can`; pesan `409` backend ditampilkan dari `ApiError.detail`. Perbaikan kecil: kartu dashboard mengikuti izin `news.view`/`programs.view`/`organization.view`/`visitor_logs.view`, kartu Agenda dihapus, label akun sidebar menjadi "Superadmin"/"Pengurus", dan menu "News" menjadi "Publikasi". Sudah di-commit pemilik sebagai `3726581`.
+- **Batch ORG-B** (18 Nov) melengkapi halaman admin `/admin/organization` dengan bagian **Anggota** di bawah divisi: daftar anggota periode terpilih dikelompokkan per divisi (`sort_order` divisi) lalu "Tanpa divisi", urut `sort_order` anggota lalu nama, dengan foto/inisial, nama, dan jabatan dari `GET /positions`; pencarian nama di sisi klien. Form anggota memakai `FormDialog` (nama, jabatan, divisi periode terpilih atau tanpa divisi, urutan, foto) dan tombol "Tambah anggota" per grup mengisi divisi otomatis. Foto diunggah lewat `uploadImage()` (`POST /media/images`, kompresi browser), `storage_key` disimpan ke `photo_url`; pratinjau memakai `mediaPathFromStorageKey()` + `resolveMediaUrl()` dan nilai lama URL/path tetap lewat `resolveMediaUrl()`. Tanpa `media.manage`, area unggah diganti pemberitahuan. Hapus anggota memakai `ConfirmDialog` dengan nama dan periode, dan checklist periode kini memakai jumlah anggota sebenarnya. Sudah di-commit pemilik sebagai `ed04418`.
+- **Batch ACC** (18 Nov) menambahkan halaman superadmin `/admin/accounts` (daftar akun, tambah/ubah, checklist izin per modul dengan implikasi otomatis, reset password, hapus) dan halaman `/admin/account` untuk semua akun yang login (profil ringkas + ganti kata sandi sendiri). Menu "Administrator" memakai izin `admins.view` dan mengarah ke `/admin/accounts`; blok akun sidebar menaut ke `/admin/account`. Helper pesan error dipindahkan ke `getApiErrorMessage` di `lib/api/errors.ts` dan `features/organization/errors.ts` dihapus. Sudah di-commit pemilik sebagai `e74e1a3`.
+- URL Instagram `https://www.instagram.com/himatknuklir` **dikonfirmasi pemilik** pada 16 Nov. Sejak Batch PUB-W nilainya dibaca dari setting `instagram_url`/`instagram_label`, bukan konstanta frontend; parameter share `rpxt` pada URL yang dikirim pemilik dibuang agar tautan stabil.
+- **Batch ADM-SET** (19 Nov) menambahkan halaman `/admin/settings` ("Pengaturan Situs") dengan `RequirePermission settings.view`, mode baca saja tanpa `settings.manage`, navigasi per grup dari backend, simpan per grup lewat `PATCH /admin/settings` hanya untuk key yang berubah, error `422` per key di field terkait, foto hero (`hero_image`) dengan unggah `POST /media/images` + `storage_key` dan `hero_image_alt` berdampingan, reset per field lewat `DELETE /admin/settings/{key}`, serta panel `unknown_keys` untuk pembersihan data lama. Menu Pengaturan kini masuk `implementedAdminRoutes`. Sudah di-commit pemilik sebagai `e54b20c`.
+- **Batch PUB-W** (20 Nov) menyambungkan halaman publik ke `GET /public/settings` dan `GET /public/programs`: `app/(public)/layout.tsx` memuat settings sekali dan mengoper nilai efektif ke header/footer, tautan Bank Soal/Instagram memakai `getPublicLinks()`, hero/tentang/program/publikasi/struktur memakai key settings, dan foto hero memakai `hero_image` melalui `PublicHeroImage`. Section `#kontak` sementara ditambahkan saat itu. Sudah di-commit pemilik sebagai `3444ed4`.
+- **Batch D-HOME** (20 Nov) membangun ulang beranda, header, dan footer publik mengikuti `Design/index.html` + `Design/assets/{app.js,style.css}`: urutan nav prototype, menu mobile tiga garis + tombol Instagram, hero dengan statistik bersyarat, Tentang dua kolom, Program Kerja maksimal 3, Publikasi maksimal 2, Kepengurusan bergaya `.section--dark`, serta footer dengan peta. Section `#kontak` dihapus dan lokasi/peta dipindah ke footer. Perubahan berada di working tree; **belum di-commit**.
+- **Batch D-PUB** (21 Nov) menambahkan halaman publik program dan publikasi. Fase A (program) sudah di-commit pemilik sebagai `35795f6`: `/program` (filter status, pencarian server, highlight `<mark>`), `/program/[slug]`, daftar program bersama beranda, tautan hero/nav ke `/program`. Fase B berada di working tree dan **belum di-commit**: `/publikasi` (pencarian backend `q`, pagination 10), `/publikasi/[slug]` (cover 16:9, tag, galeri), daftar publikasi bersama beranda, serta nav/footer ke `/publikasi`. HEAD saat batch: `35795f6`; `.gitignore` memiliki perubahan lokal pemilik yang tidak disentuh.
 
 ### b. Scope fase saat ini
 
@@ -94,14 +99,14 @@ Entri historis yang masih memuat referensi tersebut tetap utuh di Historical Arc
 1. **Acuan visual aktif** adalah Prototype Desain HIMATKN V1 di `Design/`. Source code V2 tetap menjadi sumber kebenaran teknis (route, API, tipe, auth, arsitektur).
 2. **`Design/` hanya acuan visual dan interaksi.** Konten mengikuti data dari backend. Informasi penting tidak boleh di-hardcode dari prototype: nama pengurus, jumlah divisi, periode, stats hero, kontak, email, alamat, isi program, dan isi berita. Jika backend belum menyediakan data, tampilkan empty state yang jujur atau sembunyikan elemennya, lalu catat sebagai gap.
 3. Referensi deprecated: lihat bagian d di atas.
-4. **Bank Soal adalah requirement klien**, dipenuhi dengan **link eksternal ke folder Google Drive** yang dibuka di tab baru. V2 tidak membangun fitur bank soal sendiri (upload, pencarian, filter semester), karena V2 bukan portal akademik. Untuk sementara URL di-hardcode di **satu konstanta frontend** (misalnya `frontend/lib/public/links.ts`), dipakai oleh navbar desktop, menu mobile, dan footer. Ini **utang teknis** sampai backend menyediakan `GET /public/settings`. Database V2 saat ini tidak menyimpan link ini: `site_settings` kosong pada dump lokal 10 November 2026. Link `bank-soal.html` yang tersisa di file `Design/` diabaikan karena halaman itu sudah dihapus dari prototype.
+4. **Bank Soal adalah requirement klien**, dipenuhi dengan **link eksternal ke folder Google Drive** yang dibuka di tab baru. V2 tidak membangun fitur bank soal sendiri (upload, pencarian, filter semester), karena V2 bukan portal akademik. **Sejak Batch PUB-W** URL dibaca dari `GET /public/settings` (`bank_soal_url` + `bank_soal_label`) lewat `getPublicLinks(settings)` dan dipakai navbar desktop, menu mobile, serta footer; item disembunyikan bila URL kosong. Database V2 saat ini tidak menyimpan link ini: `site_settings` kosong pada dump lokal 10 November 2026. Link `bank-soal.html` yang tersisa di file `Design/` diabaikan karena halaman itu sudah dihapus dari prototype.
 5. **Panel admin dipertahankan** sesuai desain dan implementasi V2 saat ini. Fokus redesign adalah website publik. Admin hanya mendapat penyesuaian teknis yang diperlukan untuk integrasi atau konsistensi.
 6. **Detail program kerja dan search publikasi sudah didukung API-B2.** `GET /public/programs/{slug}` dan `GET /public/news?q=...` tersedia di branch. Frontend sudah memiliki service `getPublicProgramBySlug()` dan parameter `q` pada `getPublicNews()` sejak API-F; route/UI detail dan search belum dibuat karena menunggu keputusan route (g.5/g.6). Jangan membuat endpoint, parameter, atau data palsu.
 7. **Status program wajib memetakan keempat nilai:** `planned`, `ongoing`, `completed`, `cancelled`. `cancelled` tidak boleh diabaikan. **Sejak API-B2 backend memvalidasi enum ini** pada create/update admin (`Literal`, default `planned`); nilai lain ditolak `422`. `cancelled` tetap dikirim ke endpoint publik. Status diisi manual oleh admin dan **tidak dihitung dari tanggal**.
-8. **Instagram adalah utang teknis yang sama seperti Bank Soal.** Pemilik mengonfirmasi URL resmi `https://www.instagram.com/himatknuklir` pada 16 November 2026. URL untuk sementara di-hardcode di `frontend/lib/public/link.ts` (komentar menunjuk `GET /public/settings`, key `instagram_url`) dan dipakai CTA empty state Program/Publikasi. Jangan menambah tautan sosial lain tanpa data backend.
+8. **Instagram mengikuti pola Bank Soal.** Pemilik mengonfirmasi URL resmi `https://www.instagram.com/himatknuklir` pada 16 November 2026. **Sejak Batch PUB-W** nilainya dibaca dari setting `instagram_url`/`instagram_label` lewat `getPublicLinks(settings)` dan dipakai menu mobile serta CTA empty state Program/Publikasi; tautan disembunyikan bila kosong. Jangan menambah tautan sosial lain tanpa data backend.
 9. **Site Settings memakai registry paritas V1 (Batch API-B1, diperluas B3d).** Daftar key resmi hanya di `Backend/app/services/site_settings.py`; key di luar registry diabaikan publik dan dilaporkan sebagai `unknown_keys` di admin. Registry kini **47 key** termasuk `hero_image` (tipe `image`) dan `hero_image_alt`; `period_label`/`structure_item_*`/`contact_back_label` tidak dimasukkan. Key data default `""`; key copy default netral tanpa nama kabinet/tahun/divisi. URL wajib `https` dengan host whitelist exact; `maps_embed_url` wajib path `/maps/embed`. `hero_image` wajib storage key V2 (`images/<nama>.<jpg|jpeg|png|webp>`, menerima path media lengkap lalu menormalkannya), bukan URL. Sejak F2b frontend memiliki `PUBLIC_SETTING_KEYS` **47 key** termasuk `hero_image`/`hero_image_alt`. UI publik belum migrasi.
 10. **Kontrak publik API-B2.** Program publik default hanya periode aktif; tanpa periode aktif → `items: []`, `period: null`. Filter `status` menerima 4 nilai (boleh diulang atau dipisah koma). Urutan program: `start_date` DESC (NULL di akhir), lalu `created_at` DESC, `id` DESC. Berita: `q` mencari **judul saja**, `%`/`_` di-escape, `total`, `excerpt` ±160 karakter di batas kata, dan `tags`. Organisasi: `sort_order` dikirim; `photo_url` storage key menjadi path media, `https://` dipertahankan, nilai lain `null`. Detail program memakai field DB tanpa foto.
-11. **API layer frontend sudah sinkron (Batch API-F).** `ApiError` membawa `status` (0 untuk jaringan), `detail`, `errors?`, dan `retryAfter?`; service publik (`news`, `programs`, `organization`, `settings`, `visits`) serta admin settings siap dipakai R2/R3/R4 tanpa dummy data. `PUBLIC_LINKS` di `frontend/lib/public/link.ts` tetap dipakai sebagai **fallback sementara** sampai UI disambungkan ke `bank_soal_url`/`instagram_url`/`instagram_label`.
+11. **API layer frontend sudah sinkron (Batch API-F).** `ApiError` membawa `status` (0 untuk jaringan), `detail`, `errors?`, dan `retryAfter?`; service publik (`news`, `programs`, `organization`, `settings`, `visits`) serta admin settings siap dipakai R2/R3/R4 tanpa dummy data. `PUBLIC_LINKS` di `frontend/lib/public/link.ts` sudah dihapus pada Batch PUB-W; tautan publik memakai `getPublicLinks(settings)`.
 12. **Pergantian periode dikerjakan bertahap B3a–B3d (API-B3).** B3a (17 Nov): `PUT /admin/organization/periods/{id}` hanya mengubah nama/tanggal (bukan `is_active`), dan `DELETE` hanya untuk periode nonaktif yang kosong (tanpa divisi/anggota/program). Satu-periode-aktif sudah dijaga oleh create (`61ab3c3`) dan activate (`d642419`) milik pemilik. B3b (17 Nov): CRUD divisi dengan nama unik per periode (case-insensitive), `DELETE` divisi ditolak selama masih ada anggota atau program kerja, dan salin divisi antarperiode menyalin nama/deskripsi/`sort_order` tanpa anggota, melewati nama yang sudah ada, dengan satu audit `division.copy`. Akun tanpa `organization.manage` → 403.
 13. **Ubah kata sandi sendiri (Batch B3c, 17 Nov).** `POST /api/v1/auth/change-password` wajib login + CSRF, tanpa permission tambahan. Kata sandi lama salah → **400** (bukan 401). Kata sandi baru 12–128 karakter dan tidak boleh sama dengan yang lama (422). Sesi yang dipakai untuk request tersebut **dipertahankan** (cookie sesi/CSRF tidak berubah); semua sesi lain milik admin yang sama dicabut dan dilaporkan sebagai `sessions_revoked`. Audit `admin.password_change` tidak menyimpan kata sandi. **Prototipe admin menulis minimal 8 karakter, backend mewajibkan 12** — frontend harus menyesuaikan validasi saat UI dibuat.
 14. **Foto hero memakai storage V2 (Batch B3d, 17 Nov).** `hero_image` berisi storage key `images/<nama>.<jpg|jpeg|png|webp>`, bukan URL. Alur: unggah `POST /media/images` → simpan `storage_key` ke setting → isi `hero_image_alt`. Path media lengkap `/api/v1/media/images/...` diterima dan dinormalisasi. URL (termasuk Vercel Blob), path absolut, `..`, backslash, karakter kontrol, dan ekstensi aneh ditolak 422. Backend tidak mengecek keberadaan file. Foto hero V1 di Vercel Blob harus diunggah ulang saat go-live. `GET /public/settings` mengirim path media; `GET /admin/settings` menyertakan `preview_url` hanya untuk tipe `image`.
@@ -111,21 +116,21 @@ Entri historis yang masih memuat referensi tersebut tetap utuh di Historical Arc
 
 Ringkasan dari audit 12 November 2026; detail dan bukti line-by-line ada di `docs/audit/REDESIGN_AUDIT_2026-11-12.md` (rujukan; jangan disalin ulang).
 
-- Route publik produk: `/` dan `/struktur`. Fixture `/__structure-state` **sudah dihapus pada R1 Fase A** (folder berawalan `_` sebenarnya tidak pernah menjadi route Next; URL-nya 404 bahkan sebelum dihapus).
-- Route admin: `/login`, `/admin/dashboard`, `/admin/news` (read-only di UI), `/admin/programs` (CRUD), `/admin/organization` (CRUD periode/divisi/anggota + foto anggota), `/admin/accounts` (khusus superadmin), `/admin/account` (semua akun yang login).
+- Route publik produk: `/`, `/struktur`, `/program`, `/program/[slug]`, `/publikasi`, dan `/publikasi/[slug]`. Fixture `/__structure-state` **sudah dihapus pada R1 Fase A** (folder berawalan `_` sebenarnya tidak pernah menjadi route Next; URL-nya 404 bahkan sebelum dihapus).
+- Route admin: `/login`, `/admin/dashboard`, `/admin/news` (read-only di UI), `/admin/programs` (CRUD), `/admin/organization` (CRUD periode/divisi/anggota + foto anggota), `/admin/settings` (pengaturan situs per grup), `/admin/accounts` (khusus superadmin), `/admin/account` (semua akun yang login).
 - Endpoint publik yang tersedia dan pemakaiannya:
 
   | Endpoint | Dipakai frontend? |
   |---|---|
-  | `/public/news` | Ya di beranda (tanpa `q`). Service mendukung `q`, `total`, `excerpt`, dan `tags` sejak API-F. |
-  | `/public/news/{slug}` | Service `getPublicNewsBySlug()` siap (404 → `null`); route detail belum ada. |
-  | `/public/programs` | Service `getPublicPrograms()` siap (filter periode/status/divisi, `total`, `period`); section homepage masih empty state. |
-  | `/public/programs/{slug}` | Service `getPublicProgramBySlug()` siap (404 → `null`); route detail program belum ada. |
+  | `/public/news` | Ya di beranda (maksimal 2 dari 3 item) dan `/publikasi` (`q`, pagination 10 per halaman, `total`, `excerpt`, `tags`). |
+  | `/public/news/{slug}` | Ya di `/publikasi/[slug]` (404 → `notFound()`, metadata + OpenGraph cover). |
+  | `/public/programs` | Ya di beranda (maksimal 3 item) dan `/program` (limit 50, filter status/pencarian di server, `total`, `period`). |
+  | `/public/programs/{slug}` | Ya di `/program/[slug]` (404 → `notFound()`, metadata dari nama/deskripsi). |
   | `/public/organization` | Ya, termasuk `sort_order` dan `photo_url` yang sudah dinormalisasi backend. |
-  | `/public/settings` | Service `getPublicSettings()`/`loadPublicSettings()`, `PUBLIC_SETTING_KEYS`, dan `PUBLIC_SETTINGS_FALLBACK` siap; UI belum migrasi. |
+  | `/public/settings` | Ya. Header, footer, beranda, dan `/struktur` memakai `loadPublicSettings()`/`resolvePublicSettings()`; UI publik sudah migrasi dari hardcode. |
   | `POST /public/visits` | Service `recordVisit()` siap (error ditelan); belum dipasang ke halaman. |
 
-- Admin settings API (Batch API-B1, diperluas B3d): `GET /admin/settings` (`settings.view`), `PUT`/`DELETE /admin/settings/{key}` dan `PATCH /admin/settings` (`settings.manage` + CSRF), dengan registry **47 key** dan validasi. Sejak B3d, item bertipe `image` (`hero_image`) menyertakan `preview_url` berupa path media; tipe lain tidak. Service admin (`frontend/lib/admin/settings.ts`) siap sejak API-F; **halaman admin Pengaturan belum dibuat**.
+- Admin settings API (Batch API-B1, diperluas B3d): `GET /admin/settings` (`settings.view`), `PUT`/`DELETE /admin/settings/{key}` dan `PATCH /admin/settings` (`settings.manage` + CSRF), dengan registry **47 key** dan validasi. Sejak B3d, item bertipe `image` (`hero_image`) menyertakan `preview_url` berupa path media; tipe lain tidak. Service admin (`features/settings/admin-api.ts`) siap sejak API-F; **halaman admin Pengaturan dibuat pada Batch ADM-SET (19 Nov)** dan memakai `getAdminSettings`, `patchAdminSettings`, `updateAdminSetting`, serta `deleteAdminSetting`.
 - Public content API (Batch API-B2): `GET /public/programs` (filter periode/status/divisi, `total`, metadata divisi/periode), `GET /public/programs/{slug}`, `GET /public/news` (`q` judul, `total`, `excerpt`, `tags`), `GET /public/news/{slug}` (`tags`), dan `GET /public/organization` (`sort_order`, `photo_url` ternormalisasi). Kontrak lengkap: `Backend/docs/PUBLIC_API.md`.
 - **Admin organisasi (Batch B3a, 17 Nov):** `PUT /admin/organization/periods/{id}` mengubah nama/tanggal dengan nama unik case-insensitive dan validasi `end_date >= start_date`; `DELETE /admin/organization/periods/{id}` menolak periode aktif (409) dan periode yang masih punya divisi/anggota/program (409, pesan menyebut bagian yang menghalangi). Create periode juga memvalidasi urutan tanggal. UI periode ada di halaman `/admin/organization` (Batch ORG-A).
 - **Admin divisi (Batch B3b, 17 Nov):** `POST`/`PUT`/`DELETE /admin/organization/divisions` (201/200/200) dengan nama unik per periode case-insensitive; `DELETE` menolak divisi yang masih punya anggota dan/atau dipakai program kerja (409). `POST /admin/organization/periods/{id}/divisions/copy` menyalin divisi antarperiode secara atomik, melewati nama yang sudah ada, tidak menyalin anggota, dan menulis satu audit `division.copy`. `GET /divisions` mengirim `sort_order` dan diurutkan `sort_order` lalu `id`. Perbaikan bug: audit `member.create`/`member.update`/`member.delete` kini memakai `ip_address`/`user_agent` (sebelumnya `request=request` yang membuat endpoint 500). UI divisi ada di halaman `/admin/organization` (Batch ORG-A).
@@ -138,7 +143,7 @@ Ringkasan dari audit 12 November 2026; detail dan bukti line-by-line ada di `doc
   - `PUBLIC_SETTING_KEYS` saat API-F berisi 45 key dan sudah dibandingkan otomatis dengan registry backend waktu itu. **Sejak B3d backend memiliki 47 key** (`hero_image`, `hero_image_alt`); **F2b menyamakan frontend menjadi 47 key** dan urutannya sudah diverifikasi sama dengan registry. `PUBLIC_SETTINGS_FALLBACK` memakai default copy backend dan key data `""`.
   - `frontend/lib/programs/status.ts` menjadi satu sumber label ("Direncanakan", "Berjalan", "Selesai", "Dibatalkan", "Status lain"); `ProgramPrimitives` dan `ProgramFormDialog` memakainya.
   - **Catatan `AuthContext`:** F2b menambahkan `can(name)` (memakai daftar izin efektif) dan `isSuperadmin`. `readCurrentAdmin()` masih menelan semua error dan mengembalikan `null`. Sebaiknya ia membedakan 401 (`isUnauthorized` → sesi memang habis) dari error jaringan/5xx agar UI tidak salah menyimpulkan "belum login".
-  - `frontend/lib/public/link.ts` tetap dipakai sebagai fallback Bank Soal/Instagram; migrasi ke `PublicSettings` belum dilakukan.
+  - `frontend/lib/public/link.ts` sudah dihapus pada Batch PUB-W; tautan Bank Soal/Instagram kini berasal dari `getPublicLinks(settings)` dan disembunyikan bila URL kosong.
 - Baseline: `npm run lint` dan `npx tsc --noEmit` lulus pada audit. `npm run build` pertama kali dijalankan pada R1 Fase A (15 Nov): **gagal** karena `frontend/app/(private)/(admin)/loading.tsx` berukuran 0 byte; setelah file itu dihapus (disetujui pemilik) build lulus 9 route. Batch R1 Fase B (16 Nov) mengulang lint, tsc, dan build: ketiganya lulus 9 route. Batch API-F (16 Nov) mengulang lint dan tsc (lulus) serta `npm run build` (lulus 9 route, `ƒ /` dan `ƒ /struktur`). Baseline backend sebelum API-B1: `compileall` lulus, `pytest -q` **71 passed**; API-B1 (commit `ac9cd8a`): **102 passed**; setelah tindak lanjut review API-B1: **112 passed**; setelah API-B2 (commit `7b249b6`): **124 passed**; setelah API-F (commit `7a948f8`): **133 passed**; setelah B3a (commit `f80ecfb`): **145 passed**; setelah B3b (commit `35188af`): **165 passed**; setelah B3c: **172 passed**; setelah B3d: **191 passed**; setelah SEC-1 (commit `af39ba3`): **213 passed**; setelah B4a (commit `8ea1771`): **219 passed**; setelah B4b: **223 passed**.
 
 ### g. Keputusan yang masih tertunda (blok batch R1 dan seterusnya)
@@ -155,7 +160,7 @@ Status per 16 November 2026 (Batch R1 Fase B):
 | 6 | Nama route program kerja: `/program-kerja` atau `/kegiatan` | Menunggu keputusan pemilik |
 | 7 | Perlakuan status `cancelled` di UI publik | **Diputuskan pemilik:** `cancelled` tetap dikirim backend; frontend memberi label "Dibatalkan" (API-B2 selesai) |
 | 8 | Program dari periode mana yang ditampilkan di publik (API tanpa filter periode) | **Diputuskan pemilik:** default periode aktif; `period_id` eksplisit tetap didukung (API-B2 selesai) |
-| 9 | Kontak, alamat, dan peta: nilai resmi terverifikasi atau disembunyikan | **Diputuskan pemilik:** disembunyikan dulu. **API-B1 menyediakan `GET /public/settings` + admin settings**; **API-F menyediakan service + fallback**, jadi nilai resmi bisa ditampilkan setelah UI publik disambungkan pada R2 |
+| 9 | Kontak, alamat, dan peta: nilai resmi terverifikasi atau disembunyikan | **Diputuskan pemilik:** disembunyikan dulu. **API-B1 menyediakan `GET /public/settings` + admin settings**; **PUB-W menyambungkan UI publik**, dan **D-HOME memindahkan peta/alamat ke footer** dengan fallback bila embed kosong |
 | 10 | Penanganan `/__structure-state` sebelum rilis | **Diputuskan pemilik:** fixture dihapus pada R1 |
 | 11 | Domain canonical: `himatknuklir.web.id` atau `himatknuklir.vercel.app` | **Diputuskan pemilik:** `himatknuklir.web.id`; host kanonis dipakai `www.himatknuklir.web.id` (sama dengan sitemap/robots) |
 
@@ -169,7 +174,7 @@ Status per 16 November 2026 (Batch R1 Fase B):
 - Representasi BPH: source mendeteksi BPH lewat regex nama divisi/jabatan (`frontend/components/public/StructureDirectory.tsx`), karena API tidak punya flag BPH. **Perlu keputusan pemilik apakah ini diterima.** (Koreksi atas klaim historis: lihat bagian i.)
 - `frontend/app/(private)/(admin)/loading.tsx` (0 byte, commit `8cf6f75`) dihapus di R1 karena membuat build gagal. Loading state admin perlu dibuat dengan benar di batch admin terpisah.
 - **404 global memakai `.public-site`.** `frontend/app/not-found.tsx` membungkus konten dengan `.public-site`, dan tidak ada `not-found` khusus admin. Akibatnya 404 yang muncul dari URL area admin (misalnya `/admin/...` yang tidak ada) memakai tipografi, header, dan footer publik (Literata + Inter), bukan `.admin-theme`. Ini diketahui dan **belum diperbaiki**; penanganan 404 admin masuk batch admin terpisah.
-- Tautan **Bank Soal** dan **Instagram** masih memakai `frontend/lib/public/link.ts` sebagai **fallback sementara**. Service `GET /public/settings` dan `PUBLIC_SETTING_KEYS` sudah siap sejak API-F, tetapi UI publik belum disambungkan (utang teknis; lihat e.4, e.8, dan e.11).
+- **Selesai (Batch PUB-W):** tautan **Bank Soal** dan **Instagram** tidak lagi memakai `frontend/lib/public/link.ts`; nilainya berasal dari `GET /public/settings` lewat `getPublicLinks(settings)` dan disembunyikan bila kosong.
 - **`is_superadmin` tidak diserialisasi pada `/auth/login` dan `/auth/me`.** `AdminOut` di `Backend/app/schemas/auth.py` belum memuat field itu, sehingga `response_model=AuthResponse` membuang nilai yang sudah dihasilkan `admin_payload()` meskipun `Backend/docs/ADMIN_API.md` menyebutnya. F2b menambahkan field ke type dan memakai fallback `roles.includes("superadmin")` di `AuthContext`; backend perlu menambahkan field ke schema agar kontrak auth konsisten. **Belum diperbaiki (Backend di luar scope F2b).**
 
 ### i. Koreksi atas catatan lama
@@ -208,26 +213,28 @@ Hanya agregat; tidak ada data pribadi:
 | R1 Fase B | Hero, Tentang, section Program visual, Publikasi, Kepengurusan, Kontak disembunyikan, restyle 404, loading state | **Selesai, terverifikasi, dan di-commit pemilik sebagai `cc1d496`** |
 | API-B1 | Site Settings: registry 45 key, `GET /public/settings`, admin `GET/PUT/PATCH/DELETE`, validasi URL/email/teks, audit, test | **Selesai dan di-commit pemilik sebagai `ac9cd8a`; belum di-deploy.** |
 | API-B2 | Program (filter periode/status/divisi, detail slug, `total`, metadata), berita (`q`, `total`, `excerpt`, `tags`), organisasi (`sort_order`, `photo_url`), enum status admin, seed idempoten, tindak lanjut review API-B1 | **Selesai 16 Nov 2026; belum di-commit dan belum di-deploy.** |
-| B4 | Izin per akun: model `admin_permissions`, hapus role `admin`/`editor`, endpoint kelola akun + katalog izin, guard superadmin, dokumentasi `ADMIN_API.md` | **Selesai 18 Nov 2026 (B4a `8ea1771`, B4b di working tree); belum di-deploy** |
-| API-F2 | Service & type frontend untuk auth/akun admin/settings 47 key + kompresi upload gambar berita | **Selesai 18 Nov 2026 (F2b); di working tree, belum di-commit** |
+| B4 | Izin per akun: model `admin_permissions`, hapus role `admin`/`editor`, endpoint kelola akun + katalog izin, guard superadmin, dokumentasi `ADMIN_API.md` | **Selesai 18 Nov 2026 (B4a `8ea1771`, B4b `2af22db`); belum di-deploy** |
+| API-F2 | Service & type frontend untuk auth/akun admin/settings 47 key + kompresi upload gambar berita | **Selesai 18 Nov 2026 (F2b `48131ec`)** |
 | R2 | Halaman `/struktur`: dropdown custom yang aksesibel, visual tree/kartu/avatar, fallback foto | — |
 | R3 | Data homepage: grid divisi, program dengan 4 status, perbaikan link "Instagram" | Diblok keputusan g.7–8 |
 | R4 | `/publikasi` dan `/publikasi/[slug]` | Diblok keputusan g.5 |
-| ORG-A | Halaman admin Struktur Organisasi: periode (buat/ubah/aktifkan/hapus), checklist, divisi (CRUD + salin), mode baca saja | **Selesai 18 Nov 2026; di working tree, belum di-commit** |
-| ORG-B | Bagian anggota halaman admin Struktur Organisasi: daftar per divisi, pencarian, form anggota, unggah/ganti/hapus foto, hapus anggota, checklist jumlah anggota | **Selesai 18 Nov 2026; di working tree, belum di-commit** |
-| ACC | Halaman Administrator (`/admin/accounts`, khusus superadmin) dan Akun saya (`/admin/account`): CRUD akun, checklist izin per modul + implikasi, reset password, ganti kata sandi sendiri, helper `getApiErrorMessage` | **Selesai 18 Nov 2026; di working tree, belum di-commit** |
+| ORG-A | Halaman admin Struktur Organisasi: periode (buat/ubah/aktifkan/hapus), checklist, divisi (CRUD + salin), mode baca saja | **Selesai 18 Nov 2026; di-commit pemilik sebagai `3726581`** |
+| ORG-B | Bagian anggota halaman admin Struktur Organisasi: daftar per divisi, pencarian, form anggota, unggah/ganti/hapus foto, hapus anggota, checklist jumlah anggota | **Selesai 18 Nov 2026; di-commit pemilik sebagai `ed04418`** |
+| ACC | Halaman Administrator (`/admin/accounts`, khusus superadmin) dan Akun saya (`/admin/account`): CRUD akun, checklist izin per modul + implikasi, reset password, ganti kata sandi sendiri, helper `getApiErrorMessage` | **Selesai 18 Nov 2026; di-commit pemilik** |
+| PUB-W | Halaman publik tersambung ke `GET /public/settings` + program kerja; header/footer/beranda/`/struktur` memakai nilai efektif, tautan Bank Soal/Instagram dari settings, hero image dari `hero_image` | **Selesai 20 Nov 2026; di-commit pemilik sebagai `3444ed4`** |
+| D-HOME | Beranda, header, dan footer publik disamakan dengan prototype: nav + menu mobile, hero + statistik, Tentang, Program Kerja, Publikasi, Kepengurusan, footer + peta, hapus section kontak | **Selesai 20 Nov 2026; di working tree, belum di-commit** |
 
 ### l. Backlog untuk sesi backend
 
 Bukan untuk dikerjakan OpenCode frontend:
 
-1. **Selesai (API-B1, diperluas B3d):** `GET /public/settings` + registry **47 key**. B3d menutup backlog `hero_image` dengan tipe `image` (storage V2) dan menambahkan `hero_image_alt`. Sisa pekerjaan: halaman admin Pengaturan di frontend (batch terpisah) dan pengisian nilai resmi lewat API. Sinkronisasi `PUBLIC_SETTING_KEYS` frontend ke 47 key **selesai di F2b**.
+1. **Selesai (API-B1, diperluas B3d):** `GET /public/settings` + registry **47 key**. B3d menutup backlog `hero_image` dengan tipe `image` (storage V2) dan menambahkan `hero_image_alt`. Halaman admin Pengaturan selesai pada **ADM-SET** dan UI publik memakai settings sejak **PUB-W**. Sisa pekerjaan: pengisian nilai resmi lewat API.
 2. **Selesai (API-B2):** detail program publik per slug; filter periode/status/divisi; `total`; metadata periode/divisi. Frontend belum memakainya (R3/R4).
 3. **Selesai (API-B2):** search judul dan `total` untuk `/public/news`, plus `excerpt` dan `tags`.
 4. Verifikasi `media.manage` di DB production. Seed sudah idempoten dan memberi permission ini ke `superadmin`; jalankan `python -m app.seed` sekali di production lalu verifikasi (lihat `Backend/docs/PUBLIC_API.md`).
 5. **Selesai (B4a/B4b):** role `admin` dan `editor` dihapus; izin kini dicentang per akun. Service frontend siap sejak F2b; halaman `/admin/accounts` dan form centang izin dari `GET /admin/admins/permissions` selesai di **Batch ACC**.
 6. Pembersihan data uji sebelum rilis.
-7. Migrasi frontend dari hardcode Bank Soal/Instagram ke `GET /public/settings`, lalu tampilkan kontak/peta hanya jika nilainya terisi.
+7. **Selesai (PUB-W/D-HOME):** frontend tidak lagi memakai hardcode Bank Soal/Instagram; nilainya berasal dari `GET /public/settings` dan kontak/peta hanya dirender bila terisi (peta dipindah ke footer pada D-HOME).
 
 ---
 
@@ -1384,6 +1391,35 @@ Entri sesi sejak 11 November 2026. Append-only: tambahkan entri baru di bawah; j
 
 ---
 
+### Sesi 2026-11-21 — Batch D-PUB Fase B: halaman publikasi
+
+- **Status:** Selesai di working tree; tidak commit, push, atau deploy.
+- **Branch/HEAD:** `feat/admin-ui-foundation`, HEAD `35795f6` (Fase A sudah
+  di-commit pemilik). Perubahan lokal `.gitignore` milik pemilik dipertahankan.
+- **Tujuan:** melengkapi publikasi publik mengikuti `Design/publikasi.html`,
+  `Design/artikel.html`, dan `Design/assets/app.js` (`pubItem`, `newsHTML`,
+  `renderPublikasi`, `renderArtikel`).
+- **Route baru:** `/publikasi` (pencarian `?q=`, pagination `?page=`, 10 item
+  per halaman) dan `/publikasi/[slug]` (detail, 404 → `notFound()`).
+- **Komponen baru:** `features/news/components/public/NewsList.tsx`,
+  `features/news/format.ts`, `features/news/content.tsx`,
+  `components/public/PublicSearch.tsx` (dipakai juga oleh `/program`).
+- **Perubahan Fase A:** tab filter `/program` mobile memakai `px-4` (16px)
+  sesuai `.seg button`, dan `PlainTextBody` memakai `text-[#2A3530]` sesuai
+  `.article__body p`.
+- **Perubahan lain:** beranda memakai `NewsList` bersama, gambar/tanggal/judul
+  publikasi menjadi tautan detail, `.sec-foot` “Lihat Semua Publikasi”, header
+  dan footer menuju `/publikasi` (aktif juga di `/publikasi/*`).
+- **Pemeriksaan:** `npm run lint`, `npx tsc --noEmit`, dan `npm run build`
+  lulus. Route `ƒ /publikasi` dan `ƒ /publikasi/[slug]` terdeteksi.
+- **Di luar prototipe:** galeri gambar tambahan (grid 2 kolom rasio 3:2),
+  jendela nomor pager maksimal tujuh sel, dan tag pada meta detail.
+- **Batas scope:** backend/database/dependency/`.env*` tidak diubah atau
+  dibaca; tidak ada commit/push/deploy.
+- **Langkah berikutnya:** pemilik meninjau Fase B di 375px dan 1440px.
+
+---
+
 ## 3. Historical Archive
 
 > **Arsip historis.** Entri di bawah ini dibuat sebelum 11 November 2026 dan memakai referensi desain yang sudah deprecated. Keputusan visual di dalamnya (token, font, layout, komposisi) **tidak berlaku**. Fakta teknis (dependency, kontrak API, hasil validasi, konfigurasi) hanya berlaku jika masih sesuai dengan source code terkini; verifikasi ulang sebelum dipakai. Jangan melanjutkan tugas atau "langkah berikutnya" dari entri ini tanpa konfirmasi. Untuk koreksi yang sudah diketahui, lihat Current Project State bagian Koreksi.
@@ -2023,6 +2059,161 @@ Informasi ini berasal dari audit repo remote dan dapat berubah. Agent harus veri
   - Hanya `Backend/` dan `docs/progress.md` diubah; `frontend/` tidak disentuh.
   - Tidak membaca/mencetak `.env*`; tidak install/upgrade paket; tidak commit/push/deploy.
 - **Langkah berikutnya:** pemilik meninjau dan meng-commit SEC-2. **Berhenti.**
+
+---
+
+### Sesi 2026-11-19 — Batch ADM-SET: halaman admin Pengaturan situs
+
+- **Status:** Selesai di working tree; tidak commit, push, atau deploy. **Berhenti.**
+- **Branch/HEAD:** `feat/admin-ui-foundation`, HEAD `db509d6` (merge `origin/main`). Working tree bersih sebelum batch.
+- **Tujuan batch:** membuat halaman `/admin/settings` untuk registry 47 key site settings, dengan mode baca saja, simpan per grup, validasi 422 per key, foto hero, reset per field, dan pembersihan `unknown_keys`.
+- **Yang selesai:**
+  - **Struktur halaman:** `app/(private)/(admin)/admin/settings/page.tsx` hanya mengatur state (muat data, draft nilai, dirty per grup, simpan/reset/hapus, konfirmasi). UI dipecah ke `features/settings/components/admin/`: `SettingsGroupNav`, `SettingsGroupForm`, `SettingField`, `HeroImageField`, `UnknownKeysPanel`, `SettingsPrimitives`, dan helper `settings-utils.ts`.
+  - **Izin:** halaman dibungkus `RequirePermission permission={settings.view}`. Tanpa `settings.manage`, banner mode lihat saja tampil, seluruh input `disabled`, dan tombol simpan/batalkan/reset/hapus disembunyikan memakai `Can` (footer aksi, reset per field, dan hapus `unknown_keys`).
+  - **Grup dan urutan:** grup dibentuk dari `group` item backend dengan urutan kemunculan registry: `brand` (Identitas), `links` (Tautan), `contact` (Kontak), `hero` (Beranda / Hero), `about` (Tentang), `program` (Program Kerja), `news` (Publikasi), `structure` (Struktur). Label field memakai `label` backend; hint dari peta per key dan pola `_eyebrow`/`_label`/URL. Navigasi grup berupa tombol tab tanpa memuat ulang data dan menampilkan jumlah perubahan per grup.
+  - **Field:** `text`/`email`/`url` memakai `Input` dengan `type` sesuai, `multiline` memakai `Textarea`; semuanya lewat `FormField`. Counter karakter untuk field panjang, badge "Bawaan", serta meta waktu perubahan. Field kosong boleh disimpan.
+  - **Validasi klien + backend:** validasi ringan email, wajib `https://`, host yang diizinkan, path Maps/embed, dan panjang maksimum hanya untuk umpan balik cepat. Simpan tetap mengirim ke backend; respons `422` dibaca dari `ApiError.errors` dan pesan per key ditempatkan di field terkait, dengan ringkasan "N kolom perlu diperbaiki; belum ada perubahan yang disimpan".
+  - **Simpan per grup:** `patchAdminSettings({ values })` hanya mengirim key yang berubah di grup aktif (atomik di backend). Tombol menampilkan jumlah perubahan dan nonaktif saat tidak ada perubahan. Sukses memperbarui `items`/draft dari `response.settings`, menampilkan pesan jumlah perubahan, dan catatan cache publik ±1 menit. Kegagalan non-422 memakai `getApiErrorMessage`.
+  - **Peringatan perubahan:** pindah grup dengan draft kotor memunculkan `ConfirmDialog`; meninggalkan halaman memakai `beforeunload` dan intersepsi klik tautan dengan konfirmasi sederhana.
+  - **Reset per field:** tombol kecil "Kembalikan ke bawaan"/"Kosongkan" hanya muncul bila nilai tersimpan berbeda dari default dan `settings.manage` tersedia; konfirmasi lalu `deleteAdminSetting(key)`, state diperbarui dari respons (`value` default) dan draft diselaraskan.
+  - **Foto hero:** `HeroImageField` menampilkan pratinjau dari `preview_url` atau `mediaPathFromStorageKey()` + `resolveMediaUrl()`; unggah memakai `uploadImage()` dengan input `accept="image/jpeg,image/png,image/webp"`, status mengompres/mengunggah, dan error kompresi/upload berbahasa Indonesia. Nilai yang disimpan adalah `storage_key`; tombol hapus mengisi draft `""`. Tanpa `media.manage` area unggah diganti pemberitahuan, sementara `hero_image_alt` (hint "Deskripsi foto untuk pembaca layar") tetap tampil berdampingan dan dapat diubah.
+  - **Unknown keys:** panel "Pengaturan lama yang tidak dikenal" menampilkan daftar `unknown_keys`; tombol hapus (di dalam `Can`) memakai konfirmasi dan `deleteAdminSetting(key)`, lalu panel diperbarui.
+  - **Navigasi:** `/admin/settings` ditambahkan ke `implementedAdminRoutes` agar menu Pengaturan yang sudah ada tampil di sidebar.
+- **File dibuat:**
+  - `frontend/app/(private)/(admin)/admin/settings/page.tsx`
+  - `frontend/features/settings/components/admin/SettingsGroupNav.tsx`
+  - `frontend/features/settings/components/admin/SettingsGroupForm.tsx`
+  - `frontend/features/settings/components/admin/SettingField.tsx`
+  - `frontend/features/settings/components/admin/HeroImageField.tsx`
+  - `frontend/features/settings/components/admin/UnknownKeysPanel.tsx`
+  - `frontend/features/settings/components/admin/SettingsPrimitives.tsx`
+  - `frontend/features/settings/components/admin/settings-utils.ts`
+- **File diubah:**
+  - `frontend/components/admin/shell/admin-navigation.tsx`
+  - `frontend/STRUCTURE.md`
+  - `docs/progress.md`
+- **Pemeriksaan yang dijalankan + hasil aktual:**
+  - `npx tsc --noEmit` di `frontend/` — lulus tanpa output.
+  - `npm run lint` di `frontend/` — lulus tanpa error/warning.
+  - `npm run build` di `frontend/` — sukses, 13 route termasuk `○ /admin/settings`; warning Turbopack tentang `pnpm-lock.yaml` di luar repository tetap muncul dan tidak menggagalkan build.
+- **Risiko/regresi yang diperiksa:**
+  - Halaman hanya memakai service `features/settings/admin-api.ts` dan helper media/error yang sudah ada; tidak mengubah kontrak API, auth/CSRF, atau backend.
+  - Data disimpan per grup sehingga kegagalan satu grup tidak menyentuh draft grup lain; draft tetap dipertahankan saat error 422.
+  - `updateAdminSetting` tidak dipakai di halaman karena simpan per grup memakai `patchAdminSettings`; reset dan pembersihan memakai `deleteAdminSetting`.
+  - Tanpa `media.manage`, `hero_image` tidak bisa diunggah/dihapus tetapi field lain tetap dapat disimpan.
+- **Blocker/keputusan yang diperlukan:** tidak ada blocker teknis.
+- **Konfirmasi batas scope:**
+  - Backend berubah: Tidak. Database/schema/migration berubah: Tidak.
+  - API contract/auth/CSRF/RBAC/cookie policy berubah: Tidak.
+  - Dependency, `.env*`, deployment, secret, atau konfigurasi environment berubah: Tidak.
+  - Halaman/komponen publik dan service lama tidak diubah.
+- **Langkah berikutnya:** pemilik meninjau dan meng-commit ADM-SET. **Berhenti.**
+
+---
+
+### Sesi 2026-11-20 — Batch PUB-W: halaman publik tersambung ke pengaturan situs + program kerja
+
+- **Status:** Selesai di working tree; tidak commit, push, atau deploy. **Berhenti.**
+- **Branch/HEAD:** `feat/admin-ui-foundation`, HEAD `3358eae`. Working tree bersih sebelum batch.
+- **Tujuan batch:** menyambungkan header, footer, beranda, `/struktur`, publikasi, dan program kerja publik ke `GET /public/settings` serta `GET /public/programs` tanpa mengubah desain/admin/backend.
+- **Yang selesai:**
+  - **Sumber tunggal:** `app/(public)/layout.tsx` kini Server Component async; memanggil `loadPublicSettings()` + `resolvePublicSettings()` sekali lalu mengoper nilai efektif ke `SiteHeader`/`SiteFooter`. `SiteHeader` tetap Client Component dan tidak memanggil API. Beranda dan `/struktur` memakai helper yang sama (fetch Next.js dedupe). `PUBLIC_SETTINGS_FALLBACK` dipindah ke `features/settings/fallback.ts` agar header/footer (termasuk `app/not-found.tsx`) punya default tanpa menarik modul HTTP; `public-api.ts` tetap mengekspor ulang konstanta itu.
+  - **Resolusi kosong:** `resolvePublicSettings()` menggabungkan per key; nilai non-kosong backend menang. Key data (URL, email, alamat, footer, gambar) tetap kosong bila backend kosong; key copy berdefault non-kosong kembali ke default.
+  - **Tautan:** `PUBLIC_LINKS` dihapus. `getPublicLinks(settings)` mengembalikan `{ bankSoal, instagram }` dengan `null` bila URL kosong, label Instagram dari `instagram_label` (fallback "Instagram"), `target="_blank"`, dan `rel="noopener noreferrer"`. Header desktop/mobile, footer, empty state program, dan empty state publikasi memakainya.
+  - **Header/footer:** brand dari `brand_name`/`brand_subtitle`; footer memakai `footer_copyright` (fallback `© {tahun} {brand_name}`), `footer_institution` bila ada, dan tetap tanpa logo. Item Bank Soal hanya tampil bila `bank_soal_url` terisi.
+  - **Beranda:** hero (`hero_eyebrow`, `hero_title`, `hero_emphasis`, `hero_description`, label tombol, `hero_image` + `hero_image_alt`); tentang (`about_*`, tiga item `about_item_{1..3}_*` dengan item berjudul kosong disembunyikan); program (`program_eyebrow`, `program_title`, `program_empty_text`) memakai `getPublicPrograms` periode aktif limit 6 dengan timeout 5 detik dan state error; publikasi memakai `news_*` + tautan Instagram props; struktur memakai `structure_*`; section `#kontak` baru memakai `contact_*`, email, alamat, `maps_url`, dan iframe hanya bila `maps_embed_url` terisi. Metadata beranda dan `/struktur` memakai `brand_name`/`structure_title` lewat `generateMetadata`.
+  - **Foto hero:** komponen klien `PublicHeroImage` meresolve `hero_image` lewat `resolveMediaUrl()`; kosong atau gagal dimuat → `/images/hero-group.jpg`.
+  - **`/struktur`:** eyebrow, judul, dan deskripsi hero memakai `structure_*` lewat props dari page server; logika daftar anggota tidak berubah.
+- **File dibuat:**
+  - `frontend/components/public/PublicHeroImage.tsx`
+  - `frontend/features/settings/fallback.ts`
+- **File diubah:**
+  - `frontend/app/(public)/layout.tsx`
+  - `frontend/app/(public)/page.tsx`
+  - `frontend/app/(public)/struktur/page.tsx`
+  - `frontend/components/public/SiteHeader.tsx`
+  - `frontend/components/public/SiteFooter.tsx`
+  - `frontend/features/news/components/public/PublicationsSection.tsx`
+  - `frontend/features/organization/components/OrganizationSection.tsx`
+  - `frontend/features/organization/components/StructurePage.tsx`
+  - `frontend/features/settings/links.ts`
+  - `frontend/features/settings/public-api.ts`
+  - `frontend/STRUCTURE.md`
+  - `docs/progress.md`
+- **Perilaku saat setting kosong / API gagal:**
+  - API settings gagal/timeout → fallback penuh; halaman tetap tampil dengan brand default, tanpa Bank Soal/Instagram, hero memakai aset statis, dan section kontak tidak dirender bila semua data kontak kosong.
+  - `bank_soal_url`/`instagram_url` kosong → tautan disembunyikan (bukan URL hardcoded).
+  - `hero_image` kosong/gagal → aset statis; `hero_image_alt` kosong → "Mahasiswa berfoto bersama".
+  - Program kosong → `PublicStateBox` dengan `program_empty_text`; error/timeout → state error + `RefreshButton`. Program tanpa divisi menyembunyikan baris divisi; deskripsi dipecah menjadi teks polos maksimal ±160 karakter; kartu bukan link karena route detail belum ada.
+  - Semua data kontak kosong → section `#kontak` tidak dirender; baris email/alamat/tombol/iframe yang kosong masing-masing disembunyikan.
+- **Grep sisa hardcoded:** `PUBLIC_LINKS` tidak ditemukan. Tidak ada lagi `@himatknuklir`, `instagram.com`, `drive.google.com`, nama brand, atau alamat di `app/(public)`, `components/public`, dan komponen publik fitur. Sisa teks tanpa key dan sengaja dipertahankan: label navigasi (`Beranda`, `Tentang`, `Kegiatan`, `Publikasi`, `Struktur`), `Lewati ke konten`, `Kembali ke atas`, `Periode aktif`/`Anggota`, label state (`Gagal memuat`, `Publikasi`, `Program kerja`, `Kepengurusan`), salinan error/empty non-setting, `Detail segera hadir`, dan `(membuka … di tab baru)`.
+- **Pemeriksaan yang dijalankan + hasil aktual:**
+  - `npx tsc --noEmit` di `frontend/` — lulus tanpa output.
+  - `npm run lint` di `frontend/` — lulus tanpa error/warning.
+  - `npm run build` di `frontend/` — sukses, 13 route; warning Turbopack tentang `pnpm-lock.yaml` di luar repository tetap muncul dan tidak menggagalkan build.
+- **Risiko/regresi yang diperiksa:**
+  - Hanya `frontend/app/(public)/`, `frontend/components/public/`, `frontend/features/{settings,programs,news/components/public,organization/components}/`, `frontend/STRUCTURE.md`, dan `docs/progress.md` yang berubah. Backend, admin, dependency, `.env*`, dan konfigurasi tidak disentuh.
+  - `SiteHeader`/`SiteFooter` diberi default dari `PUBLIC_SETTINGS_FALLBACK` agar `app/not-found.tsx` tetap berfungsi tanpa perubahan di luar scope.
+  - `getPublicPrograms()` dipanggil tanpa `period_id` sehingga backend memakai periode aktif; limit 6 dan urutan backend dipertahankan.
+  - Tautan "Lihat semua" publikasi mengarah ke `/publikasi`; route daftar publikasi belum ada dan dijadwalkan pada batch lain.
+- **Blocker/keputusan yang diperlukan:** tidak ada blocker teknis. Route `/publikasi` dan detail program masih menunggu batch route.
+- **Konfirmasi batas scope:**
+  - Backend berubah: Tidak. Database/schema/migration berubah: Tidak.
+  - API contract/auth/CSRF/RBAC/cookie policy berubah: Tidak.
+  - Dependency, `.env*`, deployment, secret, atau konfigurasi environment berubah: Tidak.
+  - Halaman admin tidak diubah.
+- **Langkah berikutnya:** pemilik meninjau dan meng-commit PUB-W. **Berhenti.**
+
+---
+
+### Sesi 2026-11-20 — Batch D-HOME: beranda, header, dan footer publik mengikuti prototype
+
+- **Status:** Selesai di working tree; tidak commit, push, atau deploy. **Berhenti.**
+- **Branch/HEAD:** `feat/admin-ui-foundation`, HEAD `3444ed4` (PUB-W sudah di-commit pemilik). Working tree bersih sebelum batch.
+- **Tujuan batch:** membangun ulang beranda, header, dan footer publik agar sesuai markup, styling responsif, dan state Prototype Desain HIMATKN V1 di `Design/`, tanpa mengubah logika pemuatan data.
+- **Yang selesai:**
+  - **Header:** urutan nav desktop/mobile menjadi Beranda, Tentang, Kegiatan, Publikasi, Bank Soal (bila URL tersedia), Struktur. Kegiatan menuju `/#program-kerja` dan Publikasi menuju `/#publikasi` dengan komentar `TODO` karena route halamannya belum ada. Garis aktif desktop memakai underline beranimasi; menu mobile memakai tombol tiga garis beranimasi, focus trap, Escape/klik luar, scroll body terkunci, dan tombol Instagram dari settings bila tersedia. Ikon tautan eksternal Bank Soal dihapus agar sama dengan prototype; teks `sr-only` tetap ada.
+  - **Hero:** media absolute dengan `<img>` `size-full object-cover object-[center_70%]` dan wrapper fallback `PublicHeroImage`; overlay solid di desktop dan gradien di mobile; `hero_emphasis` dirender sebagai `<em className="block italic">`; dua tombol memakai tone `white`/`outlineWhite`; tiga statistik (`periode.name`/"Periode aktif", jumlah divisi/"Divisi", jumlah anggota/"Anggota") di atas garis atas, masing-masing disembunyikan bila datanya kosong.
+  - **Tentang:** dua kolom; label pilar di kiri, judul dan deskripsi di kanan; item tanpa judul disembunyikan.
+  - **Program Kerja:** section `id="program-kerja"`, maksimal 3 item, grid `160px|1fr|140px`, badge status dari `features/programs/status.ts`, excerpt ±118 karakter dengan "…" hanya saat terpotong, meta kanan memakai nama divisi (fallback "HIMATKN") dan periode. Tombol "Baca Selengkapnya →" dan "Lihat Semua Program Kerja →" sengaja tidak dirender (route belum ada, ditandai `TODO`).
+  - **Publikasi:** mengikuti `#home-news` pada `Design/assets/app.js` dengan maksimal 2 item; gambar rasio 3/2 grayscale yang berubah saat hover; excerpt ±150 karakter; tanggal; tanpa tombol "Lihat Semua Publikasi →" (ditandai `TODO`); empty/error state mengikuti prototype.
+  - **Kepengurusan:** section `id="kepengurusan"` bergaya gelap, kartu divisi dua kolom di desktop, statistik periode/divisi di mobile, kartu tautan `/struktur?view=semua` bila jumlah divisi ganjil, dan tombol "Selengkapnya →" ke `/struktur`.
+  - **Footer:** teks brand tanpa logo, nav Beranda/Tentang/Kegiatan/Berita/Struktur, peta dari `maps_embed_url` (`loading="lazy"`, `referrerPolicy="no-referrer-when-downgrade"`, judul), tautan "Buka Google Maps ↗" dari `maps_url`, fallback peta berisi `secretariat_address` bila embed kosong, serta baris copyright kiri dan institusi kanan yang disembunyikan bila kosong.
+  - **Section kontak:** `#kontak` dihapus dari beranda; lokasi/peta dipindah ke footer.
+  - **State:** loading/empty/error untuk program, publikasi, dan kepengurusan memakai `PublicStateBox`/`RefreshButton` dengan ikon `TriangleAlert` dan salinan mengikuti `stateBox`/`errorBox` prototype.
+- **File diubah:**
+  - `frontend/app/(public)/layout.tsx`
+  - `frontend/app/(public)/page.tsx`
+  - `frontend/components/public/SiteFooter.tsx`
+  - `frontend/components/public/SiteHeader.tsx`
+  - `frontend/features/news/components/public/PublicationsSection.tsx`
+  - `frontend/features/organization/components/OrganizationSection.tsx`
+  - `frontend/STRUCTURE.md`
+  - `docs/progress.md`
+- **Pemeriksaan yang dijalankan + hasil aktual:**
+  - `npx tsc --noEmit` di `frontend/` — lulus tanpa output.
+  - `npm run lint` di `frontend/` — lulus tanpa error/warning.
+  - `npm run build` di `frontend/` tanpa override `NEXT_PUBLIC_API_URL` — sukses, 13 route (`ƒ /`, `ƒ /struktur`, 11 route lain); warning Turbopack tentang `pnpm-lock.yaml` di luar repository tetap muncul dan tidak menggagalkan build.
+  - Verifikasi visual memakai mock API sementara (port 3102) + `next start` (3100) + prototype statis (3101), screenshot Chrome CDP pada 1440px dan 375px: tidak ada overflow horizontal (`pageWidth === viewport === 375`), gambar publikasi 180px, dan menu mobile terbuka sesuai prototype. Mock API/prototype server hanya alat verifikasi dan tidak masuk repository.
+  - `git diff -- frontend/app/globals.css` — kosong. Tidak ada class atau rule CSS baru; seluruh styling memakai utility Tailwind v4 di JSX. Skrip pemeriksaan referensi class membuktikan setiap class kustom di `globals.css` masih dipakai minimal satu TSX (`.empty-panel*`/`.kicker*` di `StructurePage.tsx`, `.structure-*` di `StructureDirectory.tsx`/`StructurePage.tsx`, `.site-container`, `.public-site`, `.skip-link`, `.admin-theme`).
+- **Perbedaan yang tersisa dan disengaja:**
+  - Logo ikon di header dipertahankan sesuai keputusan pemilik; prototype hanya memakai teks. Perbedaan ini dilaporkan untuk keputusan lanjutan.
+  - Label status program memakai "Direncanakan" dari `features/programs/status.ts`; prototype menulis "Terencana".
+  - Semua kartu divisi berlabel "Divisi" karena API organisasi belum menyediakan jenis/kategori divisi.
+  - Tombol "Baca Selengkapnya", "Lihat Semua Program Kerja", dan "Lihat Semua Publikasi" tidak dirender karena route tujuan belum ada.
+  - Foto hero memakai aset statis `/images/hero-group.jpg` saat `hero_image` kosong; nilai resmi menunggu pengisian settings.
+  - Iframe peta dapat tampil kosong di Chrome headless; ini keterbatasan lingkungan verifikasi, bukan perubahan kode.
+- **Risiko/regresi yang diperiksa:**
+  - Hanya file publik di atas, `frontend/STRUCTURE.md`, dan `docs/progress.md` yang berubah. Backend, database, admin, dependency, `.env*`, dan konfigurasi tidak disentuh.
+  - Data tetap dimuat lewat helper yang sama (`loadPublicSettings`, `loadPublicOrganization`, `loadLatestPrograms`, `getPublicNews`); tidak ada endpoint, tipe, atau parameter baru.
+  - Tautan nav yang belum punya route memakai section beranda dan komentar `TODO`, bukan URL palsu.
+- **Blocker/keputusan yang diperlukan:** tidak ada blocker teknis. Route `/kegiatan`, `/publikasi`, detail publikasi, dan detail program masih menunggu batch route.
+- **Konfirmasi batas scope:**
+  - Backend berubah: Tidak. Database/schema/migration berubah: Tidak.
+  - API contract/auth/CSRF/RBAC/cookie policy berubah: Tidak.
+  - Dependency, `.env*`, deployment, secret, atau konfigurasi environment berubah: Tidak.
+  - Halaman admin tidak diubah.
+- **Langkah berikutnya:** pemilik meninjau dan meng-commit D-HOME. **Berhenti.**
 
 ---
 

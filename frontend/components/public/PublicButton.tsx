@@ -20,7 +20,7 @@ const toneClasses: Record<PublicButtonTone, string> = {
 };
 
 const baseClasses =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-[4px] border px-[22px] py-[15px] text-xs font-semibold tracking-[0.08em] uppercase transition-colors max-[640px]:px-3.5 max-[640px]:py-[13px] max-[640px]:text-[10.5px] max-[640px]:tracking-[0.06em]";
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-[4px] border px-[22px] py-[15px] text-xs font-semibold tracking-[0.08em] uppercase transition-colors";
 
 type ToneProps = {
   tone?: PublicButtonTone;
