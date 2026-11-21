@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-
+import Image from "next/image";
 import { useAuth } from "@/features/auth/AuthContext";
 
 import {
@@ -12,21 +12,17 @@ import {
 } from "./admin-navigation";
 
 /** Logo garis dari `LOGO` di Design/admin/assets/admin.js. */
-export function AdminLogo({ className = "size-7.5" }: { className?: string }) {
+/** Logo himpunan, sama dengan header situs publik (`public/favicon.png`). */
+export function AdminLogo({ className = "h-9 w-[29px]" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 40 40" aria-hidden="true" className={`shrink-0 ${className}`}>
-      <g fill="none" stroke="#C9D6CF" strokeWidth="2.2">
-        <path d="M20 21 C12 4, 2 8, 4 14 C6 20, 14 21, 20 21Z" />
-        <path d="M20 21 C28 4, 38 8, 36 14 C34 20, 26 21, 20 21Z" />
-        <path d="M20 21 C14 28, 16 38, 20 38 C24 38, 26 28, 20 21Z" />
-      </g>
-      <polygon
-        points="20,16.5 23.5,18.5 23.5,22.5 20,24.5 16.5,22.5 16.5,18.5"
-        fill="#06261B"
-        stroke="#C9D6CF"
-        strokeWidth="1.4"
-      />
-    </svg>
+    <Image
+      src="/favicon.png"
+      alt=""
+      width={29}
+      height={36}
+      priority
+      className={`shrink-0 object-contain ${className}`}
+    />
   );
 }
 
