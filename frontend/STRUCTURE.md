@@ -14,10 +14,13 @@ frontend/
 │   │   ├── shell/                # AdminShell, AdminSidebar, admin-navigation
 │   │   └── shared/               # Can, RequirePermission, ConfirmDialog, FormDialog
 │   ├── public/                   # Komponen publik lintas fitur
+│   │   ├── HighlightedText.tsx
+│   │   ├── PlainTextBody.tsx
 │   │   ├── PublicButton.tsx
 │   │   ├── PublicHeroImage.tsx
 │   │   ├── PublicImage.tsx
 │   │   ├── PublicLabel.tsx
+│   │   ├── PublicSearch.tsx
 │   │   ├── PublicStateBox.tsx
 │   │   ├── RefreshButton.tsx
 │   │   ├── SiteFooter.tsx
@@ -51,9 +54,11 @@ frontend/
 │   │   ├── admin-api.ts
 │   │   ├── public-api.ts
 │   │   ├── types.ts
+│   │   ├── format.ts             # tanggal, cover, galeri, excerpt
+│   │   ├── content.tsx           # body teks polos (Markdown menyusul)
 │   │   └── components/
 │   │       ├── admin/            # NewsList, NewsOverlays, NewsPrimitives
-│   │       └── public/           # PublicationsSection
+│   │       └── public/           # PublicationsSection, NewsList
 │   ├── organization/
 │   │   ├── admin-api.ts
 │   │   ├── public-api.ts
@@ -73,7 +78,8 @@ frontend/
 │   │   ├── types.ts
 │   │   ├── status.ts
 │   │   └── components/
-│   │       └── admin/            # ProgramDeleteDialog, ProgramFormDialog, ProgramPrimitives, ProgramsList
+│   │       ├── admin/            # ProgramDeleteDialog, ProgramFormDialog, ProgramPrimitives, ProgramsList
+│   │       └── public/           # ProgramList, ProgramStatusBadge
 │   ├── settings/
 │   │   ├── admin-api.ts
 │   │   ├── public-api.ts
@@ -87,6 +93,7 @@ frontend/
 │   └── visits/
 │       └── public-api.ts
 └── lib/
+    ├── format-date.ts            # formatDateShort / formatDateLong (YYYY-MM-DD)
     ├── api/
     │   ├── client.ts
     │   └── errors.ts
@@ -151,6 +158,10 @@ area unggah diganti pemberitahuan.
   standar untuk mengambil pesan aman dari `ApiError` (memprioritaskan
   `detail` backend) dan dipakai lintas fitur.
 - `lib/media/`: utilitas media bersama (`api.ts`, `compress.ts`, `types.ts`).
+- `lib/format-date.ts`: `formatDateShort` ("7 Mar 2026") dan `formatDateLong`
+  ("7 Maret 2026") untuk tanggal `YYYY-MM-DD`; helper
+  `features/news/format.ts` memotong datetime API menjadi bagian tanggal lalu
+  memanggil helper ini.
 - `components/ui/`: primitif UI umum (`Button`, `Input`, `Textarea`,
   `Select`, `Checkbox`, `FormField`).
 - `components/admin/shell/` dan `components/admin/shared/`: kerangka admin,
@@ -253,34 +264,60 @@ Foto hero memakai `PublicHeroImage` (komponen klien kecil): nilai `hero_image`
 dari setting diubah lewat `resolveMediaUrl()`; bila kosong atau gagal dimuat,
 komponen jatuh ke aset statis `/images/hero-group.jpg`.
 
-## Chrome publik dan beranda (Batch D-HOME)
+## Chrome publik, beranda, dan daftar (Batch D-HOME, D-PUB)
 
 `app/(public)/layout.tsx` tetap menjadi satu-satunya tempat pemuatan settings
-untuk chrome publik. Batch D-HOME hanya mengubah tampilan; data tetap mengalir
-dari server component.
+untuk chrome publik. Batch D-HOME dan D-PUB hanya mengubah tampilan; data tetap
+mengalir dari server component. Detail rute `/program` dan `/publikasi` ada di
+bagian "Halaman publik" di bawah.
 
 - `SiteHeader` (Client Component) menerima `brandName`, `brandSubtitle`,
   `bankSoal`, dan `instagram`. Urutan navigasi desktop dan mobile: Beranda,
-  Tentang, Kegiatan (`/#program-kerja`), Publikasi (`/#publikasi`), Bank Soal
-  (hanya bila `bankSoal` tidak `null`), lalu Struktur. Kegiatan dan Publikasi
-  masih menuju section beranda dengan komentar `TODO` sampai route halamannya
-  dibuat. Tombol Instagram hanya muncul di menu mobile bila `instagram` tidak
+  Tentang, Kegiatan (`/program`), Publikasi (`/publikasi`), Bank Soal (hanya bila
+  `bankSoal` tidak `null`), lalu Struktur. Status aktif dihitung dari prefix
+  pathname, sehingga `/program/*` menandai Kegiatan dan `/publikasi/*` menandai
+  Publikasi. Tombol Instagram hanya muncul di menu mobile bila `instagram` tidak
   `null`. Tombol menu memakai tiga garis beranimasi; panel menutup lewat Escape,
   klik di luar, atau tautan, dengan focus trap sederhana dan scroll body terkunci.
 - `SiteFooter` (Server Component) menerima `brandName`, `brandSubtitle`,
   `footerCopyright`, `footerInstitution`, `mapsUrl`, `mapsEmbedUrl`, dan
-  `address`. Footer memakai teks brand tanpa logo, nav Beranda/Tentang/Kegiatan/
-  Berita/Struktur, peta dari `mapsEmbedUrl` (dengan `loading="lazy"` dan
-  `referrerPolicy="no-referrer-when-downgrade"`), tautan "Buka Google Maps" dari
-  `mapsUrl`, serta fallback alamat `address` bila embed kosong. Baris copyright
-  dan institusi hanya dirender bila nilainya terisi.
+  `address`. Footer memakai teks brand tanpa logo, nav Beranda/Tentang/Kegiatan
+  (`/program`)/Berita (`/publikasi`)/Struktur, peta dari `mapsEmbedUrl` (dengan
+  `loading="lazy"` dan `referrerPolicy="no-referrer-when-downgrade"`), tautan
+  "Buka Google Maps" dari `mapsUrl`, serta fallback alamat `address` bila embed
+  kosong. Baris copyright dan institusi hanya dirender bila nilainya terisi.
 - `PublicationsSection` menerima `items`, `hasError`, `eyebrow`, `title`,
-  `emptyText`, dan `instagram` (tanpa `moreLabel`). Beranda menampilkan maksimal
-  dua publikasi, excerpt ±150 karakter, dan gambar rasio 3/2 grayscale yang
-  berubah saat hover. Tombol "Lihat Semua Publikasi" belum dirender karena route
-  daftar publikasi belum ada (`TODO`).
+  `emptyText`, dan `instagram`. Section memakai `id="publikasi"` dan merender
+  maksimal dua publikasi lewat `NewsList` bersama: cover (atau kotak "Foto"),
+  judul, excerpt ±150 karakter, tanggal pendek, dan tautan baca ke
+  `/publikasi/<slug>`. Di bawah daftar ada tombol "Lihat Semua Publikasi →" ke
+  `/publikasi` (`.sec-foot`), dan state kosong menawarkan tautan Instagram.
+- `NewsList` (`features/news/components/public/NewsList.tsx`) dipakai beranda
+  dan `/publikasi`: baris `.pub` satu kolom di mobile (gap 14px, cover 180px)
+  dan dua kolom sejak 641px, dengan `<mark>` dari `HighlightedText` saat ada
+  kata kunci.
 - `OrganizationSection` menerima `data`, `hasError`, `eyebrow`, `title`,
   `description`, `note`, dan `buttonLabel`. Section memakai `id="kepengurusan"`
   bergaya gelap, kartu divisi dua kolom di desktop, statistik periode/divisi di
   mobile, kartu tautan `/struktur?view=semua` bila jumlah divisi ganjil, dan
   tombol "Selengkapnya" ke `/struktur`.
+
+## Halaman publik
+
+- `/program` dan `/program/[slug]` (Batch D-PUB Fase A) memakai
+  `features/programs/public-api.ts`. Daftar mengambil `limit: 50` lalu memfilter
+  status dan kata kunci di server component berdasarkan `searchParams`; kartu
+  barisnya berasal dari `features/programs/components/public/ProgramList.tsx`
+  yang juga dipakai beranda. Label status selalu dari `programStatusLabel`.
+- `/publikasi` dan `/publikasi/[slug]` (Batch D-PUB Fase B) memakai
+  `features/news/public-api.ts`. Daftar mengirim `q` ke backend hanya bila
+  panjangnya ≥ 2 karakter, memakai pagination `?page=` 10 item per halaman, dan
+  menghitung `totalPages` dari `total`. Detail merender cover 16:9, tag, isi teks
+  polos lewat `features/news/content.tsx`, dan galeri; slug yang tidak ada
+  memanggil `notFound()`.
+- Pencarian pada kedua daftar memakai `components/public/PublicSearch.tsx`
+  (debounce, memperbarui `?q=`), dan setiap hasil menyorot kata kunci dengan
+  `HighlightedText`.
+- Kedua daftar punya `loading.tsx` masing-masing dengan skeleton yang meniru
+  ukuran konten akhir; detail publikasi menyertakan skeleton cover 16:9,
+  sedangkan detail program tidak karena program tidak punya gambar.

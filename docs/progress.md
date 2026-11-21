@@ -56,6 +56,7 @@ Active Development Log dan Historical Archive bersifat **append-only**: entri la
 - **Batch ADM-SET** (19 Nov) menambahkan halaman `/admin/settings` ("Pengaturan Situs") dengan `RequirePermission settings.view`, mode baca saja tanpa `settings.manage`, navigasi per grup dari backend, simpan per grup lewat `PATCH /admin/settings` hanya untuk key yang berubah, error `422` per key di field terkait, foto hero (`hero_image`) dengan unggah `POST /media/images` + `storage_key` dan `hero_image_alt` berdampingan, reset per field lewat `DELETE /admin/settings/{key}`, serta panel `unknown_keys` untuk pembersihan data lama. Menu Pengaturan kini masuk `implementedAdminRoutes`. Sudah di-commit pemilik sebagai `e54b20c`.
 - **Batch PUB-W** (20 Nov) menyambungkan halaman publik ke `GET /public/settings` dan `GET /public/programs`: `app/(public)/layout.tsx` memuat settings sekali dan mengoper nilai efektif ke header/footer, tautan Bank Soal/Instagram memakai `getPublicLinks()`, hero/tentang/program/publikasi/struktur memakai key settings, dan foto hero memakai `hero_image` melalui `PublicHeroImage`. Section `#kontak` sementara ditambahkan saat itu. Sudah di-commit pemilik sebagai `3444ed4`.
 - **Batch D-HOME** (20 Nov) membangun ulang beranda, header, dan footer publik mengikuti `Design/index.html` + `Design/assets/{app.js,style.css}`: urutan nav prototype, menu mobile tiga garis + tombol Instagram, hero dengan statistik bersyarat, Tentang dua kolom, Program Kerja maksimal 3, Publikasi maksimal 2, Kepengurusan bergaya `.section--dark`, serta footer dengan peta. Section `#kontak` dihapus dan lokasi/peta dipindah ke footer. Perubahan berada di working tree; **belum di-commit**.
+- **Batch D-PUB** (21 Nov) menambahkan halaman publik program dan publikasi. Fase A (program) sudah di-commit pemilik sebagai `35795f6`: `/program` (filter status, pencarian server, highlight `<mark>`), `/program/[slug]`, daftar program bersama beranda, tautan hero/nav ke `/program`. Fase B berada di working tree dan **belum di-commit**: `/publikasi` (pencarian backend `q`, pagination 10), `/publikasi/[slug]` (cover 16:9, tag, galeri), daftar publikasi bersama beranda, serta nav/footer ke `/publikasi`. HEAD saat batch: `35795f6`; `.gitignore` memiliki perubahan lokal pemilik yang tidak disentuh.
 
 ### b. Scope fase saat ini
 
@@ -115,16 +116,16 @@ Entri historis yang masih memuat referensi tersebut tetap utuh di Historical Arc
 
 Ringkasan dari audit 12 November 2026; detail dan bukti line-by-line ada di `docs/audit/REDESIGN_AUDIT_2026-11-12.md` (rujukan; jangan disalin ulang).
 
-- Route publik produk: `/` dan `/struktur`. Fixture `/__structure-state` **sudah dihapus pada R1 Fase A** (folder berawalan `_` sebenarnya tidak pernah menjadi route Next; URL-nya 404 bahkan sebelum dihapus).
+- Route publik produk: `/`, `/struktur`, `/program`, `/program/[slug]`, `/publikasi`, dan `/publikasi/[slug]`. Fixture `/__structure-state` **sudah dihapus pada R1 Fase A** (folder berawalan `_` sebenarnya tidak pernah menjadi route Next; URL-nya 404 bahkan sebelum dihapus).
 - Route admin: `/login`, `/admin/dashboard`, `/admin/news` (read-only di UI), `/admin/programs` (CRUD), `/admin/organization` (CRUD periode/divisi/anggota + foto anggota), `/admin/settings` (pengaturan situs per grup), `/admin/accounts` (khusus superadmin), `/admin/account` (semua akun yang login).
 - Endpoint publik yang tersedia dan pemakaiannya:
 
   | Endpoint | Dipakai frontend? |
   |---|---|
-  | `/public/news` | Ya di beranda (maksimal 2 item, tanpa `q`). Service mendukung `q`, `total`, `excerpt`, dan `tags` sejak API-F. |
-  | `/public/news/{slug}` | Service `getPublicNewsBySlug()` siap (404 → `null`); route detail belum ada. |
-  | `/public/programs` | Ya di beranda (maksimal 3 item, periode aktif). Service mendukung filter periode/status/divisi, `total`, dan `period`. |
-  | `/public/programs/{slug}` | Service `getPublicProgramBySlug()` siap (404 → `null`); route detail program belum ada. |
+  | `/public/news` | Ya di beranda (maksimal 2 dari 3 item) dan `/publikasi` (`q`, pagination 10 per halaman, `total`, `excerpt`, `tags`). |
+  | `/public/news/{slug}` | Ya di `/publikasi/[slug]` (404 → `notFound()`, metadata + OpenGraph cover). |
+  | `/public/programs` | Ya di beranda (maksimal 3 item) dan `/program` (limit 50, filter status/pencarian di server, `total`, `period`). |
+  | `/public/programs/{slug}` | Ya di `/program/[slug]` (404 → `notFound()`, metadata dari nama/deskripsi). |
   | `/public/organization` | Ya, termasuk `sort_order` dan `photo_url` yang sudah dinormalisasi backend. |
   | `/public/settings` | Ya. Header, footer, beranda, dan `/struktur` memakai `loadPublicSettings()`/`resolvePublicSettings()`; UI publik sudah migrasi dari hardcode. |
   | `POST /public/visits` | Service `recordVisit()` siap (error ditelan); belum dipasang ke halaman. |
@@ -1387,6 +1388,35 @@ Entri sesi sejak 11 November 2026. Append-only: tambahkan entri baru di bawah; j
     atau Redis sungguhan; tidak commit/push/deploy.
 - **Langkah berikutnya:** pemilik meninjau dan meng-commit STORAGE-VB.
   **Berhenti.**
+
+---
+
+### Sesi 2026-11-21 — Batch D-PUB Fase B: halaman publikasi
+
+- **Status:** Selesai di working tree; tidak commit, push, atau deploy.
+- **Branch/HEAD:** `feat/admin-ui-foundation`, HEAD `35795f6` (Fase A sudah
+  di-commit pemilik). Perubahan lokal `.gitignore` milik pemilik dipertahankan.
+- **Tujuan:** melengkapi publikasi publik mengikuti `Design/publikasi.html`,
+  `Design/artikel.html`, dan `Design/assets/app.js` (`pubItem`, `newsHTML`,
+  `renderPublikasi`, `renderArtikel`).
+- **Route baru:** `/publikasi` (pencarian `?q=`, pagination `?page=`, 10 item
+  per halaman) dan `/publikasi/[slug]` (detail, 404 → `notFound()`).
+- **Komponen baru:** `features/news/components/public/NewsList.tsx`,
+  `features/news/format.ts`, `features/news/content.tsx`,
+  `components/public/PublicSearch.tsx` (dipakai juga oleh `/program`).
+- **Perubahan Fase A:** tab filter `/program` mobile memakai `px-4` (16px)
+  sesuai `.seg button`, dan `PlainTextBody` memakai `text-[#2A3530]` sesuai
+  `.article__body p`.
+- **Perubahan lain:** beranda memakai `NewsList` bersama, gambar/tanggal/judul
+  publikasi menjadi tautan detail, `.sec-foot` “Lihat Semua Publikasi”, header
+  dan footer menuju `/publikasi` (aktif juga di `/publikasi/*`).
+- **Pemeriksaan:** `npm run lint`, `npx tsc --noEmit`, dan `npm run build`
+  lulus. Route `ƒ /publikasi` dan `ƒ /publikasi/[slug]` terdeteksi.
+- **Di luar prototipe:** galeri gambar tambahan (grid 2 kolom rasio 3:2),
+  jendela nomor pager maksimal tujuh sel, dan tag pada meta detail.
+- **Batas scope:** backend/database/dependency/`.env*` tidak diubah atau
+  dibaca; tidak ada commit/push/deploy.
+- **Langkah berikutnya:** pemilik meninjau Fase B di 375px dan 1440px.
 
 ---
 

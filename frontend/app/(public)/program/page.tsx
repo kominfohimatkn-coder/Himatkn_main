@@ -211,7 +211,7 @@ export default async function ProgramPage({
                   role="tab"
                   aria-selected={active}
                   aria-current={active ? "page" : undefined}
-                  className={`rounded-[3px] px-3 py-[11px] text-xs font-semibold tracking-[0.1em] whitespace-nowrap uppercase transition-colors min-[641px]:px-[22px] min-[641px]:py-3 ${
+                  className={`rounded-[3px] px-4 py-[11px] text-xs font-semibold tracking-[0.1em] whitespace-nowrap uppercase transition-colors min-[641px]:px-[22px] min-[641px]:py-3 ${
                     active
                       ? "bg-green-800 text-white hover:text-white"
                       : "text-muted hover:text-green-900"

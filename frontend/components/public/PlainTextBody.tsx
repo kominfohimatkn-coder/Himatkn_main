@@ -21,7 +21,7 @@ export function PlainTextBody({ text }: { text: string | null }) {
       {paragraphs.map((paragraph, index) => (
         <p
           key={`${index}-${paragraph.slice(0, 24)}`}
-          className="mb-5 text-[17px] leading-[1.8] whitespace-pre-line text-ink"
+          className="mb-5 text-[17px] leading-[1.8] whitespace-pre-line text-[#2A3530]"
         >
           {paragraph}
         </p>

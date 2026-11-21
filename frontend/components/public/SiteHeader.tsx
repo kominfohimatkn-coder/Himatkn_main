@@ -22,9 +22,7 @@ const baseNavigation: NavItem[] = [
   { label: "Beranda", href: "/" },
   { label: "Tentang", href: "/#tentang" },
   { label: "Kegiatan", href: "/program" },
-  // TODO(publikasi-page): route /publikasi belum ada. Arahkan ke section
-  // publikasi di beranda sampai halaman Publikasi tersedia.
-  { label: "Publikasi", href: "/#publikasi" },
+  { label: "Publikasi", href: "/publikasi" },
 ];
 
 type SiteHeaderProps = {

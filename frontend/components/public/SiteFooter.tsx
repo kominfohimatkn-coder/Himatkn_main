@@ -11,8 +11,7 @@ const footerNavigation: FooterItem[] = [
   { label: "Beranda", href: "/" },
   { label: "Tentang", href: "/#tentang" },
   { label: "Kegiatan", href: "/program" },
-  // TODO(publikasi-page): route /publikasi belum ada.
-  { label: "Berita", href: "/#publikasi" },
+  { label: "Berita", href: "/publikasi" },
   { label: "Struktur", href: "/struktur" },
 ];
 
