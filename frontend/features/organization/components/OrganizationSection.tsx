@@ -135,7 +135,11 @@ export function OrganizationSection({
             <div className="mt-8.5 flex flex-wrap items-center justify-between gap-5 text-[13px] text-on-dark-soft max-[640px]:mt-0">
               {note ? <p className="max-[640px]:hidden">{note}</p> : null}
               {buttonLabel ? (
-                <PublicButtonLink href="/struktur" tone="white">
+                <PublicButtonLink
+                  href="/struktur"
+                  tone="white"
+                  className="min-[641px]:ml-auto"
+                >
                   {buttonLabel}
                   <ArrowRight className="size-4" aria-hidden="true" />
                 </PublicButtonLink>
