@@ -150,6 +150,17 @@
   --color-line-on-dark: var(--line-on-dark);
   --color-amber: var(--amber);
 
+  /* Panel admin — nilai aktual di-scope pada .admin-theme */
+  --color-green-600: var(--green-600);
+  --color-mint-50: var(--mint-50);
+  --color-line-strong: var(--line-strong);
+  --color-muted-light: var(--muted-light);
+  --color-on-dark-muted: var(--on-dark-muted);
+  --color-amber-bg: var(--amber-bg);
+  --color-danger-bg: var(--danger-bg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+
   /* Status */
   --color-danger: var(--danger);
   --color-warning: var(--warning);
@@ -883,12 +894,63 @@ section[id] {
    ========================================================= */
 
 .admin-theme {
-  --font-sans: var(--font-admin-sans);
-  --font-serif: var(--font-admin-serif);
-  --font-sans-stack: var(--font-admin-sans);
-  --font-serif-stack: var(--font-admin-serif);
+  /* Palet Design/admin/assets/admin.css (:root). */
+  --green-950: #06261b;
+  --green-900: #0b2a1f;
+  --green-800: #0f4d36;
+  --green-700: #1e5a43;
+  --green-600: #2c6e55;
+  --mint: #e3eee8;
+  --mint-50: #f1f6f3;
+  --white: #ffffff;
+  --ink: #13201a;
+  --muted: #5b6863;
+  --muted-light: #66726c;
+  --line: #dce4e0;
+  --line-strong: #c9d4ce;
+  --line-on-dark: #1c3d31;
+  --on-dark-muted: #a7b8b0;
+  --amber: #b07a18;
+  --amber-bg: #fbf3e3;
+  --danger: #a33a22;
+  --danger-bg: #fcf1ee;
+  --info: #2b4f8f;
+  --info-bg: #eef2fa;
+  --warning: #b07a18;
+  --success: #1e5a43;
+  --radius: 4px;
 
+  /* Token lama dipetakan ke palet admin agar halaman yang belum
+     dirombak ikut berwarna hijau-mint (dibersihkan di batch ADM-2..7). */
+  --paper: #ffffff;
+  --cream: #fbfdfc;
+  --cream-2: #f1f6f3;
+  --bg-light: #fbfdfc;
+  --bg-light-2: #f1f6f3;
+  --bg-dark: #06261b;
+  --bg-dark-2: #0b2a1f;
+  --gold: #b07a18;
+  --gold-soft: #c48c26;
+  --gold-ink: #8a5f12;
+  --gold-bright: #e3eee8;
+  --ink-soft: #5b6863;
+  --on-dark: #ffffff;
+  --on-dark-soft: #a7b8b0;
+  --paper-line: #dce4e0;
+  --line-dark: #dce4e0;
+  --focus-ring: #1e5a43;
+
+  /* Font admin mengikuti prototipe: Literata (judul) + Inter (isi). */
+  --font-sans-stack: var(--font-inter), system-ui, sans-serif;
+  --font-serif-stack: var(--font-literata), Georgia, serif;
+  --font-sans: var(--font-sans-stack);
+  --font-serif: var(--font-serif-stack);
+
+  background: #fbfdfc;
+  color: var(--ink);
   font-family: var(--font-sans-stack);
+  font-size: 14px;
+  line-height: 1.55;
 }
 
 /* =========================================================
@@ -901,9 +963,11 @@ section[id] {
   --focus-ring: var(--gold-bright);
 }
 
-:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 3px;
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 3px;
+  }
 }
 
 /* =========================================================

@@ -1,39 +1,71 @@
 import Link from "next/link";
 import type { ComponentProps, ComponentPropsWithoutRef } from "react";
 
+/**
+ * Tombol admin mengikuti `.btn` di Design/admin/assets/admin.css.
+ * Nama varian lama tetap didukung agar halaman yang belum dirombak tidak rusak:
+ * primary → solid, secondary → ghost, light → outline, dark → solid gelap.
+ */
 export type ButtonVariant =
+  | "solid"
+  | "outline"
+  | "ghost"
+  | "danger"
+  | "danger-outline"
   | "primary"
   | "secondary"
-  | "outline"
   | "dark"
-  | "light"
-  | "danger";
+  | "light";
+
+export type ButtonSize = "md" | "sm" | "xs" | "icon";
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary:
-    "border-gold bg-gold text-bg-dark hover:border-gold-soft hover:bg-gold-soft",
-  secondary:
-    "border-on-dark/25 bg-transparent text-on-dark hover:border-on-dark/50 hover:bg-on-dark/5",
+  solid: "border-transparent bg-green-800 text-white hover:bg-green-700",
+  primary: "border-transparent bg-green-800 text-white hover:bg-green-700",
+  dark: "border-transparent bg-green-950 text-white hover:bg-green-900",
   outline:
-    "border-paper-line bg-transparent text-ink hover:border-gold hover:bg-bg-light-2",
-  dark:
-    "border-bg-dark bg-bg-dark text-on-dark hover:border-bg-dark-2 hover:bg-bg-dark-2",
+    "border-line-strong bg-white text-green-900 hover:border-green-800",
   light:
-    "border-paper-line bg-paper text-ink hover:border-gold hover:bg-bg-light-2",
-  danger:
-    "border-danger bg-danger text-white hover:border-danger/85 hover:bg-danger/85",
+    "border-line-strong bg-white text-green-900 hover:border-green-800",
+  ghost:
+    "border-transparent bg-transparent text-muted hover:bg-mint-50 hover:text-green-900",
+  secondary:
+    "border-transparent bg-transparent text-muted hover:bg-mint-50 hover:text-green-900",
+  danger: "border-transparent bg-danger text-white hover:bg-[#8a2f1b]",
+  "danger-outline":
+    "border-[#e6cfc6] bg-white text-danger hover:border-danger",
 };
+
+const sizeClasses: Record<ButtonSize, string> = {
+  md: "h-[38px] text-[11.5px] tracking-[0.08em]",
+  sm: "h-8 text-[11px] tracking-[0.08em]",
+  xs: "h-7 text-[11px] tracking-[0.06em]",
+  icon: "size-[34px] text-[11px]",
+};
+
+/** Padding dipisah agar `.btn--ghost` (10px) tidak bertabrakan dengan padding ukuran. */
+function paddingClass(variant: ButtonVariant, size: ButtonSize): string {
+  if (size === "icon") return "px-0";
+  if (variant === "ghost" || variant === "secondary") return "px-2.5";
+  if (size === "sm") return "px-[11px]";
+  if (size === "xs") return "px-[9px]";
+  return "px-4";
+}
 
 type SharedButtonProps = {
   variant?: ButtonVariant;
+  size?: ButtonSize;
 };
 
 export function buttonClassName({
-  variant = "primary",
+  variant = "solid",
+  size = "md",
   className = "",
 }: SharedButtonProps & { className?: string } = {}) {
   return [
-    "inline-flex min-h-11 items-center justify-center gap-2 rounded-[3px] border px-4 font-sans text-xs font-bold tracking-[0.01em] transition-[background-color,border-color,color,transform] duration-200 hover:-translate-y-px disabled:pointer-events-none disabled:opacity-60",
+    "inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-[4px] border font-sans leading-none font-semibold whitespace-nowrap uppercase transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45 [&_svg]:size-[15px] [&_svg]:shrink-0",
+    sizeClasses[size],
+    paddingClass(variant, size),
     variantClasses[variant],
     className,
   ]
@@ -42,7 +74,8 @@ export function buttonClassName({
 }
 
 export function Button({
-  variant = "primary",
+  variant = "solid",
+  size = "md",
   className,
   type = "button",
   ...props
@@ -50,18 +83,22 @@ export function Button({
   return (
     <button
       type={type}
-      className={buttonClassName({ variant, className })}
+      className={buttonClassName({ variant, size, className })}
       {...props}
     />
   );
 }
 
 export function ButtonLink({
-  variant = "primary",
+  variant = "solid",
+  size = "md",
   className,
   ...props
 }: ComponentProps<typeof Link> & SharedButtonProps) {
   return (
-    <Link className={buttonClassName({ variant, className })} {...props} />
+    <Link
+      className={buttonClassName({ variant, size, className })}
+      {...props}
+    />
   );
 }

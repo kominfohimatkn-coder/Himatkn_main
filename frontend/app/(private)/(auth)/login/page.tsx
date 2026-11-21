@@ -1,11 +1,21 @@
-
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState, type FormEvent } from "react";
+import { Eye, EyeOff, TriangleAlert } from "lucide-react";
 
+import { AdminLogo } from "@/components/admin/shell/AdminSidebar";
+import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/features/auth/AuthContext";
 
+const inputClasses =
+  "w-full rounded-[4px] border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none transition-[border-color,box-shadow] duration-150 hover:border-line-strong focus-visible:border-green-800 focus-visible:shadow-[0_0_0_3px_rgba(15,77,54,0.1)]";
+
+const labelClasses =
+  "text-[11px] font-semibold tracking-[0.08em] text-green-900 uppercase";
+
+/** Halaman login mengikuti Design/admin/login.html (`.login`). */
 export default function LoginPage() {
   const router = useRouter();
   const { login, isAuthenticated, isLoading } = useAuth();
@@ -44,92 +54,145 @@ export default function LoginPage() {
 
   if (isLoading) {
     return (
-      <main className="admin-theme flex min-h-screen items-center justify-center bg-bg-light px-4">
-        <p className="text-sm text-ink-soft">Memuat sesi...</p>
+      <main className="admin-theme flex min-h-screen items-center justify-center px-4">
+        <p className="text-sm text-muted">Memuat sesi...</p>
       </main>
     );
   }
 
   return (
-    <main className="admin-theme flex min-h-screen items-center justify-center bg-bg-light px-4 py-10">
-      <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">
-          Login Admin
-        </h1>
+    <main className="admin-theme grid min-h-screen grid-cols-1 min-[901px]:grid-cols-[1.05fr_1fr]">
+      <section
+        aria-hidden="true"
+        className="relative flex min-h-60 flex-col justify-between gap-6 overflow-hidden bg-green-950 px-6 py-7 text-white min-[901px]:min-h-0 min-[901px]:p-12"
+      >
+        {/* Foto latar seperti `.login__side::before` + gradien `::after`. */}
+        <div className="absolute inset-0 bg-[url('/images/hero-group.jpg')] bg-cover bg-center opacity-[0.16] grayscale" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,38,27,0.4),rgba(6,38,27,0.92))]" />
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-          <div>
-            <label
-              htmlFor="username"
-              className="block text-sm font-medium text-ink"
-            >
-              Username
-            </label>
+        <div className="relative z-10 flex items-center gap-3">
+          <AdminLogo className="size-[34px]" />
+          <span>
+            <span className="block font-serif text-[13px] leading-[1.15] font-bold tracking-[0.02em] uppercase">
+              Hima Teknokimia Nuklir
+            </span>
+            <span className="mt-[3px] block text-[11px] leading-[1.3] font-medium tracking-[0.1em] text-on-dark-muted uppercase">
+              Politeknik Teknologi Nuklir
+            </span>
+          </span>
+        </div>
 
-            <input
-              id="username"
-              name="username"
-              type="text"
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              autoComplete="username"
-              required
-              className="mt-1.5 min-h-11 w-full border border-paper-line bg-white px-3 py-2 text-sm text-ink outline-none transition-colors placeholder:text-ink-soft/70 focus:border-gold focus:ring-2 focus:ring-gold/20"
-            />
-          </div>
+        <div className="relative z-10">
+          <p className="text-[11px] leading-[1.2] font-semibold tracking-[0.1em] text-on-dark-muted uppercase">
+            Panel Admin
+          </p>
+          <h1 className="mt-3.5 font-serif text-[clamp(32px,3.4vw,46px)] leading-[1.15] font-bold text-white">
+            Kelola situs <em className="block">HIMATKN</em>
+          </h1>
+          <p className="mt-4 hidden max-w-[40ch] text-[15px] text-on-dark-muted min-[901px]:block">
+            Publikasi, program kerja, dan struktur kepengurusan HIMATKN dalam
+            satu tempat.
+          </p>
+        </div>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-ink"
-            >
-              Password
-            </label>
+        <p className="relative z-10 text-xs text-on-dark-muted">
+          © {new Date().getFullYear()} HIMATKN
+        </p>
+      </section>
 
-            <div className="mt-1.5 flex min-h-11 items-center border border-paper-line bg-white focus-within:border-gold focus-within:ring-2 focus-within:ring-gold/20">
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                autoComplete="current-password"
-                required
-                className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm text-ink outline-none"
-              />
+      <section className="grid place-items-center px-6 py-12">
+        <div className="w-full max-w-[380px]">
+          <p className="text-[11px] leading-[1.2] font-semibold tracking-[0.1em] text-green-700 uppercase">
+            Masuk
+          </p>
+          <h2 className="mt-2.5 font-serif text-[28px] leading-[1.25] font-bold text-green-900">
+            Selamat datang kembali
+          </h2>
+          <p className="mt-1.5 text-muted">
+            Gunakan akun administrator yang diberikan superadmin.
+          </p>
 
-              <button
-                type="button"
-                onClick={() => setShowPassword((current) => !current)}
-                aria-label={
-                  showPassword ? "Sembunyikan password" : "Tampilkan password"
-                }
-                aria-pressed={showPassword}
-                className="min-h-11 shrink-0 px-3 text-xs font-medium text-ink-soft hover:text-ink focus-visible:outline-offset-[-3px]"
-              >
-                {showPassword ? "Sembunyikan" : "Lihat"}
-              </button>
-            </div>
-          </div>
-
-          {error && (
-            <p
+          {error ? (
+            <div
               role="alert"
-              className="border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700"
+              className="mt-[22px] flex items-start gap-3 rounded-[4px] border border-[#ebcfc6] bg-danger-bg px-3.5 py-3 text-[13px] text-danger [&_svg]:mt-px [&_svg]:size-[17px] [&_svg]:shrink-0"
             >
-              {error}
-            </p>
-          )}
+              <TriangleAlert aria-hidden="true" />
+              <span>{error}</span>
+            </div>
+          ) : null}
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="flex min-h-11 w-full items-center justify-center bg-bg-dark px-4 py-2.5 text-sm font-medium text-on-dark transition-colors hover:bg-bg-dark-2 focus-visible:outline-gold disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isSubmitting ? "Memproses..." : "Masuk"}
-          </button>
-        </form>
-      </div>
+          <form onSubmit={handleSubmit} className="mt-7">
+            <div className="grid gap-1.5">
+              <label htmlFor="username" className={labelClasses}>
+                Username
+              </label>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                required
+                className={inputClasses}
+              />
+            </div>
+
+            <div className="mt-4 grid gap-1.5">
+              <label htmlFor="password" className={labelClasses}>
+                Kata sandi
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="current-password"
+                  required
+                  className={`${inputClasses} pr-11`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  aria-label={
+                    showPassword
+                      ? "Sembunyikan kata sandi"
+                      : "Tampilkan kata sandi"
+                  }
+                  aria-pressed={showPassword}
+                  className="absolute top-1/2 right-1 grid size-9 -translate-y-1/2 cursor-pointer place-items-center border-0 bg-transparent text-muted [&_svg]:size-[18px]"
+                >
+                  {showPassword ? (
+                    <EyeOff aria-hidden="true" />
+                  ) : (
+                    <Eye aria-hidden="true" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="mt-[22px] h-[46px]! w-full"
+            >
+              {isSubmitting ? "Memproses..." : "Masuk"}
+            </Button>
+          </form>
+
+          <div className="mt-7 flex justify-between gap-4 text-xs text-muted">
+            <Link href="/" className="text-muted hover:text-green-800">
+              ← Kembali ke situs
+            </Link>
+            <span>Lupa kata sandi? Hubungi superadmin.</span>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }
