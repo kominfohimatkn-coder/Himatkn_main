@@ -59,7 +59,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
     <div className="admin-theme min-h-screen">
       <a
         href="#content"
-        className="absolute -top-16 left-3 z-[200] rounded-[4px] bg-green-800 px-3.5 py-2 text-white focus:top-3"
+        className="absolute -top-16 left-3 z-200 rounded-sm bg-green-800 px-3.5 py-2 text-white focus:top-3"
       >
         Langsung ke konten
       </a>

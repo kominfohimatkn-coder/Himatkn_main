@@ -71,8 +71,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,38,27,0.4),rgba(6,38,27,0.92))]" />
 
         <div className="relative z-10 flex items-center gap-3">
-          <AdminLogo className="size-[34px]" />
-          <span>
+          <AdminLogo className="h-10.5 w-8.5" />          <span>
             <span className="block font-serif text-[13px] leading-[1.15] font-bold tracking-[0.02em] uppercase">
               Hima Teknokimia Nuklir
             </span>
