@@ -19,7 +19,7 @@ pip install -r requirements.txt
 Copy-Item .env.example .env
 # isi DATABASE_URL dan JWT_SECRET_KEY
 python -m app.seed
-uvicorn app.main:app --reload --port 8000
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 Swagger: `http://localhost:8000/docs`.
