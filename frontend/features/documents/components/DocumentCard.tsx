@@ -1,18 +1,30 @@
-import { FileText } from "lucide-react";
+import { FileText, FolderOpen } from "lucide-react";
 
 import { PublicLabel } from "@/components/public/PublicLabel";
 import { formatDateShort } from "@/lib/format-date";
 
-import type { PublicDocument } from "../data";
+import { driveTarget, type PublicDocument } from "../data";
 
 /** Tombol kecil `.btn--sm` di prototipe (padding 11px 16px, huruf 11px). */
 const actionBase =
   "inline-flex max-[640px]:flex-1 items-center justify-center gap-2 rounded-[4px] border px-4 py-[11px] text-[11px] leading-none font-semibold tracking-[0.08em] uppercase transition-colors";
+const outlineAction = `${actionBase} border-[#C9D4CE] bg-white text-green-900 hover:border-green-800`;
+const solidAction = `${actionBase} border-green-800 bg-green-800 text-white hover:border-green-700 hover:bg-green-700`;
 
-/** Kartu dokumen, mengikuti `.doc` di Design/assets/style.css. */
+/**
+ * Kartu dokumen, mengikuti `.doc` di Design/assets/style.css. Link folder
+ * Drive menampilkan tombol "Buka di Drive"; link file menampilkan "Lihat" +
+ * "Unduh". Link yang tidak dikenali tetap tampil tanpa tombol.
+ */
 export function DocumentCard({ document }: { document: PublicDocument }) {
-  const updated = formatDateShort(document.updated);
-  const meta = ["PDF", document.size, updated ? `Diperbarui ${updated}` : null]
+  const target = driveTarget(document.drive);
+  const isFolder = target?.kind === "folder";
+  const updated = formatDateShort(document.updated ?? null);
+  const meta = [
+    isFolder ? "Folder Google Drive" : "PDF",
+    document.size,
+    updated ? `Diperbarui ${updated}` : null,
+  ]
     .filter(Boolean)
     .join(" · ");
 
@@ -25,8 +37,14 @@ export function DocumentCard({ document }: { document: PublicDocument }) {
         aria-hidden="true"
         className="grid h-[62px] w-[52px] place-items-center content-center gap-0.5 rounded-[3px] bg-mint text-green-800 max-[640px]:h-12 max-[640px]:w-10"
       >
-        <FileText className="size-[22px]" strokeWidth={1.6} />
-        <span className="text-[9px] font-bold tracking-[0.08em]">PDF</span>
+        {isFolder ? (
+          <FolderOpen className="size-[22px]" strokeWidth={1.6} />
+        ) : (
+          <FileText className="size-[22px]" strokeWidth={1.6} />
+        )}
+        <span className="text-[9px] font-bold tracking-[0.08em]">
+          {isFolder ? "FOLDER" : "PDF"}
+        </span>
       </div>
 
       <div className="min-w-0">
@@ -39,25 +57,41 @@ export function DocumentCard({ document }: { document: PublicDocument }) {
         </p>
         <p className="mt-2.5 text-xs text-muted">{meta}</p>
 
-        <div className="mt-[18px] flex flex-wrap gap-2.5">
-          <a
-            href={document.file}
-            target="_blank"
-            rel="noopener"
-            aria-label={`Lihat ${document.title} (PDF, tab baru)`}
-            className={`${actionBase} border-[#C9D4CE] bg-white text-green-900 hover:border-green-800`}
-          >
-            Lihat <span aria-hidden="true">↗</span>
-          </a>
-          <a
-            href={document.file}
-            download
-            aria-label={`Unduh ${document.title} (PDF${document.size ? `, ${document.size}` : ""})`}
-            className={`${actionBase} border-green-800 bg-green-800 text-white hover:border-green-700 hover:bg-green-700`}
-          >
-            Unduh
-          </a>
-        </div>
+        {target ? (
+          <div className="mt-[18px] flex flex-wrap gap-2.5">
+            {target.kind === "folder" ? (
+              <a
+                href={target.view}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Buka folder ${document.title} di Google Drive (tab baru)`}
+                className={solidAction}
+              >
+                Buka di Drive <span aria-hidden="true">↗</span>
+              </a>
+            ) : (
+              <>
+                <a
+                  href={target.view}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Lihat ${document.title} di Google Drive (tab baru)`}
+                  className={outlineAction}
+                >
+                  Lihat <span aria-hidden="true">↗</span>
+                </a>
+                <a
+                  href={target.download}
+                  rel="noopener noreferrer"
+                  aria-label={`Unduh ${document.title} (PDF${document.size ? `, ${document.size}` : ""}) dari Google Drive`}
+                  className={solidAction}
+                >
+                  Unduh
+                </a>
+              </>
+            )}
+          </div>
+        ) : null}
       </div>
     </article>
   );
