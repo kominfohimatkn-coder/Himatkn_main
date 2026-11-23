@@ -6,7 +6,7 @@ import { ClipboardCheck, Eye, Pencil, Plus, RefreshCw, Search, Trash2 } from "lu
 import { Badge } from "@/components/admin/shared/Badge";
 import { Card } from "@/components/admin/shared/Card";
 import ConfirmDialog from "@/components/admin/shared/ConfirmDialog";
-import { Pager, Table, Td, Th, Tr } from "@/components/admin/shared/DataTable";
+import { MobileList, MobileRow, Pager, Table, Td, Th, Tr } from "@/components/admin/shared/DataTable";
 import { SearchInput, Segmented, SelectSm, Toolbar } from "@/components/admin/shared/ListControls";
 import { Notice } from "@/components/admin/shared/Notice";
 import { PageHead } from "@/components/admin/shared/PageHead";
@@ -153,6 +153,7 @@ export default function ProgramsList() {
       await deleteAdminProgram(deleting.id);
       setPrograms((current) => current?.filter((p) => p.id !== deleting.id) ?? null);
       setDeleting(null);
+      setFormTarget(null);
       toast("Program kerja dihapus.");
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : "Program kerja gagal dihapus.");
@@ -239,6 +240,7 @@ export default function ProgramsList() {
     body = (
       <>
         <Table
+          className="max-[640px]:hidden"
           head={
             <>
               <Th>Program</Th>
@@ -311,6 +313,33 @@ export default function ProgramsList() {
             );
           })}
         </Table>
+        <MobileList>
+          {pageRows.map((program) => {
+            const s = normalizeProgramStatus(program.status);
+            const badge = s ? PROGRAM_STATUS_BADGE[s] : { tone: "grey" as const };
+
+            return (
+              <MobileRow
+                key={program.id}
+                onClick={manage ? () => setFormTarget({ program }) : undefined}
+                title={program.name}
+                muted={s === "cancelled"}
+                status={
+                  <Badge tone={badge.tone} dot={badge.dot}>
+                    {programStatusLabel(program.status)}
+                  </Badge>
+                }
+                meta={[
+                  divisionName(program.division_id),
+                  schedule(program) ?? "Belum dijadwalkan",
+                  period ? null : periodName(program.period_id),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              />
+            );
+          })}
+        </MobileList>
         <Pager total={rows.length} page={page} perPage={PER_PAGE} onPage={setPage} />
       </>
     );
@@ -400,6 +429,14 @@ export default function ProgramsList() {
           periods={periods}
           divisions={divisions}
           defaultPeriodId={period ? Number(period) : undefined}
+          onDelete={
+            formTarget.program
+              ? () => {
+                  setDeleteError("");
+                  setDeleting(formTarget.program ?? null);
+                }
+              : undefined
+          }
           onClose={() => setFormTarget(null)}
           onSaved={(saved, isNew) => {
             setPrograms((current) =>
