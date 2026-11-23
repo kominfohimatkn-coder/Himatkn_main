@@ -27,6 +27,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/publikasi`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${SITE_URL}/program`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${SITE_URL}/struktur`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${SITE_URL}/dokumen`, changeFrequency: "monthly", priority: 0.7 },
   ];
 
   // Bila API gagal, sitemap tetap berisi halaman utama.
