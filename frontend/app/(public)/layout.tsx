@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-
+import { RevealObserver } from "@/components/public/RevealObserver";
 import { SiteFooter } from "@/components/public/SiteFooter";
 import { SiteHeader } from "@/components/public/SiteHeader";
 import { getPublicLinks } from "@/features/settings/links";
@@ -37,6 +37,7 @@ export default async function PublicLayout({
         mapsEmbedUrl={settings.maps_embed_url}
         address={settings.secretariat_address}
       />
+      <RevealObserver />
     </div>
   );
 }

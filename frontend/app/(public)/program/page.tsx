@@ -4,6 +4,7 @@ import { CalendarDays, Search, TriangleAlert } from "lucide-react";
 
 import { PublicButtonLink } from "@/components/public/PublicButton";
 import { PublicSearch } from "@/components/public/PublicSearch";
+import { PublicPageHeader } from "@/components/public/PublicPageHeader";
 import { PublicStateBox } from "@/components/public/PublicStateBox";
 import { RefreshButton } from "@/components/public/RefreshButton";
 import { ProgramList } from "@/features/programs/components/public/ProgramList";
@@ -167,13 +168,10 @@ export default async function ProgramPage({
   return (
     <section className="min-h-[60vh] pt-16 pb-20 min-[641px]:pt-[104px] min-[641px]:pb-[120px]">
       <div className="site-container">
-        <h1 className="text-center font-serif text-[clamp(32px,3.4vw,44px)] leading-[1.25] font-bold text-green-900">
-          Program Kerja
-        </h1>
-        <p className="mx-auto mt-3.5 max-w-[56ch] text-center text-muted">
-          {intro}
-        </p>
-        <hr className="mx-auto mt-[30px] mb-10 h-px w-full max-w-[760px] border-0 bg-line" />
+        <PublicPageHeader
+          title="Program Kerja"
+          intro={intro}
+        />
 
         <PublicSearch
           initialValue={q}

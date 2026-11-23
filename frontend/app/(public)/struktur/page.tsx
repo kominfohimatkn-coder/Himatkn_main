@@ -1,6 +1,7 @@
 import { TriangleAlert, Users } from "lucide-react";
 import type { Metadata } from "next";
 
+import { PublicPageHeader } from "@/components/public/PublicPageHeader";
 import { PublicStateBox } from "@/components/public/PublicStateBox";
 import { RefreshButton } from "@/components/public/RefreshButton";
 import { StructureView } from "@/features/organization/components/public/StructureView";
@@ -39,10 +40,9 @@ export default async function StrukturPage({ searchParams }: StrukturPageProps) 
   return (
     <section className="min-h-[60vh] pt-16 pb-20 min-[641px]:pt-[104px] min-[641px]:pb-[120px]">
       <div className="site-container">
-        <h1 className="text-center font-serif text-[clamp(32px,3.4vw,44px)] leading-[1.25] font-bold text-green-900">
-          {settings.structure_title}
-        </h1>
-        <hr className="mx-auto mt-[30px] mb-10 h-px w-full max-w-[760px] border-0 bg-line" />
+        <PublicPageHeader
+          title={settings.structure_title}
+        />
 
         {organization.hasError ? (
           <div className="mt-12">

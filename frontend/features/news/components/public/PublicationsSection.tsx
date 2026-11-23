@@ -35,7 +35,7 @@ export function PublicationsSection({
       aria-labelledby="pub-title"
     >
       <div className="site-container">
-        <div>
+        <div data-reveal>
           {eyebrow ? <PublicLabel>{eyebrow}</PublicLabel> : null}
           <h2
             id="pub-title"
@@ -84,7 +84,7 @@ export function PublicationsSection({
           <>
             <NewsList items={visibleItems} className="mt-10" />
 
-            <div className="mt-10 flex justify-center">
+            <div data-reveal className="mt-10 flex justify-center">
               <PublicButtonLink href="/publikasi" tone="outline">
                 Lihat Semua Publikasi →
               </PublicButtonLink>

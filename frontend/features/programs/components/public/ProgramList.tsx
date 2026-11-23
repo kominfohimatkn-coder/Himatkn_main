@@ -51,6 +51,7 @@ export function ProgramList({
         return (
           <li
             key={program.id}
+            data-reveal
             className="grid grid-cols-1 gap-0 rounded-[4px] border border-line bg-white p-[18px] transition-colors min-[641px]:grid-cols-[160px_1fr_140px] min-[641px]:gap-x-6 min-[641px]:rounded-none min-[641px]:border-x-0 min-[641px]:border-t-0 min-[641px]:border-b min-[641px]:bg-transparent min-[641px]:px-0 min-[641px]:pt-[26px] min-[641px]:pb-[22px] min-[641px]:hover:bg-mint/35"
           >
             <ProgramStatusBadge status={program.status} />

@@ -62,8 +62,10 @@ export function NewsList({ items, term, className = "" }: NewsListProps) {
         return (
           <li
             key={item.id}
+            data-reveal
             className="group grid grid-cols-1 gap-3.5 border-b border-line py-[30px] transition-colors min-[641px]:grid-cols-[180px_1fr] min-[641px]:gap-6"
           >
+          
             <NewsCover item={item} href={href} />
 
             <div>
