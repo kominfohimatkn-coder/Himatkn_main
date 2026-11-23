@@ -7,6 +7,7 @@ import {
   PublicButtonLink,
 } from "@/components/public/PublicButton";
 import { PublicSearch } from "@/components/public/PublicSearch";
+import { PublicPageHeader } from "@/components/public/PublicPageHeader";
 import { PublicStateBox } from "@/components/public/PublicStateBox";
 import { RefreshButton } from "@/components/public/RefreshButton";
 import { NewsList } from "@/features/news/components/public/NewsList";
@@ -151,13 +152,10 @@ export default async function PublikasiPage({
   return (
     <section className="min-h-[60vh] pt-16 pb-20 min-[641px]:pt-[104px] min-[641px]:pb-[120px]">
       <div className="site-container">
-        <h1 className="text-center font-serif text-[clamp(32px,3.4vw,44px)] leading-[1.25] font-bold text-green-900">
-          Publikasi
-        </h1>
-        <p className="mx-auto mt-3.5 max-w-[56ch] text-center text-muted">
-          Kabar, liputan kegiatan, dan dokumentasi {settings.brand_name}.
-        </p>
-        <hr className="mx-auto mt-[30px] mb-10 h-px w-full max-w-[760px] border-0 bg-line" />
+        <PublicPageHeader
+          title="Publikasi"
+          intro={`Kabar, liputan kegiatan, dan dokumentasi ${settings.brand_name}.`}
+        />
 
         <PublicSearch
           initialValue={q}

@@ -38,7 +38,7 @@ export function OrganizationSection({
       aria-labelledby="struct-title"
     >
       <div className="site-container">
-        <div className="mb-11 max-w-[560px]">
+        <div data-reveal className="mb-11 max-w-[560px]">
           {eyebrow ? <PublicLabel tone="dark">{eyebrow}</PublicLabel> : null}
           <h2
             id="struct-title"
@@ -75,7 +75,10 @@ export function OrganizationSection({
           </PublicStateBox>
         ) : (
           <>
-            <div className="hidden overflow-hidden rounded-[4px] border border-line-on-dark max-[640px]:grid max-[640px]:grid-cols-2">
+            <div
+              data-reveal
+              className="hidden overflow-hidden rounded-[4px] border border-line-on-dark max-[640px]:grid max-[640px]:grid-cols-2"
+            >
               <div className="px-3 py-[22px] text-center">
                 <strong className="block text-[28px] leading-[1.1] font-bold">
                   {divisionCount}
@@ -94,7 +97,10 @@ export function OrganizationSection({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 overflow-hidden rounded-[4px] border border-line-on-dark border-t-[6px] border-t-[#1F3E33] max-[640px]:hidden">
+            <div
+              data-reveal
+              className="grid grid-cols-2 overflow-hidden rounded-[4px] border border-line-on-dark border-t-[6px] border-t-[#1F3E33] max-[640px]:hidden"
+            >
               {divisions.map((division) => (
                 <div
                   key={division.id}
@@ -132,7 +138,10 @@ export function OrganizationSection({
               ) : null}
             </div>
 
-            <div className="mt-8.5 flex flex-wrap items-center justify-between gap-5 text-[13px] text-on-dark-soft max-[640px]:mt-0">
+            <div
+              data-reveal
+              className="mt-8.5 flex flex-wrap items-center justify-between gap-5 text-[13px] text-on-dark-soft max-[640px]:mt-0"
+            >
               {note ? <p className="max-[640px]:hidden">{note}</p> : null}
               {buttonLabel ? (
                 <PublicButtonLink

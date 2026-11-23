@@ -12,6 +12,7 @@ const footerNavigation: FooterItem[] = [
   { label: "Tentang", href: "/#tentang" },
   { label: "Kegiatan", href: "/program" },
   { label: "Berita", href: "/publikasi" },
+  { label: "Dokumen", href: "/dokumen" },
   { label: "Struktur", href: "/struktur" },
 ];
 
@@ -47,7 +48,10 @@ export function SiteFooter({
   return (
     <footer className="border-t border-line-on-dark bg-green-950 pt-14 text-white">
       <div className="site-container">
-        <div className="flex flex-col gap-6 border-b border-line-on-dark pb-8 min-[641px]:flex-row min-[641px]:items-start min-[641px]:justify-between">
+        <div
+          data-reveal
+          className="flex flex-col gap-6 border-b border-line-on-dark pb-8 min-[641px]:flex-row min-[641px]:items-start min-[641px]:justify-between"
+        >
           <Link href="/" className="flex items-center gap-3">
             <span>
               <span className="block font-serif text-[13px] leading-[1.1] font-bold tracking-[0.01em] text-white uppercase min-[641px]:text-[15px]">
@@ -72,7 +76,7 @@ export function SiteFooter({
         </div>
 
         {hasMap ? (
-          <div className="py-[34px] pb-[26px]">
+          <div data-reveal className="py-[34px] pb-[26px]">
             <div className="mb-4 flex items-center justify-between gap-4">
               <p className="text-xs font-semibold tracking-[0.1em] text-on-dark-soft uppercase">
                 Lokasi Kami

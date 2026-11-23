@@ -139,7 +139,7 @@ export default async function HomePage() {
             key={settings.hero_image || "static-hero"}
             src={settings.hero_image}
             alt={heroImageAlt}
-            className="size-full! object-cover object-center"
+            className="size-full! object-cover object-center motion-safe:animate-hero-zoom"
             />
         </div>
         <div
@@ -150,7 +150,8 @@ export default async function HomePage() {
         <div className="site-container relative z-10 pt-30 pb-10 text-white max-[640px]:pt-35 max-[640px]:pb-37.5 max-[640px]:text-center">
           <h1
             id="hero-title"
-            className="font-serif text-[clamp(36px,3.6vw,56px)] leading-[1.12] font-bold text-white max-[640px]:text-[38px] max-[640px]:leading-[1.18]"
+            style={{ animationDelay: "100ms" }}
+            className="motion-safe:animate-fade-up font-serif text-[clamp(36px,3.6vw,56px)] leading-[1.12] font-bold text-white max-[640px]:text-[38px] max-[640px]:leading-[1.18]"
           >
             {settings.hero_title}{" "}
             {settings.hero_emphasis ? (
@@ -158,11 +159,17 @@ export default async function HomePage() {
             ) : null}
           </h1>
           {settings.hero_description ? (
-            <p className="mt-[18px] text-base text-white/[0.88] max-[640px]:mx-auto max-[640px]:mt-1.5 max-[640px]:max-w-[22ch] max-[640px]:text-[15px]">
+            <p
+              style={{ animationDelay: "220ms" }}
+              className="mt-[18px] text-base text-white/[0.88] motion-safe:animate-fade-up max-[640px]:mx-auto max-[640px]:mt-1.5 max-[640px]:max-w-[22ch] max-[640px]:text-[15px]"
+            >
               {settings.hero_description}
             </p>
           ) : null}
-          <div className="mt-[26px] flex flex-wrap gap-3 max-[640px]:mt-[22px] max-[640px]:flex-nowrap max-[640px]:justify-center max-[640px]:gap-2">
+          <div
+            style={{ animationDelay: "340ms" }}
+            className="mt-[26px] flex flex-wrap gap-3 motion-safe:animate-fade-up max-[640px]:mt-[22px] max-[640px]:flex-nowrap max-[640px]:justify-center max-[640px]:gap-2"
+          >
             {settings.hero_primary_label ? (
               <PublicButtonLink
                 href="/program"
@@ -187,7 +194,10 @@ export default async function HomePage() {
           </div>
 
           {heroStats.length > 0 ? (
-            <div className="mt-[110px] flex max-w-[915px] gap-14 border-t border-white/45 pt-4 max-[640px]:hidden">
+            <div
+              style={{ animationDelay: "500ms" }}
+              className="mt-[110px] flex max-w-[915px] gap-14 border-t border-white/45 pt-4 motion-safe:animate-fade-up max-[640px]:hidden"
+            >
               {heroStats.map((stat) => (
                 <div key={stat.label}>
                   <strong className="block font-serif text-[13px] font-bold tracking-[0.04em] uppercase">
@@ -209,7 +219,7 @@ export default async function HomePage() {
         aria-labelledby="tentang-title"
       >
         <div className="site-container grid gap-10 min-[961px]:grid-cols-[1fr_1.25fr] min-[961px]:gap-16">
-          <div>
+          <div data-reveal>
             {settings.about_eyebrow ? (
               <PublicLabel>{settings.about_eyebrow}</PublicLabel>
             ) : null}
@@ -230,6 +240,7 @@ export default async function HomePage() {
             {pillars.map((pillar) => (
               <li
                 key={`${pillar.tag}-${pillar.title}`}
+                data-reveal
                 className="grid grid-cols-[110px_1fr] gap-4 border-b border-[#C9D7CF] py-[26px] max-[640px]:grid-cols-1 max-[640px]:gap-1.5 max-[640px]:py-[22px]"
               >
                 <span className="text-[11px] font-medium tracking-[0.1em] text-green-700 uppercase">
@@ -257,7 +268,7 @@ export default async function HomePage() {
         aria-labelledby="proker-title"
       >
         <div className="site-container">
-          <div>
+          <div data-reveal>
             {settings.program_eyebrow ? (
               <PublicLabel>{settings.program_eyebrow}</PublicLabel>
             ) : null}
@@ -297,7 +308,7 @@ export default async function HomePage() {
           )}
 
           {programs.hasError ? null : (
-            <div className="mt-10 flex justify-center">
+            <div data-reveal className="mt-10 flex justify-center">
               <PublicButtonLink href="/program" tone="outline">
                 Lihat Semua Program Kerja →
               </PublicButtonLink>

@@ -174,6 +174,33 @@
   --font-annotation: var(--font-annotation-stack);
 }
 
+/* Animasi masuk, mengikuti bagian ANIMASI di Design/assets/style.css.
+   Dipakai lewat `motion-safe:animate-*`, jadi otomatis mati bila pengguna
+   memilih "kurangi gerakan" di perangkatnya. */
+@theme {
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-page-in: page-in 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  --animate-fade-up: fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-hero-zoom: hero-zoom 1.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @keyframes page-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+  }
+  @keyframes hero-zoom {
+    from {
+      transform: scale(1.08);
+    }
+  }
+}
+
 /* =========================================================
    GLOBAL RESET
    ========================================================= */
