@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { Trash2 } from "lucide-react";
 
 import FormDialog from "@/components/admin/shared/FormDialog";
 import { Button } from "@/components/ui/Button";
@@ -36,6 +37,7 @@ export default function ProgramFormDialog({
   periods,
   divisions,
   defaultPeriodId,
+  onDelete,
   onClose,
   onSaved,
 }: {
@@ -44,6 +46,8 @@ export default function ProgramFormDialog({
   /** Semua divisi dari semua periode; disaring sesuai periode terpilih. */
   divisions: AdminDivision[];
   defaultPeriodId?: number;
+  /** Bila diisi, form edit menampilkan "Zona berbahaya" dengan tombol hapus. */
+  onDelete?: () => void;
   onClose: () => void;
   onSaved: (program: AdminProgram, isNew: boolean) => void;
 }) {
@@ -220,6 +224,20 @@ export default function ProgramFormDialog({
               onChange={(event) => setDescription(event.target.value)}
             />
           </FormField>
+
+          {onDelete ? (
+            <div className="mt-2 border-t border-line pt-[18px]">
+              <p className="text-[11px] leading-[1.2] font-semibold tracking-[0.1em] text-danger uppercase">
+                Zona berbahaya
+              </p>
+              <p className="mt-1.5 mb-3 text-[13px] text-muted">
+                Program yang dihapus hilang dari situs dan tidak bisa dikembalikan.
+              </p>
+              <Button variant="danger-outline" onClick={onDelete} disabled={saving}>
+                <Trash2 aria-hidden="true" /> Hapus program kerja
+              </Button>
+            </div>
+          ) : null}
 
           {formError ? (
             <p role="alert" className="rounded-[4px] border border-[#ebcfc6] bg-danger-bg px-3.5 py-3 text-[13px] text-danger">

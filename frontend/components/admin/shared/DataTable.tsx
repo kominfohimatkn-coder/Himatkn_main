@@ -1,13 +1,24 @@
+import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
+import { ChevronRight } from "lucide-react";
 
 /**
  * Tabel admin, mengikuti `.table` + `.table--cards` di Design/admin.
  * Di layar ≤640px setiap baris menjadi kartu dan label kolom (`label`)
- * tampil di atas isinya.
+ * tampil di atas isinya. Daftar yang punya `MobileList` menyembunyikan
+ * tabel di ponsel lewat `className="max-[640px]:hidden"`.
  */
-export function Table({ head, children }: { head: ReactNode; children: ReactNode }) {
+export function Table({
+  head,
+  className = "",
+  children,
+}: {
+  head: ReactNode;
+  className?: string;
+  children: ReactNode;
+}) {
   return (
-    <div className="overflow-x-auto">
+    <div className={`overflow-x-auto ${className}`.trim()}>
       <table className="w-full border-collapse max-[640px]:block">
         <thead className="max-[640px]:hidden">
           <tr>{head}</tr>
@@ -66,6 +77,87 @@ export function Td({
     >
       {children}
     </td>
+  );
+}
+
+/**
+ * Daftar versi ponsel (≤640px), mengikuti `.m-rows` di Design/admin/mobile.html.
+ * Tampil hanya di ponsel; di layar lebih besar yang tampil `Table`.
+ */
+export function MobileList({ children }: { children: ReactNode }) {
+  return <ul className="divide-y divide-line min-[641px]:hidden">{children}</ul>;
+}
+
+/**
+ * Satu baris daftar ponsel (`.m-row`):
+ *
+ *   [lead]  Judul (maks. 2 baris)                 ›
+ *           [status]  info · info · info  (1 baris)
+ *
+ * Seluruh baris bisa diketuk (`href` atau `onClick`); tanpa keduanya baris
+ * hanya untuk dibaca dan tanda › tidak tampil.
+ */
+export function MobileRow({
+  href,
+  onClick,
+  lead,
+  title,
+  status,
+  meta,
+  muted = false,
+}: {
+  href?: string;
+  onClick?: () => void;
+  /** Gambar sampul atau avatar di kiri. */
+  lead?: ReactNode;
+  title: ReactNode;
+  /** Biasanya `<Badge>`. */
+  status?: ReactNode;
+  /** Info pendukung tanpa label, dipisah ` · `. Terpotong bila terlalu panjang. */
+  meta?: ReactNode;
+  /** Judul abu-abu, misalnya program yang dibatalkan. */
+  muted?: boolean;
+}) {
+  const interactive = Boolean(href || onClick);
+  const className = `flex w-full items-center gap-3 py-3 pr-3 pl-4 text-left ${
+    interactive ? "cursor-pointer transition-colors hover:bg-[#f7faf8] active:bg-[#f7faf8]" : ""
+  }`;
+  const content = (
+    <>
+      {lead}
+      <span className="min-w-0 flex-1">
+        <span
+          className={`line-clamp-2 text-[14.5px] leading-[1.35] font-semibold wrap-anywhere ${
+            muted ? "text-muted" : "text-green-900"
+          }`}
+        >
+          {title}
+        </span>
+        {status || meta ? (
+          <span className="mt-[5px] flex min-w-0 items-center gap-2">
+            {status}
+            {meta ? <span className="min-w-0 flex-1 truncate text-xs text-muted">{meta}</span> : null}
+          </span>
+        ) : null}
+      </span>
+      {interactive ? <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-muted-light" /> : null}
+    </>
+  );
+
+  return (
+    <li>
+      {href ? (
+        <Link href={href} className={className}>
+          {content}
+        </Link>
+      ) : onClick ? (
+        <button type="button" onClick={onClick} className={className}>
+          {content}
+        </button>
+      ) : (
+        <div className={className}>{content}</div>
+      )}
+    </li>
   );
 }
 

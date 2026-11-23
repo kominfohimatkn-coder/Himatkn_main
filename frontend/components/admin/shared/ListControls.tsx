@@ -1,9 +1,13 @@
 import type { ComponentProps, ReactNode } from "react";
 
-/** Baris filter di atas tabel, mengikuti `.toolbar` di Design/admin. */
+/**
+ * Baris filter di atas tabel, mengikuti `.toolbar` di Design/admin.
+ * Di ponsel (`.m-toolbar`): cari selebar penuh → select berdampingan
+ * (satu select = selebar penuh) → filter status di paling bawah.
+ */
 export function Toolbar({ children }: { children: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-center gap-2.5 border-b border-line px-4 py-3.5 max-[640px]:p-3">
+    <div className="flex flex-wrap items-center gap-2.5 border-b border-line px-4 py-3.5 max-[640px]:grid max-[640px]:grid-cols-2 max-[640px]:gap-2 max-[640px]:p-3 max-[640px]:[&>span:only-of-type]:col-span-2">
       {children}
     </div>
   );
@@ -12,7 +16,7 @@ export function Toolbar({ children }: { children: ReactNode }) {
 /** Kolom cari dengan ikon kaca pembesar (`.search`). */
 export function SearchInput(props: ComponentProps<"input">) {
   return (
-    <div className="relative max-w-[360px] flex-[1_1_240px] max-[640px]:max-w-none">
+    <div className="relative max-w-[360px] flex-[1_1_240px] max-[640px]:col-span-2 max-[640px]:max-w-none">
       <svg
         aria-hidden="true"
         viewBox="0 0 24 24"
@@ -33,7 +37,10 @@ export function SearchInput(props: ComponentProps<"input">) {
   );
 }
 
-/** Tombol pilihan bersegmen (`.seg`), misalnya filter status. */
+/**
+ * Tombol pilihan bersegmen (`.seg`), misalnya filter status.
+ * Di ponsel tidak terlipat: satu baris yang bisa digeser ke samping.
+ */
 export function Segmented<T extends string>({
   label,
   value,
@@ -49,7 +56,7 @@ export function Segmented<T extends string>({
     <div
       role="group"
       aria-label={label}
-      className="inline-flex flex-wrap gap-0.5 rounded-[4px] border border-line bg-mint-50 p-[3px]"
+      className="inline-flex max-w-full flex-wrap gap-0.5 rounded-[4px] border border-line bg-mint-50 p-[3px] max-[640px]:order-last max-[640px]:col-span-2 max-[640px]:flex max-[640px]:flex-nowrap max-[640px]:overflow-x-auto max-[640px]:[scrollbar-width:none]"
     >
       {options.map((option) => (
         <button
@@ -57,7 +64,7 @@ export function Segmented<T extends string>({
           type="button"
           aria-pressed={option.value === value}
           onClick={() => onChange(option.value)}
-          className="h-[30px] cursor-pointer rounded-[3px] px-3 text-[11px] font-semibold tracking-[0.08em] text-muted uppercase transition-colors hover:text-green-900 aria-pressed:bg-green-800 aria-pressed:text-white"
+          className="h-[30px] shrink-0 cursor-pointer rounded-[3px] px-3 text-[11px] font-semibold tracking-[0.08em] text-muted uppercase transition-colors hover:text-green-900 aria-pressed:bg-green-800 aria-pressed:text-white"
         >
           {option.label}
           {option.count !== undefined ? (
@@ -72,10 +79,10 @@ export function Segmented<T extends string>({
 /** Select kecil di toolbar (`.select-sm`). */
 export function SelectSm({ children, ...props }: ComponentProps<"select">) {
   return (
-    <span className="relative inline-block">
+    <span className="relative inline-block max-[640px]:min-w-0">
       <select
         {...props}
-        className="h-9 cursor-pointer appearance-none rounded-[4px] border border-line bg-white pr-[30px] pl-3 text-sm text-ink outline-none focus-visible:border-green-800 focus-visible:shadow-[0_0_0_3px_rgba(15,77,54,0.1)]"
+        className="h-9 cursor-pointer max-[640px]:w-full appearance-none rounded-[4px] border border-line bg-white pr-[30px] pl-3 text-sm text-ink outline-none focus-visible:border-green-800 focus-visible:shadow-[0_0_0_3px_rgba(15,77,54,0.1)]"
       >
         {children}
       </select>

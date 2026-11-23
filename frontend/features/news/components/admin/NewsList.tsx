@@ -18,7 +18,7 @@ import {
 import { Badge } from "@/components/admin/shared/Badge";
 import { Card } from "@/components/admin/shared/Card";
 import ConfirmDialog from "@/components/admin/shared/ConfirmDialog";
-import { Pager, Table, Td, Th, Tr } from "@/components/admin/shared/DataTable";
+import { MobileList, MobileRow, Pager, Table, Td, Th, Tr } from "@/components/admin/shared/DataTable";
 import {
   SearchInput,
   Segmented,
@@ -67,6 +67,21 @@ async function loadAllNews(signal: AbortSignal): Promise<AdminNews[]> {
   }
 
   return all.sort((a, b) => b.updated_at.localeCompare(a.updated_at));
+}
+
+/** Sampul kecil 3:2; ikon gambar bila belum ada gambar. */
+function NewsThumb({ src }: { src: string | null }) {
+  return (
+    <div className="grid aspect-[3/2] w-16 shrink-0 place-items-center overflow-hidden rounded-[3px] bg-[#dce5e0] text-muted-light [&_svg]:size-[18px]">
+      {src ? <img src={src} alt="" className="size-full object-cover grayscale" /> : <ImageIcon aria-hidden="true" />}
+    </div>
+  );
+}
+
+/** Tag pertama + jumlah sisanya, contoh: `Kegiatan +2`. */
+function tagSummary(tags: NewsTag[]) {
+  if (!tags.length) return null;
+  return tags.length > 1 ? `${tags[0].name} +${tags.length - 1}` : tags[0].name;
 }
 
 /** Halaman daftar publikasi, mengikuti `viewNews()` di Design/admin. */
@@ -237,6 +252,7 @@ export default function NewsList() {
     body = (
       <>
         <Table
+          className="max-[640px]:hidden"
           head={
             <>
               <Th>Judul</Th>
@@ -258,13 +274,7 @@ export default function NewsList() {
               <Tr key={item.id}>
                 <Td>
                   <div className="flex items-center gap-3">
-                    <div className="grid aspect-[3/2] w-16 shrink-0 place-items-center overflow-hidden rounded-[3px] bg-[#dce5e0] text-muted-light [&_svg]:size-[18px]">
-                      {cover ? (
-                        <img src={cover} alt="" className="size-full object-cover grayscale" />
-                      ) : (
-                        <ImageIcon aria-hidden="true" />
-                      )}
-                    </div>
+                    <NewsThumb src={cover} />
                     <div className="min-w-0">
                       <div className="font-semibold text-green-900">{item.title}</div>
                       <div className="mt-0.5 text-xs text-muted">
@@ -336,6 +346,25 @@ export default function NewsList() {
             );
           })}
         </Table>
+        <MobileList>
+          {pageRows.map((item) => {
+            const statusInfo = NEWS_STATUS[item.status];
+            const author = item.author_id !== null ? authors.get(item.author_id) : undefined;
+
+            return (
+              <MobileRow
+                key={item.id}
+                href={`/admin/news/${item.id}`}
+                lead={<NewsThumb src={resolveMediaUrl(item.images[0]?.url)} />}
+                title={item.title}
+                status={<Badge tone={statusInfo.tone}>{statusInfo.label}</Badge>}
+                meta={[formatNewsDateShort(item.updated_at), tagSummary(item.tags), author]
+                  .filter(Boolean)
+                  .join(" · ")}
+              />
+            );
+          })}
+        </MobileList>
         <Pager total={rows.length} page={page} perPage={PER_PAGE} onPage={setPage} />
       </>
     );
