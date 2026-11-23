@@ -10,7 +10,7 @@ import { DOCUMENTS } from "@/features/documents/data";
 export const metadata: Metadata = {
   title: "Dokumen",
   description:
-    "Dokumen resmi HIMATKN yang dapat dilihat langsung atau diunduh.",
+    "Dokumen resmi HIMATKN.",
   alternates: { canonical: "/dokumen" },
 };
 
