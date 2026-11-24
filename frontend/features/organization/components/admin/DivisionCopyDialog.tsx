@@ -1,19 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+
+import { AlertTriangle, Check, Info } from "lucide-react";
 
 import FormDialog from "@/components/admin/shared/FormDialog";
+import { Notice } from "@/components/admin/shared/Notice";
+import { Button } from "@/components/ui/Button";
 import { FormField } from "@/components/ui/FormField";
 import { Select } from "@/components/ui/Select";
 import { getAdminDivisions } from "@/features/organization/admin-api";
 
 import { getApiErrorMessage } from "@/lib/api/errors";
-
-import {
-  organizationActionClass,
-  organizationPrimaryActionClass,
-  OrganizationNotice,
-} from "./OrganizationPrimitives";
 
 import type {
   AdminPeriod,
@@ -139,148 +137,108 @@ export default function DivisionCopyDialog({
     setReloadKey((current) => current + 1);
   }
 
+  const footer = (children: ReactNode) => (
+    <footer className="sticky bottom-0 mt-auto flex justify-end gap-2 border-t border-line bg-white px-6 py-3.5">
+      {children}
+    </footer>
+  );
+
   return (
     <FormDialog
       open
       eyebrow={`Periode ${targetPeriod.name}`}
       title="Salin divisi dari periode lain"
-      description="Hanya nama, deskripsi, dan urutan divisi yang disalin. Anggota tidak ikut disalin."
-      size="md"
       busy={isSaving}
       onClose={onClose}
     >
-      <div className="space-y-5 p-5 sm:p-7">
-        {result ? (
-          <>
-            <OrganizationNotice tone="warning">
-              <p className="font-serif text-lg font-semibold text-bg-dark">
-                {result.created.length} divisi disalin,{" "}
-                {result.skipped.length} dilewati
+      <div className="flex min-h-full flex-col">
+        <div className="grid flex-1 content-start gap-4 px-6 py-[22px]">
+          {result ? (
+            <Notice icon={<Check aria-hidden="true" />}>
+              <p className="font-serif text-base font-bold">
+                {result.created.length} disalin, {result.skipped.length} dilewati
               </p>
-
               <p className="mt-1">
                 {result.created.length > 0
                   ? `Divisi dari periode ${selectedSource?.name ?? "sumber"} sudah ditambahkan ke periode ${targetPeriod.name}. Anggota tidak ikut disalin.`
                   : "Semua divisi sudah ada di periode ini."}
               </p>
-
-              {result.skipped.length > 0 && (
+              {result.skipped.length > 0 ? (
                 <p className="mt-2">
-                  <strong>Dilewati karena namanya sudah ada:</strong>{" "}
-                  {result.skipped.join(", ")}
+                  <strong>Dilewati karena namanya sudah ada:</strong> {result.skipped.join(", ")}
                 </p>
-              )}
-            </OrganizationNotice>
+              ) : null}
+            </Notice>
+          ) : countState.status === "loading" ? (
+            <p role="status" className="text-sm text-muted">
+              Memuat jumlah divisi periode lain...
+            </p>
+          ) : countState.status === "error" ? (
+            <Notice tone="amber" icon={<AlertTriangle aria-hidden="true" />}>
+              <strong>Periode lain belum dapat diperiksa.</strong> {countState.error}
+            </Notice>
+          ) : sources.length === 0 ? (
+            <Notice icon={<Info aria-hidden="true" />}>
+              <strong>Tidak ada divisi untuk disalin.</strong> Belum ada periode lain yang
+              punya divisi. Tambahkan divisi secara manual.
+            </Notice>
+          ) : (
+            <>
+              <FormField label="Salin dari periode" required>
+                <Select value={selectedSourceId} onChange={(event) => setSourceId(event.target.value)}>
+                  {sources.map((period) => (
+                    <option key={period.id} value={String(period.id)}>
+                      {period.name}
+                      {period.is_active ? " (aktif)" : ""} · {countState.counts[period.id] ?? 0} divisi
+                    </option>
+                  ))}
+                </Select>
+              </FormField>
 
-            <footer className="flex justify-end border-t border-paper-line pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className={organizationPrimaryActionClass}
-              >
-                Selesai
-              </button>
-            </footer>
-          </>
-        ) : countState.status === "loading" ? (
-          <p role="status" className="text-sm text-ink-soft">
-            Memuat jumlah divisi periode lain...
-          </p>
-        ) : countState.status === "error" ? (
-          <>
-            <OrganizationNotice tone="error">
-              <p className="font-medium">Periode lain belum dapat diperiksa</p>
-              <p className="mt-1">{countState.error}</p>
-            </OrganizationNotice>
+              <Notice icon={<Info aria-hidden="true" />}>
+                Yang disalin hanya <strong>nama, deskripsi, dan urutan divisi</strong>.{" "}
+                <strong>Anggota tidak ikut disalin.</strong> Divisi yang namanya sudah ada
+                di periode {targetPeriod.name} akan dilewati.
+              </Notice>
 
-            <footer className="flex flex-col-reverse gap-2 border-t border-paper-line pt-4 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={onClose}
-                className={organizationActionClass}
-              >
-                Batal
-              </button>
+              {error ? (
+                <p role="alert" className="rounded-[4px] border border-[#ebcfc6] bg-danger-bg px-3.5 py-3 text-[13px] text-danger">
+                  {error}
+                </p>
+              ) : null}
+            </>
+          )}
+        </div>
 
-              <button
-                type="button"
-                onClick={retryCounts}
-                className={organizationPrimaryActionClass}
-              >
-                Coba lagi
-              </button>
-            </footer>
-          </>
-        ) : sources.length === 0 ? (
-          <>
-            <OrganizationNotice tone="info">
-              <strong>Tidak ada divisi untuk disalin.</strong> Belum ada
-              periode lain yang punya divisi. Tambahkan divisi secara manual.
-            </OrganizationNotice>
-
-            <footer className="flex justify-end border-t border-paper-line pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className={organizationActionClass}
-              >
-                Tutup
-              </button>
-            </footer>
-          </>
-        ) : (
-          <>
-            <FormField label="Salin dari periode" required>
-              <Select
-                id="division-copy-source"
-                name="source_period_id"
-                value={selectedSourceId}
-                onChange={(event) => setSourceId(event.target.value)}
-                required
-              >
-                {sources.map((period) => (
-                  <option key={period.id} value={String(period.id)}>
-                    {period.name}
-                    {period.is_active ? " (aktif)" : ""} ·{" "}
-                    {countState.counts[period.id] ?? 0} divisi
-                  </option>
-                ))}
-              </Select>
-            </FormField>
-
-            <OrganizationNotice tone="info">
-              Yang disalin hanya <strong>nama, deskripsi, dan urutan</strong>{" "}
-              divisi. <strong>Anggota tidak ikut disalin.</strong> Divisi yang
-              namanya sudah ada di periode {targetPeriod.name} akan dilewati.
-            </OrganizationNotice>
-
-            {error && (
-              <OrganizationNotice tone="error">{error}</OrganizationNotice>
-            )}
-
-            <footer className="flex flex-col-reverse gap-2 border-t border-paper-line pt-4 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={isSaving}
-                className={organizationActionClass}
-              >
-                Batal
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  void handleCopy();
-                }}
-                disabled={isSaving}
-                className={organizationPrimaryActionClass}
-              >
-                {isSaving ? "Menyalin..." : "Salin divisi"}
-              </button>
-            </footer>
-          </>
-        )}
+        {result
+          ? footer(<Button onClick={onClose}>Selesai</Button>)
+          : countState.status === "error"
+            ? footer(
+                <>
+                  <Button variant="outline" onClick={onClose}>
+                    Batal
+                  </Button>
+                  <Button onClick={retryCounts}>Coba lagi</Button>
+                </>,
+              )
+            : countState.status === "ready" && sources.length === 0
+              ? footer(
+                  <Button variant="outline" onClick={onClose}>
+                    Tutup
+                  </Button>,
+                )
+              : countState.status === "ready"
+                ? footer(
+                    <>
+                      <Button variant="outline" onClick={onClose} disabled={isSaving}>
+                        Batal
+                      </Button>
+                      <Button onClick={() => void handleCopy()} disabled={isSaving}>
+                        {isSaving ? "Menyalin..." : "Salin divisi"}
+                      </Button>
+                    </>,
+                  )
+                : null}
       </div>
     </FormDialog>
   );

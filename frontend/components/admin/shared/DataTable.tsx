@@ -95,7 +95,8 @@ export function MobileList({ children }: { children: ReactNode }) {
  *           [status]  info · info · info  (1 baris)
  *
  * Seluruh baris bisa diketuk (`href` atau `onClick`); tanpa keduanya baris
- * hanya untuk dibaca dan tanda › tidak tampil.
+ * hanya untuk dibaca dan tanda › tidak tampil. `trailing` (mis. tombol ↑ ↓)
+ * hanya dipakai pada baris yang tidak bisa diketuk.
  */
 export function MobileRow({
   href,
@@ -105,6 +106,7 @@ export function MobileRow({
   status,
   meta,
   muted = false,
+  trailing,
 }: {
   href?: string;
   onClick?: () => void;
@@ -117,6 +119,8 @@ export function MobileRow({
   meta?: ReactNode;
   /** Judul abu-abu, misalnya program yang dibatalkan. */
   muted?: boolean;
+  /** Tombol di kanan baris yang tidak bisa diketuk. */
+  trailing?: ReactNode;
 }) {
   const interactive = Boolean(href || onClick);
   const className = `flex w-full items-center gap-3 py-3 pr-3 pl-4 text-left ${
@@ -155,7 +159,10 @@ export function MobileRow({
           {content}
         </button>
       ) : (
-        <div className={className}>{content}</div>
+        <div className={className}>
+          {content}
+          {trailing}
+        </div>
       )}
     </li>
   );

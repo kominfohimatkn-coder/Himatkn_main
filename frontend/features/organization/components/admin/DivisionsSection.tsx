@@ -1,223 +1,271 @@
 "use client";
 
-import { Can } from "@/components/admin/shared/Can";
-import { PERMISSIONS } from "@/features/auth/permissions";
+import { useState } from "react";
+import { ArrowDown, ArrowUp, Copy, Layers, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 
-import {
-  organizationActionClass,
-  organizationDangerActionClass,
-  organizationPrimaryActionClass,
-} from "./OrganizationPrimitives";
+import { MobileList, MobileRow, Table, Td, Th, Tr } from "@/components/admin/shared/DataTable";
+import { StateBlock } from "@/components/admin/shared/StateBlock";
+import { Button } from "@/components/ui/Button";
 
-import type { AdminDivision } from "../../types";
+import type { AdminDivision, AdminPosition } from "../../types";
 
-interface DivisionsSectionProps {
-  periodName: string;
-  divisions: AdminDivision[];
-  isLoading: boolean;
-  error: string;
-  onReload: () => void;
-  onCreate: () => void;
-  onEdit: (division: AdminDivision) => void;
-  onDelete: (division: AdminDivision) => void;
-  onCopy: () => void;
+/** Tombol ↑ ↓ untuk memindah urutan divisi. */
+function MoveButtons({
+  division,
+  index,
+  total,
+  busy,
+  onMove,
+}: {
+  division: AdminDivision;
+  index: number;
+  total: number;
+  busy: boolean;
+  onMove: (division: AdminDivision, direction: -1 | 1) => void;
+}) {
+  return (
+    <span className="inline-flex gap-0.5">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="size-8!"
+        disabled={busy || index === 0}
+        aria-label={`Naikkan ${division.name}`}
+        onClick={() => onMove(division, -1)}
+      >
+        <ArrowUp aria-hidden="true" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="size-8!"
+        disabled={busy || index === total - 1}
+        aria-label={`Turunkan ${division.name}`}
+        onClick={() => onMove(division, 1)}
+      >
+        <ArrowDown aria-hidden="true" />
+      </Button>
+    </span>
+  );
 }
 
+/**
+ * Daftar divisi satu periode, mengikuti tab "Divisi & jabatan" di Design/admin.
+ * Angka urutan tidak ditampilkan; urutan diubah dengan tombol ↑ ↓.
+ * Di ponsel, ketuk baris untuk edit; tombol "Ubah urutan" menampilkan ↑ ↓.
+ */
 export default function DivisionsSection({
   periodName,
   divisions,
+  memberCounts,
   isLoading,
   error,
+  canManage,
+  moving,
   onReload,
   onCreate,
   onEdit,
   onDelete,
   onCopy,
-}: DivisionsSectionProps) {
+  onMove,
+}: {
+  periodName: string;
+  /** Sudah urut. */
+  divisions: AdminDivision[];
+  memberCounts: Map<number, number>;
+  isLoading: boolean;
+  error: string;
+  canManage: boolean;
+  /** Sedang menyimpan urutan. */
+  moving: boolean;
+  onReload: () => void;
+  onCreate: () => void;
+  onEdit: (division: AdminDivision) => void;
+  onDelete: (division: AdminDivision) => void;
+  onCopy: () => void;
+  onMove: (division: AdminDivision, direction: -1 | 1) => void;
+}) {
+  const [reordering, setReordering] = useState(false);
+
+  let body;
+  if (isLoading) {
+    body = (
+      <div role="status" aria-label="Memuat divisi" className="grid gap-4 p-4">
+        {[0, 1, 2, 3].map((row) => (
+          <div key={row} className="grid animate-pulse gap-2">
+            <div className="h-3 w-2/5 rounded-[3px] bg-green-900/5" />
+            <div className="h-2.5 w-1/5 rounded-[3px] bg-green-900/5" />
+          </div>
+        ))}
+      </div>
+    );
+  } else if (error) {
+    body = (
+      <StateBlock
+        tone="error"
+        icon={<RefreshCw />}
+        label="Gagal memuat"
+        title="Divisi tidak dapat dimuat"
+        action={
+          <Button variant="outline" onClick={onReload}>
+            <RefreshCw aria-hidden="true" /> Coba lagi
+          </Button>
+        }
+      >
+        {error}
+      </StateBlock>
+    );
+  } else if (divisions.length === 0) {
+    body = (
+      <StateBlock
+        icon={<Layers />}
+        label={`Periode ${periodName}`}
+        title="Belum ada divisi"
+        action={
+          canManage ? (
+            <Button onClick={onCopy}>
+              <Copy aria-hidden="true" /> Salin divisi
+            </Button>
+          ) : undefined
+        }
+      >
+        Salin divisi dari periode sebelumnya agar tidak perlu mengetik ulang, lalu sesuaikan.
+      </StateBlock>
+    );
+  } else {
+    body = (
+      <>
+        <Table
+          className="max-[640px]:hidden"
+          head={
+            <>
+              <Th>Divisi</Th>
+              <Th>Anggota</Th>
+              <Th>
+                <span className="sr-only">Aksi</span>
+              </Th>
+            </>
+          }
+        >
+          {divisions.map((division, index) => (
+            <Tr key={division.id}>
+              <Td>
+                <div className="font-semibold text-green-900">{division.name}</div>
+                {division.description ? (
+                  <div className="mt-0.5 line-clamp-2 max-w-[52ch] text-xs text-muted">
+                    {division.description}
+                  </div>
+                ) : null}
+              </Td>
+              <Td label="Anggota">{memberCounts.get(division.id) ?? 0}</Td>
+              <Td actions>
+                {canManage ? (
+                  <div className="inline-flex items-center gap-1">
+                    <MoveButtons division={division} index={index} total={divisions.length} busy={moving} onMove={onMove} />
+                    <Button variant="outline" size="sm" onClick={() => onEdit(division)}>
+                      <Pencil aria-hidden="true" /> Ubah
+                    </Button>
+                    <Button
+                      variant="danger-outline"
+                      size="icon"
+                      className="size-8!"
+                      aria-label={`Hapus ${division.name}`}
+                      onClick={() => onDelete(division)}
+                    >
+                      <Trash2 aria-hidden="true" />
+                    </Button>
+                  </div>
+                ) : null}
+              </Td>
+            </Tr>
+          ))}
+        </Table>
+        <MobileList>
+          {divisions.map((division, index) => (
+            <MobileRow
+              key={division.id}
+              onClick={canManage && !reordering ? () => onEdit(division) : undefined}
+              title={division.name}
+              meta={[`${memberCounts.get(division.id) ?? 0} anggota`, division.description]
+                .filter(Boolean)
+                .join(" · ")}
+              trailing={
+                reordering ? (
+                  <MoveButtons division={division} index={index} total={divisions.length} busy={moving} onMove={onMove} />
+                ) : undefined
+              }
+            />
+          ))}
+        </MobileList>
+      </>
+    );
+  }
+
   return (
-    <section aria-labelledby="division-list-title" className="mt-6">
-      <div className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-end sm:justify-between">
+    <section className="rounded-[4px] border border-line bg-white">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">
         <div>
-          <h2
-            id="division-list-title"
-            className="font-serif text-lg font-semibold text-bg-dark"
-          >
+          <h2 className="font-serif text-base leading-[1.25] font-bold text-green-900">
             Divisi periode {periodName}
           </h2>
-
-          <p
-            aria-live="polite"
-            className="mt-1 text-xs leading-5 text-ink-soft"
-          >
-            {isLoading
-              ? "Memuat divisi..."
-              : `${divisions.length} divisi, diurutkan berdasarkan urutan lalu nama`}
-          </p>
+          <p className="mt-0.5 text-xs text-muted">{divisions.length} divisi</p>
         </div>
-
-        <div className="grid grid-cols-2 gap-2 sm:flex">
-          <button
-            type="button"
-            onClick={onReload}
-            disabled={isLoading}
-            className={organizationActionClass}
-          >
-            Muat ulang
-          </button>
-
-          <Can permission={PERMISSIONS.ORGANIZATION_MANAGE}>
-            <button
-              type="button"
-              onClick={onCopy}
-              disabled={isLoading}
-              className={organizationActionClass}
-            >
-              Salin dari periode lain
-            </button>
-
-            <button
-              type="button"
-              onClick={onCreate}
-              disabled={isLoading}
-              className={organizationPrimaryActionClass}
-            >
-              Tambah divisi
-            </button>
-          </Can>
-        </div>
+        {canManage ? (
+          <div className="flex flex-wrap gap-2">
+            {divisions.length > 1 ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="min-[641px]:hidden"
+                aria-pressed={reordering}
+                onClick={() => setReordering((value) => !value)}
+              >
+                {reordering ? "Selesai" : "Ubah urutan"}
+              </Button>
+            ) : null}
+            <Button variant="outline" size="sm" onClick={onCopy}>
+              <Copy aria-hidden="true" /> Salin
+              <span className="max-[640px]:hidden">dari periode lain</span>
+            </Button>
+            <Button size="sm" onClick={onCreate}>
+              <Plus aria-hidden="true" /> Tambah
+            </Button>
+          </div>
+        ) : null}
       </div>
+      {body}
+    </section>
+  );
+}
 
-      <div
-        aria-busy={isLoading}
-        className="border border-paper-line bg-bg-light"
-      >
-        {isLoading ? (
-          <div className="space-y-4 p-6" role="status">
-            <p className="text-sm text-ink-soft">Memuat daftar divisi...</p>
+/** Jabatan berlaku untuk semua periode dan tidak diubah dari panel. */
+export function PositionsCard({
+  positions,
+  error,
+}: {
+  positions: AdminPosition[];
+  error: string;
+}) {
+  const sorted = [...positions].sort((a, b) => a.sort_order - b.sort_order || a.id - b.id);
 
-            {Array.from({ length: 3 }).map((_, index) => (
-              <div
-                key={index}
-                className="h-12 animate-pulse bg-bg-light-2 motion-reduce:animate-none"
-              />
-            ))}
-          </div>
-        ) : error ? (
-          <div role="alert" className="px-5 py-8">
-            <h3 className="text-sm font-semibold">
-              Divisi belum dapat dimuat
-            </h3>
-
-            <p className="mt-2 text-sm leading-6 text-red-700">{error}</p>
-
-            <button
-              type="button"
-              onClick={onReload}
-              className={`${organizationActionClass} mt-4`}
-            >
-              Coba lagi
-            </button>
-          </div>
-        ) : divisions.length === 0 ? (
-          <div className="px-5 py-12 text-center">
-            <h3 className="font-serif text-lg font-semibold text-bg-dark">
-              Periode ini belum punya divisi
-            </h3>
-
-            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-ink-soft">
-              Salin divisi dari periode sebelumnya agar tidak perlu mengetik
-              ulang, lalu sesuaikan.
-            </p>
-
-            <Can permission={PERMISSIONS.ORGANIZATION_MANAGE}>
-              <div className="mt-5 flex flex-col justify-center gap-2 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={onCopy}
-                  className={organizationActionClass}
-                >
-                  Salin divisi
-                </button>
-
-                <button
-                  type="button"
-                  onClick={onCreate}
-                  className={organizationPrimaryActionClass}
-                >
-                  Tambah divisi
-                </button>
-              </div>
-            </Can>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-125 border-collapse text-left">
-              <thead className="border-b border-paper-line bg-bg-light-2">
-                <tr className="text-xs font-semibold tracking-wide text-ink-soft uppercase">
-                  <th scope="col" className="w-20 px-5 py-3">
-                    Urutan
-                  </th>
-                  <th scope="col" className="px-5 py-3">
-                    Divisi
-                  </th>
-                  <Can permission={PERMISSIONS.ORGANIZATION_MANAGE}>
-                    <th scope="col" className="px-5 py-3">
-                      Aksi
-                    </th>
-                  </Can>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-paper-line">
-                {divisions.map((division) => (
-                  <tr
-                    key={division.id}
-                    className="align-top transition-colors hover:bg-bg-light-2/60"
-                  >
-                    <td className="px-5 py-4 text-sm text-ink-soft">
-                      {division.sort_order}
-                    </td>
-
-                    <td className="px-5 py-4">
-                      <p className="font-medium text-bg-dark">
-                        {division.name}
-                      </p>
-
-                      {division.description && (
-                        <p className="mt-1 max-w-xl text-sm leading-5 text-ink-soft">
-                          {division.description}
-                        </p>
-                      )}
-                    </td>
-
-                    <Can permission={PERMISSIONS.ORGANIZATION_MANAGE}>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => onEdit(division)}
-                            className={organizationActionClass}
-                          >
-                            Ubah
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => onDelete(division)}
-                            className={organizationDangerActionClass}
-                          >
-                            Hapus
-                          </button>
-                        </div>
-                      </td>
-                    </Can>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+  return (
+    <section className="self-start rounded-[4px] border border-line bg-white">
+      <div className="border-b border-line px-5 py-4">
+        <h2 className="font-serif text-base leading-[1.25] font-bold text-green-900">Jabatan</h2>
+        <p className="mt-0.5 text-xs text-muted">Berlaku untuk semua periode.</p>
       </div>
+      {error ? (
+        <p className="px-5 py-4 text-[13px] text-danger">{error}</p>
+      ) : (
+        <ol className="divide-y divide-line">
+          {sorted.map((position, index) => (
+            <li key={position.id} className="flex gap-3 px-5 py-3 text-sm text-ink">
+              <span className="w-5 shrink-0 text-right text-muted-light tabular-nums">{index + 1}.</span>
+              {position.name}
+            </li>
+          ))}
+        </ol>
+      )}
     </section>
   );
 }
