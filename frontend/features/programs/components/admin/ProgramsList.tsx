@@ -373,38 +373,34 @@ export default function ProgramsList() {
             }}
           />
           <SelectSm
-            aria-label="Periode"
+            label="Periode"
             value={period}
-            onChange={(event) => {
-              setPeriodId(event.target.value);
+            onChange={(value) => {
+              setPeriodId(value);
               setDivisionId("");
               setPage(1);
             }}
-          >
-            <option value="">Semua periode</option>
-            {periods.map((p) => (
-              <option key={p.id} value={p.id}>
-                Periode {p.name}
-                {p.is_active ? " (aktif)" : ""}
-              </option>
-            ))}
-          </SelectSm>
+            options={[
+              { value: "", label: "Semua periode" },
+              ...periods.map((p) => ({
+                value: String(p.id),
+                label: `Periode ${p.name}${p.is_active ? " (aktif)" : ""}`,
+              })),
+            ]}
+          />
           <SelectSm
-            aria-label="Divisi"
+            label="Divisi"
             value={divisionId}
             disabled={!period}
-            onChange={(event) => {
-              setDivisionId(event.target.value);
+            onChange={(value) => {
+              setDivisionId(value);
               setPage(1);
             }}
-          >
-            <option value="">Semua divisi</option>
-            {periodDivisions.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </SelectSm>
+            options={[
+              { value: "", label: "Semua divisi" },
+              ...periodDivisions.map((d) => ({ value: String(d.id), label: d.name })),
+            ]}
+          />
         </Toolbar>
         <div className="border-b border-line px-4 pb-3.5 max-[640px]:px-3 max-[640px]:pb-3">
           <Segmented<StatusFilter>

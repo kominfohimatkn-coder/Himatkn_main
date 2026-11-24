@@ -185,17 +185,14 @@ export default function MembersSection({
           onChange={(event) => setQuery(event.target.value)}
         />
         <SelectSm
-          aria-label="Divisi"
+          label="Divisi"
           value={divisionFilter}
-          onChange={(event) => setDivisionFilter(event.target.value)}
-        >
-          <option value="">Semua divisi</option>
-          {divisions.map((division) => (
-            <option key={division.id} value={String(division.id)}>
-              {division.name}
-            </option>
-          ))}
-        </SelectSm>
+          onChange={setDivisionFilter}
+          options={[
+            { value: "", label: "Semua divisi" },
+            ...divisions.map((division) => ({ value: String(division.id), label: division.name })),
+          ]}
+        />
         <span aria-live="polite" className="ml-auto text-xs text-muted max-[640px]:ml-0">
           {filtering ? `${visibleCount} dari ${members.length} anggota` : `${members.length} anggota`}
         </span>

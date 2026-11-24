@@ -418,20 +418,18 @@ export default function NewsList() {
             ]}
           />
           <SelectSm
-            aria-label="Tag"
+            label="Tag"
+            className="max-[640px]:col-span-2"
             value={tagId}
-            onChange={(event) => {
-              setTagId(event.target.value);
+            onChange={(value) => {
+              setTagId(value);
               setPage(1);
             }}
-          >
-            <option value="">Semua tag</option>
-            {tags.map((tag) => (
-              <option key={tag.id} value={tag.id}>
-                {tag.name}
-              </option>
-            ))}
-          </SelectSm>
+            options={[
+              { value: "", label: "Semua tag" },
+              ...tags.map((tag) => ({ value: String(tag.id), label: tag.name })),
+            ]}
+          />
         </Toolbar>
         {body}
       </Card>

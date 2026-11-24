@@ -290,20 +290,18 @@ export default function ActivityLogList() {
             }}
           />
           <SelectSm
-            aria-label="Administrator"
+            label="Administrator"
+            className="max-[640px]:col-span-2"
             value={adminId}
-            onChange={(event) => {
-              setAdminId(event.target.value);
+            onChange={(value) => {
+              setAdminId(value);
               setPage(1);
             }}
-          >
-            <option value="">Semua admin</option>
-            {admins.map((admin) => (
-              <option key={admin.id} value={admin.id}>
-                {admin.username}
-              </option>
-            ))}
-          </SelectSm>
+            options={[
+              { value: "", label: "Semua admin" },
+              ...admins.map((admin) => ({ value: String(admin.id), label: admin.username })),
+            ]}
+          />
           <Segmented<KindFilter>
             label="Jenis aksi"
             value={kind}

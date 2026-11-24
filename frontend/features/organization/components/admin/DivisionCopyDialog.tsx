@@ -8,7 +8,7 @@ import FormDialog from "@/components/admin/shared/FormDialog";
 import { Notice } from "@/components/admin/shared/Notice";
 import { Button } from "@/components/ui/Button";
 import { FormField } from "@/components/ui/FormField";
-import { Select } from "@/components/ui/Select";
+import { SelectMenu } from "@/components/ui/SelectMenu";
 import { getAdminDivisions } from "@/features/organization/admin-api";
 
 import { getApiErrorMessage } from "@/lib/api/errors";
@@ -185,14 +185,19 @@ export default function DivisionCopyDialog({
           ) : (
             <>
               <FormField label="Salin dari periode" required>
-                <Select value={selectedSourceId} onChange={(event) => setSourceId(event.target.value)}>
-                  {sources.map((period) => (
-                    <option key={period.id} value={String(period.id)}>
-                      {period.name}
-                      {period.is_active ? " (aktif)" : ""} · {countState.counts[period.id] ?? 0} divisi
-                    </option>
-                  ))}
-                </Select>
+                <SelectMenu
+                  size="md"
+                  label="Salin dari periode"
+                  hideLabel
+                  value={selectedSourceId}
+                  onChange={setSourceId}
+                  options={sources.map((period) => ({
+                    value: String(period.id),
+                    label: `${period.name}${period.is_active ? " (aktif)" : ""} · ${
+                      countState.counts[period.id] ?? 0
+                    } divisi`,
+                  }))}
+                />
               </FormField>
 
               <Notice icon={<Info aria-hidden="true" />}>

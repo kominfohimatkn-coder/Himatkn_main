@@ -13,7 +13,7 @@ import { StateBlock } from "@/components/admin/shared/StateBlock";
 import { useToast } from "@/components/admin/shared/Toast";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { FormField } from "@/components/ui/FormField";
-import { Select } from "@/components/ui/Select";
+import { SelectMenu } from "@/components/ui/SelectMenu";
 import { useAuth } from "@/features/auth/AuthContext";
 import { PERMISSIONS } from "@/features/auth/permissions";
 import { ApiError } from "@/lib/api/errors";
@@ -437,16 +437,19 @@ export function NewsEditor({ newsId }: { newsId: number | null }) {
             action={isNew ? undefined : <Badge tone={savedInfo.tone}>{savedInfo.label}</Badge>}
           >
             <FormField label="Status">
-              <Select
-                name="status"
+              <SelectMenu<NewsStatus>
+                size="md"
+                label="Status"
+                hideLabel
                 value={status}
                 disabled={!editable}
-                onChange={(event) => change(setStatus)(event.target.value as NewsStatus)}
-              >
-                <option value="draft">Draft — tidak tampil</option>
-                <option value="published">Terbit — tampil di situs</option>
-                <option value="archived">Arsip — disembunyikan</option>
-              </Select>
+                onChange={change(setStatus)}
+                options={[
+                  { value: "draft", label: "Draft", description: "Tidak tampil di situs" },
+                  { value: "published", label: "Terbit", description: "Tampil di situs" },
+                  { value: "archived", label: "Arsip", description: "Disembunyikan dari situs" },
+                ]}
+              />
             </FormField>
             <p className="mt-2.5 text-xs text-muted">
               {news?.published_at
