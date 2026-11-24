@@ -49,7 +49,7 @@ export default function MemberDeleteDialog({
       title="Hapus anggota?"
       description={
         <>
-          <strong className="font-semibold text-bg-dark">
+          <strong className="font-semibold text-green-900">
             {member.name}
           </strong>{" "}
           akan dihapus dari struktur periode {periodName}. Tindakan ini tidak

@@ -73,7 +73,7 @@ export default function MemberAvatar({
   return (
     <span
       className={[
-        "inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-bg-dark font-bold text-white",
+        "inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-green-800 font-bold text-white",
         sizeClasses[size],
       ].join(" ")}
     >

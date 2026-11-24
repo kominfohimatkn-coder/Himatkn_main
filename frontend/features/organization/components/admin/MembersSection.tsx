@@ -1,37 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { AlertTriangle, Copy, Pencil, Plus, RefreshCw, Search, Users } from "lucide-react";
 
-import { Can } from "@/components/admin/shared/Can";
-import { Input } from "@/components/ui/Input";
-import { PERMISSIONS } from "@/features/auth/permissions";
+import { Notice } from "@/components/admin/shared/Notice";
+import { SearchInput, SelectSm } from "@/components/admin/shared/ListControls";
+import { StateBlock } from "@/components/admin/shared/StateBlock";
+import { Button } from "@/components/ui/Button";
 
 import MemberAvatar from "./MemberAvatar";
-import {
-  organizationActionClass,
-  organizationPrimaryActionClass,
-  OrganizationNotice,
-} from "./OrganizationPrimitives";
 
-import type {
-  AdminDivision,
-  AdminMember,
-  AdminPosition,
-} from "../../types";
-
-interface MembersSectionProps {
-  periodName: string;
-  divisions: AdminDivision[];
-  members: AdminMember[];
-  positions: AdminPosition[];
-  positionsLoading: boolean;
-  positionsError: string;
-  isLoading: boolean;
-  error: string;
-  onReload: () => void;
-  onCreate: (divisionId?: number | null) => void;
-  onEdit: (member: AdminMember) => void;
-}
+import type { AdminDivision, AdminMember, AdminPosition } from "../../types";
 
 interface MemberGroup {
   key: string;
@@ -40,20 +19,13 @@ interface MemberGroup {
   members: AdminMember[];
 }
 
-function sortMembers(members: AdminMember[]): AdminMember[] {
-  return [...members].sort(
-    (first, second) =>
-      first.sort_order - second.sort_order ||
-      first.name.localeCompare(second.name, "id"),
-  );
-}
-
-function matchesQuery(name: string, query: string): boolean {
-  return name.toLocaleLowerCase("id-ID").includes(query);
-}
-
+/**
+ * Tab Anggota di halaman Struktur, mengikuti `.division-block` + `.member` di Design/admin.
+ * Anggota dikelompokkan per divisi dan diurutkan seperti di halaman publik:
+ * urutan jabatan dulu, lalu urutan anggota, lalu nama.
+ * Seluruh kartu anggota bisa diketuk untuk membuka form ubah.
+ */
 export default function MembersSection({
-  periodName,
   divisions,
   members,
   positions,
@@ -61,322 +33,276 @@ export default function MembersSection({
   positionsError,
   isLoading,
   error,
+  canManage,
   onReload,
   onCreate,
   onEdit,
-}: MembersSectionProps) {
+  onCopyDivisions,
+}: {
+  /** Sudah urut. */
+  divisions: AdminDivision[];
+  members: AdminMember[];
+  positions: AdminPosition[];
+  positionsLoading: boolean;
+  positionsError: string;
+  isLoading: boolean;
+  error: string;
+  canManage: boolean;
+  onReload: () => void;
+  onCreate: (divisionId?: number | null) => void;
+  onEdit: (member: AdminMember) => void;
+  onCopyDivisions: () => void;
+}) {
   const [query, setQuery] = useState("");
+  const [divisionFilter, setDivisionFilter] = useState("");
 
-  const normalizedQuery = query.trim().toLocaleLowerCase("id-ID");
-
-  const positionNames = useMemo(
-    () => new Map(positions.map((position) => [position.id, position.name])),
+  const positionById = useMemo(
+    () => new Map(positions.map((position) => [position.id, position])),
     [positions],
   );
 
-  const sortedDivisions = useMemo(
-    () =>
-      [...divisions].sort(
+  const normalizedQuery = query.trim().toLocaleLowerCase("id-ID");
+  const filtering = Boolean(normalizedQuery || divisionFilter);
+
+  const groups = useMemo(() => {
+    const rank = (member: AdminMember) =>
+      positionById.get(member.position_id)?.sort_order ?? Number.MAX_SAFE_INTEGER;
+    const sortMembers = (list: AdminMember[]) =>
+      [...list].sort(
         (first, second) =>
+          rank(first) - rank(second) ||
           first.sort_order - second.sort_order ||
           first.name.localeCompare(second.name, "id"),
-      ),
-    [divisions],
-  );
+      );
 
-  const filteredMembers = normalizedQuery
-    ? members.filter((member) =>
-        matchesQuery(member.name, normalizedQuery),
-      )
-    : members;
-
-  const knownDivisionIds = new Set(
-    sortedDivisions.map((division) => division.id),
-  );
-
-  const unassignedMembers = sortMembers(
-    filteredMembers.filter(
+    const visible = members.filter(
       (member) =>
-        member.division_id === null ||
-        !knownDivisionIds.has(member.division_id),
-    ),
-  );
+        (!normalizedQuery || member.name.toLocaleLowerCase("id-ID").includes(normalizedQuery)) &&
+        (!divisionFilter || String(member.division_id) === divisionFilter),
+    );
+    const known = new Set(divisions.map((division) => division.id));
 
-  const groups: MemberGroup[] = sortedDivisions.map((division) => ({
-    key: `division-${division.id}`,
-    divisionId: division.id,
-    name: division.name,
-    members: sortMembers(
-      filteredMembers.filter(
-        (member) => member.division_id === division.id,
-      ),
-    ),
-  }));
+    const result: MemberGroup[] = divisions.map((division) => ({
+      key: `division-${division.id}`,
+      divisionId: division.id,
+      name: division.name,
+      members: sortMembers(visible.filter((member) => member.division_id === division.id)),
+    }));
 
-  if (unassignedMembers.length > 0) {
-    groups.push({
-      key: "unassigned",
-      divisionId: null,
-      name: "Tanpa divisi",
-      members: unassignedMembers,
-    });
+    const unassigned = visible.filter(
+      (member) => member.division_id === null || !known.has(member.division_id),
+    );
+    if (unassigned.length > 0) {
+      result.push({ key: "unassigned", divisionId: null, name: "Tanpa divisi", members: sortMembers(unassigned) });
+    }
+
+    /* Saat mencari/menyaring, divisi kosong disembunyikan. */
+    return filtering ? result.filter((group) => group.members.length > 0) : result;
+  }, [divisions, divisionFilter, filtering, members, normalizedQuery, positionById]);
+
+  const positionsReady = !positionsLoading && !positionsError && positions.length > 0;
+  const canAdd = canManage && positionsReady;
+  const visibleCount = groups.reduce((total, group) => total + group.members.length, 0);
+
+  if (isLoading) {
+    return (
+      <div role="status" aria-label="Memuat anggota" className="grid gap-3">
+        {[0, 1].map((block) => (
+          <div key={block} className="animate-pulse rounded-[4px] border border-line bg-white p-4">
+            <div className="h-3.5 w-1/4 rounded-[3px] bg-green-900/5" />
+            <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-2.5">
+              {[0, 1, 2].map((item) => (
+                <div key={item} className="h-[62px] rounded-[4px] bg-green-900/5" />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   }
 
-  const visibleGroups = normalizedQuery
-    ? groups.filter((group) => group.members.length > 0)
-    : groups;
+  if (error) {
+    return (
+      <div className="rounded-[4px] border border-line bg-white">
+        <StateBlock
+          tone="error"
+          icon={<RefreshCw />}
+          label="Gagal memuat"
+          title="Anggota tidak dapat dimuat"
+          action={
+            <Button variant="outline" onClick={onReload}>
+              <RefreshCw aria-hidden="true" /> Coba lagi
+            </Button>
+          }
+        >
+          {error}
+        </StateBlock>
+      </div>
+    );
+  }
 
-  const positionsReady =
-    !positionsLoading && !positionsError && positions.length > 0;
-
-  const addDisabledReason = positionsLoading
-    ? "Daftar jabatan sedang dimuat."
-    : positionsError
-      ? "Daftar jabatan gagal dimuat."
-      : positions.length === 0
-        ? "Belum ada jabatan yang tersedia."
-        : undefined;
+  if (members.length === 0) {
+    return (
+      <div className="rounded-[4px] border border-line bg-white">
+        <StateBlock
+          icon={<Users />}
+          label="Anggota"
+          title="Belum ada anggota di periode ini"
+          action={
+            !canManage ? undefined : divisions.length > 0 ? (
+              <Button disabled={!positionsReady} onClick={() => onCreate()}>
+                <Plus aria-hidden="true" /> Tambah anggota
+              </Button>
+            ) : (
+              <Button onClick={onCopyDivisions}>
+                <Copy aria-hidden="true" /> Salin divisi
+              </Button>
+            )
+          }
+        >
+          {divisions.length > 0
+            ? "Tambahkan pengurus mulai dari Ketua Himpunan dan Badan Pengurus Harian."
+            : "Siapkan divisi dulu, lalu isi anggotanya."}
+        </StateBlock>
+      </div>
+    );
+  }
 
   return (
-    <section aria-labelledby="member-list-title" className="mt-6">
-      <div className="flex flex-col gap-4 pb-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2
-            id="member-list-title"
-            className="font-serif text-lg font-semibold text-bg-dark"
-          >
-            Anggota periode {periodName}
-          </h2>
+    <>
+      {positionsError ? (
+        <Notice tone="amber" icon={<AlertTriangle aria-hidden="true" />} className="mb-3.5">
+          <strong>Daftar jabatan belum dapat dimuat.</strong> Anggota tetap tampil, tetapi
+          jabatannya tidak, dan anggota belum dapat ditambah atau diubah. {positionsError}
+        </Notice>
+      ) : null}
 
-          <p
-            aria-live="polite"
-            className="mt-1 text-xs leading-5 text-ink-soft"
-          >
-            {isLoading
-              ? "Memuat anggota..."
-              : normalizedQuery
-                ? `${filteredMembers.length} dari ${members.length} anggota cocok dengan pencarian`
-                : `${members.length} anggota, dikelompokkan per divisi`}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2 sm:flex">
-          <button
-            type="button"
-            onClick={onReload}
-            disabled={isLoading}
-            className={organizationActionClass}
-          >
-            Muat ulang
-          </button>
-
-          <Can permission={PERMISSIONS.ORGANIZATION_MANAGE}>
-            <button
-              type="button"
-              onClick={() => onCreate()}
-              disabled={isLoading || !positionsReady}
-              title={addDisabledReason}
-              className={organizationPrimaryActionClass}
-            >
-              Tambah anggota
-            </button>
-          </Can>
-        </div>
+      <div className="mb-3.5 flex flex-wrap items-center gap-2.5 rounded-[4px] border border-line bg-white px-4 py-3.5 max-[640px]:grid max-[640px]:grid-cols-1 max-[640px]:p-3">
+        <SearchInput
+          placeholder="Cari nama anggota…"
+          aria-label="Cari anggota"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+        <SelectSm
+          aria-label="Divisi"
+          value={divisionFilter}
+          onChange={(event) => setDivisionFilter(event.target.value)}
+        >
+          <option value="">Semua divisi</option>
+          {divisions.map((division) => (
+            <option key={division.id} value={String(division.id)}>
+              {division.name}
+            </option>
+          ))}
+        </SelectSm>
+        <span aria-live="polite" className="ml-auto text-xs text-muted max-[640px]:ml-0">
+          {filtering ? `${visibleCount} dari ${members.length} anggota` : `${members.length} anggota`}
+        </span>
       </div>
 
-      {positionsError && (
-        <div className="mb-4">
-          <OrganizationNotice tone="error">
-            <p className="font-medium">Daftar jabatan belum dapat dimuat</p>
-            <p className="mt-1">{positionsError}</p>
-            <p className="mt-1">
-              Anggota tetap dapat dilihat, tetapi jabatan tidak dapat
-              ditampilkan dan anggota baru belum dapat disimpan.
-            </p>
-          </OrganizationNotice>
-        </div>
-      )}
-
-      <div
-        aria-busy={isLoading}
-        className="border border-paper-line bg-bg-light"
-      >
-        {isLoading ? (
-          <div className="space-y-4 p-6" role="status">
-            <p className="text-sm text-ink-soft">Memuat daftar anggota...</p>
-
-            {Array.from({ length: 3 }).map((_, index) => (
-              <div
-                key={index}
-                className="h-14 animate-pulse bg-bg-light-2 motion-reduce:animate-none"
-              />
-            ))}
-          </div>
-        ) : error ? (
-          <div role="alert" className="px-5 py-8">
-            <h3 className="text-sm font-semibold">
-              Anggota belum dapat dimuat
-            </h3>
-
-            <p className="mt-2 text-sm leading-6 text-red-700">{error}</p>
-
-            <button
-              type="button"
-              onClick={onReload}
-              className={`${organizationActionClass} mt-4`}
-            >
-              Coba lagi
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="border-b border-paper-line p-4">
-              <label
-                htmlFor="member-search"
-                className="block text-sm font-medium text-ink"
+      {groups.length === 0 ? (
+        <div className="rounded-[4px] border border-line bg-white">
+          <StateBlock
+            icon={<Search />}
+            label="Pencarian"
+            title="Tidak ada anggota yang cocok"
+            action={
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setQuery("");
+                  setDivisionFilter("");
+                }}
               >
-                Cari anggota
-              </label>
-
-              <Input
-                id="member-search"
-                type="search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Cari nama anggota…"
-                className="mt-1.5"
-              />
-            </div>
-
-            {members.length === 0 ? (
-              <div className="px-5 py-12 text-center">
-                <h3 className="font-serif text-lg font-semibold text-bg-dark">
-                  Belum ada anggota di periode ini
-                </h3>
-
-                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-ink-soft">
-                  {sortedDivisions.length > 0
-                    ? "Tambahkan pengurus mulai dari Ketua Himpunan dan Badan Pengurus Harian."
-                    : "Siapkan divisi dulu, lalu isi anggotanya. Anggota juga dapat ditambahkan tanpa divisi."}
-                </p>
-
-                <Can permission={PERMISSIONS.ORGANIZATION_MANAGE}>
-                  <button
-                    type="button"
-                    onClick={() => onCreate()}
-                    disabled={!positionsReady}
-                    title={addDisabledReason}
-                    className={`${organizationPrimaryActionClass} mt-5`}
+                Tampilkan semua anggota
+              </Button>
+            }
+          >
+            Coba nama lain atau pilih Semua divisi.
+          </StateBlock>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {groups.map((group) => (
+            <section
+              key={group.key}
+              aria-labelledby={`member-group-${group.key}`}
+              className="rounded-[4px] border border-line bg-white"
+            >
+              <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3.5 max-[640px]:px-4">
+                <div className="min-w-0">
+                  <h2
+                    id={`member-group-${group.key}`}
+                    className="font-serif text-base leading-[1.25] font-bold text-green-900"
                   >
-                    Tambah anggota
-                  </button>
-                </Can>
-              </div>
-            ) : normalizedQuery && visibleGroups.length === 0 ? (
-              <div className="px-5 py-12 text-center">
-                <h3 className="font-serif text-lg font-semibold text-bg-dark">
-                  Tidak ada anggota yang cocok
-                </h3>
-
-                <p className="mt-2 text-sm leading-6 text-ink-soft">
-                  Tidak ada nama yang memuat “{query.trim()}”.
-                </p>
-
-                <button
-                  type="button"
-                  onClick={() => setQuery("")}
-                  className={`${organizationActionClass} mt-5`}
-                >
-                  Tampilkan semua anggota
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3 p-3 sm:p-4">
-                {visibleGroups.map((group) => (
-                  <section
-                    key={group.key}
-                    aria-labelledby={`member-group-${group.key}`}
-                    className="border border-paper-line bg-bg-light"
+                    {group.name}
+                  </h2>
+                  <p className="mt-0.5 text-xs text-muted">{group.members.length} orang</p>
+                </div>
+                {canAdd && group.divisionId !== null ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Tambah anggota ${group.name}`}
+                    onClick={() => onCreate(group.divisionId)}
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-paper-line bg-bg-light-2/60 px-4 py-3">
-                      <div className="min-w-0">
-                        <h3
-                          id={`member-group-${group.key}`}
-                          className="text-sm font-semibold text-bg-dark"
-                        >
-                          {group.name}
-                        </h3>
+                    <Plus aria-hidden="true" /> Tambah
+                  </Button>
+                ) : null}
+              </div>
 
-                        <p className="mt-0.5 text-xs text-ink-soft">
-                          {group.members.length} orang
-                        </p>
-                      </div>
+              {group.members.length === 0 ? (
+                <p className="px-5 py-5 text-[13px] text-muted max-[640px]:px-4">
+                  Belum ada anggota di divisi ini.
+                </p>
+              ) : (
+                <ul className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-2.5 p-4 max-[640px]:grid-cols-1 max-[640px]:p-3">
+                  {group.members.map((member) => {
+                    const role = positionById.get(member.position_id)?.name ?? "Jabatan tidak tersedia";
+                    const content = (
+                      <>
+                        <MemberAvatar name={member.name} photoUrl={member.photo_url} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block font-serif text-sm leading-[1.3] font-bold wrap-anywhere text-green-900">
+                            {member.name}
+                          </span>
+                          <span className="mt-[3px] block text-[11px] font-semibold tracking-[0.1em] text-green-700 uppercase">
+                            {role}
+                          </span>
+                        </span>
+                      </>
+                    );
+                    const card =
+                      "flex w-full items-center gap-3 rounded-[4px] border border-line bg-white p-3 text-left";
 
-                      <Can permission={PERMISSIONS.ORGANIZATION_MANAGE}>
-                        {group.divisionId !== null && (
+                    return (
+                      <li key={member.id}>
+                        {canAdd ? (
                           <button
                             type="button"
-                            onClick={() => onCreate(group.divisionId ?? null)}
-                            disabled={!positionsReady}
-                            title={addDisabledReason}
-                            className={organizationActionClass}
+                            onClick={() => onEdit(member)}
+                            aria-label={`Ubah ${member.name}, ${role}`}
+                            className={`${card} group cursor-pointer transition-[border-color,box-shadow] hover:border-line-strong hover:shadow-[0_6px_18px_rgba(6,38,27,0.05)] active:bg-[#f7faf8]`}
                           >
-                            Tambah anggota
-                          </button>
-                        )}
-                      </Can>
-                    </div>
-
-                    {group.members.length === 0 ? (
-                      <p className="px-4 py-6 text-sm text-ink-soft">
-                        Belum ada anggota di divisi ini.
-                      </p>
-                    ) : (
-                      <div className="grid gap-2 p-3 sm:grid-cols-2 xl:grid-cols-3">
-                        {group.members.map((member) => (
-                          <article
-                            key={member.id}
-                            className="flex items-start gap-3 border border-paper-line bg-bg-light p-3"
-                          >
-                            <MemberAvatar
-                              name={member.name}
-                              photoUrl={member.photo_url}
+                            {content}
+                            <Pencil
+                              aria-hidden="true"
+                              className="size-4 shrink-0 text-muted-light transition-colors group-hover:text-green-800"
                             />
-
-                            <div className="min-w-0 flex-1">
-                              <p className="font-medium break-words text-bg-dark">
-                                {member.name}
-                              </p>
-
-                              <p className="mt-0.5 text-xs leading-5 text-ink-soft">
-                                {positionNames.get(member.position_id) ??
-                                  "Jabatan tidak tersedia"}
-                              </p>
-                            </div>
-
-                            <Can
-                              permission={PERMISSIONS.ORGANIZATION_MANAGE}
-                            >
-                              <button
-                                type="button"
-                                onClick={() => onEdit(member)}
-                                aria-label={`Ubah ${member.name}`}
-                                className={organizationActionClass}
-                              >
-                                Ubah
-                              </button>
-                            </Can>
-                          </article>
-                        ))}
-                      </div>
-                    )}
-                  </section>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </section>
+                          </button>
+                        ) : (
+                          <div className={card}>{content}</div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+          ))}
+        </div>
+      )}
+    </>
   );
 }

@@ -15,6 +15,7 @@ import { AdminPage } from "@/components/admin/shared/AdminPage";
 import { Badge, type BadgeTone } from "@/components/admin/shared/Badge";
 import { Card } from "@/components/admin/shared/Card";
 import { RequirePermission } from "@/components/admin/shared/RequirePermission";
+import { implementedAdminRoutes } from "@/components/admin/shell/admin-navigation";
 import { StateBlock } from "@/components/admin/shared/StateBlock";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { useAuth } from "@/features/auth/AuthContext";
@@ -50,7 +51,9 @@ export default function DashboardPage() {
   const canViewNews = can(PERMISSIONS.NEWS_VIEW);
   const canViewPrograms = can(PERMISSIONS.PROGRAMS_VIEW);
   const canViewOrganization = can(PERMISSIONS.ORGANIZATION_VIEW);
-  const canViewVisitors = can(PERMISSIONS.VISITOR_LOGS_VIEW);
+  /* Kartu Kunjungan baru tampil setelah halaman Statistik Pengunjung ada (ADM-7). */
+  const canViewVisitors =
+    can(PERMISSIONS.VISITOR_LOGS_VIEW) && implementedAdminRoutes.has("/admin/visitor-logs");
   const canCreateNews = can(PERMISSIONS.NEWS_CREATE);
   const canManageOrganization = can(PERMISSIONS.ORGANIZATION_MANAGE);
 
