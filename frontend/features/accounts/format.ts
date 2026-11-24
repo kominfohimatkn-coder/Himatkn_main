@@ -30,6 +30,27 @@ export function formatAdminLastLogin(
   return lastLoginFormatter.format(date);
 }
 
+const lastLoginShortFormatter = new Intl.DateTimeFormat("id-ID", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
+
+/** Versi ringkas untuk baris daftar ponsel, contoh: `23 Nov 2026`. */
+export function formatAdminLastLoginShort(
+  value: string | null | undefined,
+): string {
+  if (!value) {
+    return "Belum pernah login";
+  }
+
+  const date = new Date(value);
+
+  return Number.isNaN(date.getTime())
+    ? "Tanggal tidak valid"
+    : lastLoginShortFormatter.format(date);
+}
+
 /**
  * Ringkasan izin akun berdasarkan label modul pada katalog.
  *
