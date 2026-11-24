@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { Info } from "lucide-react";
 
 import FormDialog from "@/components/admin/shared/FormDialog";
+import { Notice } from "@/components/admin/shared/Notice";
+import { Button } from "@/components/ui/Button";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
-
 import { getApiErrorMessage } from "@/lib/api/errors";
-
-import { OrganizationNotice } from "./OrganizationPrimitives";
 
 import type { AdminPeriod } from "../../types";
 
@@ -18,73 +18,43 @@ export interface PeriodFormValues {
   end_date: string | null;
 }
 
-interface PeriodFormDialogProps {
-  period?: AdminPeriod;
-  onClose: () => void;
-  onSubmit: (values: PeriodFormValues) => Promise<void>;
-}
+type Field = "name" | "end_date";
 
-interface PeriodFormState {
-  name: string;
-  start_date: string;
-  end_date: string;
-}
-
+/** Panel buat/ubah periode, mengikuti `periodForm()` di Design/admin. */
 export default function PeriodFormDialog({
   period,
   onClose,
   onSubmit,
-}: PeriodFormDialogProps) {
-  const [form, setForm] = useState<PeriodFormState>(() => ({
-    name: period?.name ?? "",
-    start_date: period?.start_date?.slice(0, 10) ?? "",
-    end_date: period?.end_date?.slice(0, 10) ?? "",
-  }));
-
-  const [isSaving, setIsSaving] = useState(false);
+}: {
+  period?: AdminPeriod;
+  onClose: () => void;
+  onSubmit: (values: PeriodFormValues) => Promise<void>;
+}) {
+  const [name, setName] = useState(period?.name ?? "");
+  const [startDate, setStartDate] = useState(period?.start_date?.slice(0, 10) ?? "");
+  const [endDate, setEndDate] = useState(period?.end_date?.slice(0, 10) ?? "");
+  const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
   const [error, setError] = useState("");
-
-  function updateField(field: keyof PeriodFormState, value: string) {
-    setForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
-  }
+  const [isSaving, setIsSaving] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
 
-    const name = form.name.trim();
-
-    if (name.length < 2) {
-      setError("Nama periode minimal 2 karakter.");
-      return;
-    }
-
-    if (
-      form.start_date &&
-      form.end_date &&
-      form.end_date < form.start_date
-    ) {
-      setError("Tanggal selesai tidak boleh sebelum tanggal mulai.");
-      return;
-    }
+    const cleanName = name.trim();
+    const found: Partial<Record<Field, string>> = {};
+    if (cleanName.length < 2) found.name = cleanName ? "Minimal 2 karakter." : "Wajib diisi.";
+    if (startDate && endDate && endDate < startDate)
+      found.end_date = "Tanggal selesai tidak boleh sebelum tanggal mulai.";
+    setErrors(found);
+    if (Object.keys(found).length) return;
 
     setIsSaving(true);
-
     try {
-      await onSubmit({
-        name,
-        start_date: form.start_date || null,
-        end_date: form.end_date || null,
-      });
-
+      await onSubmit({ name: cleanName, start_date: startDate || null, end_date: endDate || null });
       onClose();
     } catch (err) {
-      setError(
-        getApiErrorMessage(err, "Periode gagal disimpan."),
-      );
+      setError(getApiErrorMessage(err, "Periode gagal disimpan."));
     } finally {
       setIsSaving(false);
     }
@@ -95,85 +65,50 @@ export default function PeriodFormDialog({
       open
       eyebrow="Struktur organisasi"
       title={period ? `Ubah periode ${period.name}` : "Buat periode baru"}
-      description="Nama periode harus unik dan tanggal selesai tidak boleh sebelum tanggal mulai."
-      size="md"
       busy={isSaving}
       onClose={onClose}
     >
-      <form onSubmit={handleSubmit} className="space-y-5 p-5 sm:p-7">
-        <FormField
-          label="Nama periode"
-          hint="Contoh: 2026/2027. Harus unik."
-          required
-        >
-          <Input
-            id="period-name"
-            name="name"
-            value={form.name}
-            onChange={(event) => updateField("name", event.target.value)}
-            minLength={2}
-            maxLength={50}
-            required
-            placeholder="2026/2027"
-          />
-        </FormField>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label="Mulai">
+      <form noValidate onSubmit={handleSubmit} className="flex min-h-full flex-col">
+        <div className="grid flex-1 content-start gap-4 px-6 py-[22px]">
+          <FormField label="Nama periode" hint="Contoh: 2026/2027. Harus unik." required error={errors.name}>
             <Input
-              id="period-start-date"
-              name="start_date"
-              type="date"
-              value={form.start_date}
-              onChange={(event) =>
-                updateField("start_date", event.target.value)
-              }
+              value={name}
+              maxLength={50}
+              placeholder="2026/2027"
+              onChange={(event) => setName(event.target.value)}
             />
           </FormField>
 
-          <FormField label="Selesai">
-            <Input
-              id="period-end-date"
-              name="end_date"
-              type="date"
-              value={form.end_date}
-              onChange={(event) =>
-                updateField("end_date", event.target.value)
-              }
-            />
-          </FormField>
+          <div className="grid items-start gap-3.5 min-[641px]:grid-cols-2">
+            <FormField label="Mulai">
+              <Input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
+            </FormField>
+            <FormField label="Selesai" error={errors.end_date}>
+              <Input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
+            </FormField>
+          </div>
+
+          {period ? null : (
+            <Notice icon={<Info aria-hidden="true" />}>
+              Periode baru dibuat dalam keadaan <strong>tidak aktif</strong>. Lengkapi
+              divisi dan anggotanya dulu, lalu aktifkan.
+            </Notice>
+          )}
+
+          {error ? (
+            <p role="alert" className="rounded-[4px] border border-[#ebcfc6] bg-danger-bg px-3.5 py-3 text-[13px] text-danger">
+              {error}
+            </p>
+          ) : null}
         </div>
 
-        {!period && (
-          <OrganizationNotice tone="warning">
-            Periode baru dibuat dalam keadaan <strong>tidak aktif</strong>.
-            Lengkapi divisi dan anggotanya dulu, lalu aktifkan.
-          </OrganizationNotice>
-        )}
-
-        {error && <OrganizationNotice tone="error">{error}</OrganizationNotice>}
-
-        <footer className="flex flex-col-reverse gap-2 border-t border-paper-line pt-5 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSaving}
-            className="min-h-11 border border-paper-line px-4 py-2 text-sm font-medium hover:bg-bg-light-2 disabled:opacity-50"
-          >
+        <footer className="sticky bottom-0 flex justify-end gap-2 border-t border-line bg-white px-6 py-3.5">
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
             Batal
-          </button>
-
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="min-h-11 border border-bg-dark bg-bg-dark px-4 py-2 text-sm font-medium text-white hover:bg-bg-dark/90 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isSaving
-              ? "Menyimpan..."
-              : period
-                ? "Simpan perubahan"
-                : "Buat periode"}
-          </button>
+          </Button>
+          <Button type="submit" disabled={isSaving}>
+            {isSaving ? "Menyimpan..." : period ? "Simpan perubahan" : "Buat periode"}
+          </Button>
         </footer>
       </form>
     </FormDialog>

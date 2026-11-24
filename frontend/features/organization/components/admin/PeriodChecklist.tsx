@@ -1,157 +1,111 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Check, Copy, Plus, Power } from "lucide-react";
 
-import { Can } from "@/components/admin/shared/Can";
-import { PERMISSIONS } from "@/features/auth/permissions";
-
-import { organizationPrimaryActionClass } from "./OrganizationPrimitives";
+import { Button } from "@/components/ui/Button";
 
 import type { AdminPeriod } from "../../types";
 
-interface PeriodChecklistProps {
-  period: AdminPeriod;
-  divisionCount: number;
-  divisionsLoading: boolean;
-  memberCount: number;
-  membersLoading: boolean;
-  membersError: string;
-  onActivate: (period: AdminPeriod) => void;
-}
-
-function ChecklistItem({
-  index,
-  label,
-  hint,
-  done = false,
-  informational = false,
-  action,
-}: {
-  index: number;
-  label: string;
-  hint: string;
-  done?: boolean;
-  informational?: boolean;
-  action?: ReactNode;
-}) {
-  return (
-    <li className="flex items-start gap-3">
-      <span
-        aria-hidden="true"
-        className={[
-          "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border text-xs font-semibold",
-          done
-            ? "border-green-700 bg-green-700 text-white"
-            : "border-paper-line bg-bg-light text-ink-soft",
-        ].join(" ")}
-      >
-        {done ? (
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            className="size-3.5"
-          >
-            <path d="m5 12 4 4L19 6" />
-          </svg>
-        ) : informational ? (
-          "–"
-        ) : (
-          index
-        )}
-      </span>
-
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-bg-dark">{label}</p>
-
-        <p className="mt-0.5 text-xs leading-5 text-ink-soft">{hint}</p>
-
-        {action && <div className="mt-2">{action}</div>}
-      </div>
-    </li>
-  );
-}
-
+/**
+ * Langkah menyiapkan periode baru, mengikuti `.checklist` di Design/admin.
+ * Hanya tampil untuk periode tidak aktif yang divisi atau anggotanya masih kosong.
+ */
 export default function PeriodChecklist({
   period,
   divisionCount,
-  divisionsLoading,
   memberCount,
-  membersLoading,
-  membersError,
+  onCopy,
+  onOpenDivisions,
+  onAddMember,
   onActivate,
-}: PeriodChecklistProps) {
-  const hasDivisions = !divisionsLoading && divisionCount > 0;
-  const hasMembers = !membersLoading && !membersError && memberCount > 0;
+}: {
+  period: AdminPeriod;
+  divisionCount: number;
+  memberCount: number;
+  onCopy: () => void;
+  onOpenDivisions: () => void;
+  onAddMember: () => void;
+  onActivate: () => void;
+}) {
+  const steps: [string, boolean, ReactNode][] = [
+    ["Buat periode", true, null],
+    [
+      "Salin divisi dari periode lain",
+      divisionCount > 0,
+      <Button key="copy" variant="outline" size="xs" onClick={onCopy}>
+        <Copy aria-hidden="true" /> Salin divisi
+      </Button>,
+    ],
+    [
+      "Sesuaikan divisi (tambah, ubah, hapus)",
+      divisionCount > 0 && memberCount > 0,
+      <Button key="divs" variant="ghost" size="xs" onClick={onOpenDivisions}>
+        Buka daftar divisi
+      </Button>,
+    ],
+    [
+      "Isi anggota",
+      memberCount > 0,
+      <Button key="member" variant="outline" size="xs" onClick={onAddMember}>
+        <Plus aria-hidden="true" /> Tambah anggota
+      </Button>,
+    ],
+    [
+      "Aktifkan periode",
+      period.is_active,
+      <Button key="activate" size="xs" onClick={onActivate}>
+        <Power aria-hidden="true" /> Aktifkan
+      </Button>,
+    ],
+  ];
+  const next = steps.findIndex(([, done]) => !done);
+  const doneCount = steps.filter(([, done]) => done).length;
 
   return (
     <section
-      aria-labelledby="period-checklist-title"
-      className="mt-6 border border-gold/40 bg-gold/10 p-5"
+      aria-label={`Langkah menyiapkan periode ${period.name}`}
+      className="mb-[18px] rounded-[4px] border border-green-800 bg-white"
     >
-      <p className="text-xs font-semibold tracking-wide text-ink-soft uppercase">
-        Menyiapkan periode {period.name}
-      </p>
+      <div className="border-b border-line px-5 py-4">
+        <p className="text-[11px] leading-[1.2] font-semibold tracking-[0.1em] text-green-700 uppercase">
+          Menyiapkan periode {period.name}
+        </p>
+        <h2 className="mt-1 font-serif text-base font-bold text-green-900">
+          {doneCount} dari {steps.length} langkah selesai
+        </h2>
+      </div>
 
-      <h2
-        id="period-checklist-title"
-        className="mt-1 font-serif text-lg font-semibold text-bg-dark"
-      >
-        Checklist periode baru
-      </h2>
+      <ol className="grid gap-0.5 px-5 pt-2 pb-4">
+        {steps.map(([label, done, action], index) => {
+          const isNext = index === next;
 
-      <p className="mt-1 text-sm leading-6 text-ink-soft">
-        Lengkapi divisi dan anggota sebelum mengaktifkan periode. Data yang
-        kosong tetap boleh diaktifkan, tetapi halaman Struktur situs akan
-        tampil kosong sampai diisi.
-      </p>
-
-      <ol className="mt-4 space-y-4">
-        <ChecklistItem
-          index={1}
-          label="Divisi sudah ada"
-          done={hasDivisions}
-          hint={
-            divisionsLoading
-              ? "Memuat divisi..."
-              : hasDivisions
-                ? `${divisionCount} divisi tersedia di periode ini.`
-                : "Belum ada divisi di periode ini. Tambahkan atau salin divisi terlebih dahulu."
-          }
-        />
-
-        <ChecklistItem
-          index={2}
-          label="Anggota sudah ada"
-          done={hasMembers}
-          hint={
-            membersLoading
-              ? "Memuat anggota..."
-              : membersError
-                ? `Jumlah anggota belum dapat diperiksa: ${membersError}`
-                : hasMembers
-                  ? `${memberCount} anggota tersedia di periode ini.`
-                  : "Belum ada anggota di periode ini. Anggota dapat ditambahkan lewat bagian Anggota di bawah."
-          }
-        />
-
-        <ChecklistItem
-          index={3}
-          label="Siap diaktifkan"
-          hint="Situs publik akan langsung memakai periode ini setelah diaktifkan."
-          action={
-            <Can permission={PERMISSIONS.ORGANIZATION_MANAGE}>
-              <button
-                type="button"
-                onClick={() => onActivate(period)}
-                className={organizationPrimaryActionClass}
+          return (
+            <li key={label} className="flex flex-wrap items-center gap-3 py-2">
+              <span
+                aria-hidden="true"
+                className={`grid size-[26px] shrink-0 place-items-center rounded-full border-[1.5px] text-xs font-bold [&_svg]:size-3.5 ${
+                  done
+                    ? "border-green-800 bg-green-800 text-white"
+                    : isNext
+                      ? "border-green-800 text-green-800"
+                      : "border-line-strong text-muted"
+                }`}
               >
-                Aktifkan periode
-              </button>
-            </Can>
-          }
-        />
+                {done ? <Check /> : index + 1}
+              </span>
+              <span
+                className={`min-w-40 flex-1 ${
+                  done ? "text-ink" : isNext ? "font-semibold text-green-900" : "text-muted"
+                }`}
+              >
+                {label}
+                {done ? <span className="sr-only"> (selesai)</span> : null}
+              </span>
+              {isNext ? action : null}
+            </li>
+          );
+        })}
       </ol>
     </section>
   );
