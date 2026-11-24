@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { Check } from "lucide-react";
 
+import { Notice } from "@/components/admin/shared/Notice";
+import { useToast } from "@/components/admin/shared/Toast";
+import { Button } from "@/components/ui/Button";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
 import { getApiErrorMessage, isApiError } from "@/lib/api/errors";
@@ -15,6 +19,7 @@ interface FieldErrors {
 }
 
 export default function ChangePasswordForm() {
+  const toast = useToast();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -86,6 +91,7 @@ export default function ChangePasswordForm() {
       setNewPassword("");
       setConfirmPassword("");
       setSessionsRevoked(response.sessions_revoked);
+      toast("Kata sandi diubah.");
     } catch (err) {
       if (
         isApiError(err) &&
@@ -109,19 +115,13 @@ export default function ChangePasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form noValidate onSubmit={handleSubmit} className="grid gap-4">
       {sessionsRevoked !== null && (
-        <div
-          role="status"
-          className="border border-green-200 bg-green-50 p-3 text-sm leading-6 text-green-800"
-        >
-          <p className="font-medium">
-            Password diganti. {sessionsRevoked} sesi lain telah diakhiri.
-          </p>
-
-          <p className="mt-1 text-xs">
-            Sesi di perangkat ini tetap aktif.
-          </p>
+        <div role="status">
+          <Notice icon={<Check aria-hidden="true" />}>
+            <strong>Kata sandi berhasil diubah.</strong> {sessionsRevoked} sesi
+            di perangkat lain diakhiri; perangkat ini tetap masuk.
+          </Notice>
         </div>
       )}
 
@@ -186,22 +186,18 @@ export default function ChangePasswordForm() {
       </FormField>
 
       {error && (
-        <div
+        <p
           role="alert"
-          className="border border-red-200 bg-red-50 p-3 text-sm leading-6 text-red-800"
+          className="rounded-[4px] border border-[#ebcfc6] bg-danger-bg px-3.5 py-3 text-[13px] text-danger"
         >
           {error}
-        </div>
+        </p>
       )}
 
-      <div className="border-t border-paper-line pt-5 sm:flex sm:justify-end">
-        <button
-          type="submit"
-          disabled={isSaving}
-          className="inline-flex min-h-11 w-full items-center justify-center border border-bg-dark bg-bg-dark px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-bg-dark/90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-        >
+      <div className="mt-1 flex justify-end max-[640px]:[&>button]:w-full">
+        <Button type="submit" disabled={isSaving}>
           {isSaving ? "Menyimpan..." : "Simpan kata sandi"}
-        </button>
+        </Button>
       </div>
     </form>
   );

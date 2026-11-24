@@ -51,33 +51,32 @@ export default function PermissionChecklist({
   }
 
   return (
-    <section aria-labelledby="permission-checklist-title" className="space-y-3">
+    <section aria-labelledby="permission-checklist-title" className="grid gap-3">
       <div>
         <h3
           id="permission-checklist-title"
-          className="text-sm font-semibold text-bg-dark"
+          className="text-[11px] font-semibold tracking-[0.08em] text-green-900 uppercase"
         >
           Izin akun
         </h3>
 
-        <p className="mt-1 text-xs leading-5 text-ink-soft">
+        <p className="mt-1 text-xs leading-5 text-muted">
           Centang izin yang diberikan. Izin turunan otomatis ikut tercentang
-          dan tidak dapat dilepas selama izin yang membutuhkannya masih
-          tercentang.
+          selama izin yang membutuhkannya masih tercentang.
         </p>
       </div>
 
-      <div className="space-y-3">
+      <div className="grid items-start gap-3 min-[641px]:grid-cols-2">
         {visibleModules.map((module) => (
           <fieldset
             key={module.key}
-            className="border border-paper-line bg-bg-light p-4"
+            className="rounded-[4px] border border-line bg-white px-4 pt-1 pb-4"
           >
-            <legend className="px-1 text-sm font-semibold text-bg-dark">
+            <legend className="px-1 font-serif text-sm font-bold text-green-900">
               {module.label}
             </legend>
 
-            <div className="mt-2 space-y-3">
+            <div className="mt-1 grid gap-2.5">
               {module.permissions.map((permission) => {
                 const always = alwaysGranted.has(permission.name);
                 const checked =
@@ -103,7 +102,7 @@ export default function PermissionChecklist({
                       always
                         ? "Selalu diberikan"
                         : implied
-                          ? "Otomatis dari izin lain yang dipilih"
+                          ? "Otomatis dari izin lain"
                           : undefined
                     }
                   />
@@ -115,7 +114,7 @@ export default function PermissionChecklist({
       </div>
 
       {selected.length === 0 && (
-        <p className="text-xs leading-5 text-ink-soft">
+        <p className="text-xs leading-5 text-muted">
           Tanpa centang, akun hanya mendapat akses Dashboard.
         </p>
       )}
