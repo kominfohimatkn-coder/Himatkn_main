@@ -8,7 +8,7 @@ import { Notice } from "@/components/admin/shared/Notice";
 import { Button } from "@/components/ui/Button";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
+import { SelectMenu } from "@/components/ui/SelectMenu";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 import MemberPhotoField from "./MemberPhotoField";
@@ -134,32 +134,39 @@ export default function MemberFormDialog({
 
           <div className="grid items-start gap-3.5 min-[641px]:grid-cols-2">
             <FormField label="Jabatan" hint="Berlaku untuk semua periode." required error={errors.position_id}>
-              <Select
-                value={positionId}
+              <SelectMenu
+                size="md"
+                label="Jabatan"
+                hideLabel
                 placeholder="Pilih jabatan"
+                value={positionId}
                 disabled={positions.length === 0}
-                onChange={(event) => {
-                  setPositionId(event.target.value);
+                onChange={(value) => {
+                  setPositionId(value);
                   setErrors((current) => ({ ...current, position_id: undefined }));
                 }}
-              >
-                {sortedPositions.map((position) => (
-                  <option key={position.id} value={String(position.id)}>
-                    {position.name}
-                  </option>
-                ))}
-              </Select>
+                options={sortedPositions.map((position) => ({
+                  value: String(position.id),
+                  label: position.name,
+                }))}
+              />
             </FormField>
 
             <FormField label="Divisi" hint={`Divisi periode ${period.name}.`}>
-              <Select value={divisionId} onChange={(event) => setDivisionId(event.target.value)}>
-                <option value="">Tanpa divisi</option>
-                {divisions.map((division) => (
-                  <option key={division.id} value={String(division.id)}>
-                    {division.name}
-                  </option>
-                ))}
-              </Select>
+              <SelectMenu
+                size="md"
+                label="Divisi"
+                hideLabel
+                value={divisionId}
+                onChange={setDivisionId}
+                options={[
+                  { value: "", label: "Tanpa divisi" },
+                  ...divisions.map((division) => ({
+                    value: String(division.id),
+                    label: division.name,
+                  })),
+                ]}
+              />
             </FormField>
           </div>
 

@@ -7,7 +7,7 @@ import FormDialog from "@/components/admin/shared/FormDialog";
 import { Button } from "@/components/ui/Button";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
+import { SelectMenu } from "@/components/ui/SelectMenu";
 import { Textarea } from "@/components/ui/Textarea";
 import { ApiError } from "@/lib/api/errors";
 import type { AdminDivision, AdminPeriod } from "@/features/organization/types";
@@ -162,50 +162,53 @@ export default function ProgramFormDialog({
 
           <div className="grid items-start gap-3.5 min-[641px]:grid-cols-2">
             <FormField label="Periode" required error={errors.period_id}>
-              <Select
+              <SelectMenu
+                size="md"
+                label="Periode"
+                hideLabel
+                placeholder="Pilih periode"
                 value={periodId}
-                onChange={(event) => {
-                  setPeriodId(event.target.value);
+                onChange={(value) => {
+                  setPeriodId(value);
                   setDivisionId("");
                 }}
-              >
-                {!periodId ? <option value="">Pilih periode</option> : null}
-                {periods.map((period) => (
-                  <option key={period.id} value={period.id}>
-                    {period.name}
-                    {period.is_active ? " (aktif)" : ""}
-                  </option>
-                ))}
-              </Select>
+                options={periods.map((period) => ({
+                  value: String(period.id),
+                  label: `${period.name}${period.is_active ? " (aktif)" : ""}`,
+                }))}
+              />
             </FormField>
             <FormField label="Divisi" hint="Pilihan mengikuti periode.">
-              <Select value={divisionId} onChange={(event) => setDivisionId(event.target.value)}>
-                <option value="">Tanpa divisi</option>
-                {periodDivisions.map((division) => (
-                  <option key={division.id} value={division.id}>
-                    {division.name}
-                  </option>
-                ))}
-              </Select>
+              <SelectMenu
+                size="md"
+                label="Divisi"
+                hideLabel
+                value={divisionId}
+                onChange={setDivisionId}
+                options={[
+                  { value: "", label: "Tanpa divisi" },
+                  ...periodDivisions.map((division) => ({
+                    value: String(division.id),
+                    label: division.name,
+                  })),
+                ]}
+              />
             </FormField>
           </div>
 
           <FormField label="Status" required error={errors.status}>
-            <Select
+            <SelectMenu<ProgramStatus | "">
+              size="md"
+              label="Status"
+              hideLabel
+              placeholder={`Status lain (${program?.status ?? "-"})`}
               value={status}
-              onChange={(event) => setStatus(event.target.value as ProgramStatus)}
-            >
-              {!status ? (
-                <option value="" disabled>
-                  {`Status lain (${program?.status ?? "-"})`}
-                </option>
-              ) : null}
-              {PROGRAM_STATUSES.map((value) => (
-                <option key={value} value={value}>
-                  {programStatusLabel(value)}
-                </option>
-              ))}
-            </Select>
+              onChange={(value) => setStatus(value)}
+              options={PROGRAM_STATUSES.map((value) => ({
+                value,
+                label: programStatusLabel(value),
+              }))}
+            />
           </FormField>
 
           <div className="grid items-start gap-3.5 min-[641px]:grid-cols-2">

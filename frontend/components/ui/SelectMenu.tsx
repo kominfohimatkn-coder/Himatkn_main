@@ -5,6 +5,7 @@ import {
   useId,
   useRef,
   useState,
+  type AriaAttributes,
   type KeyboardEvent,
   type ReactNode,
 } from "react";
@@ -19,6 +20,15 @@ export interface SelectMenuOption<T extends string = string> {
   /** Tanda kecil di kanan, mis. jumlah perubahan belum disimpan. */
   badge?: ReactNode;
 }
+
+type SelectMenuSize = "lg" | "md" | "sm";
+
+/** `lg`: pemilih besar (Pengaturan, /struktur); `md`: kolom form; `sm`: filter toolbar. */
+const TRIGGER_SIZES: Record<SelectMenuSize, string> = {
+  lg: "gap-3.5 border-line-strong px-3.5 py-3 hover:border-green-700 hover:bg-mint-50",
+  md: "min-h-10 gap-2.5 border-line px-3 py-2 text-sm hover:border-line-strong",
+  sm: "h-9 gap-2 border-line px-3 text-sm hover:border-line-strong",
+};
 
 /**
  * Dropdown pilih-satu yang dipakai admin dan publik
@@ -35,8 +45,13 @@ export function SelectMenu<T extends string>({
   options,
   onChange,
   disabled = false,
+  size = "lg",
+  placeholder = "Pilih",
   className = "",
   triggerClassName = "",
+  id: triggerId,
+  "aria-describedby": describedBy,
+  "aria-invalid": invalid,
 }: {
   /** Label untuk pembaca layar dan (bila `hideLabel` false) tampil di atas. */
   label: string;
@@ -45,10 +60,19 @@ export function SelectMenu<T extends string>({
   options: SelectMenuOption<T>[];
   onChange: (value: T) => void;
   disabled?: boolean;
+  size?: SelectMenuSize;
+  /** Teks tombol bila `value` tidak ada di `options`. */
+  placeholder?: string;
   className?: string;
   /** Kelas tambahan untuk tombol, mis. latar berbeda di halaman publik. */
   triggerClassName?: string;
+  /** Diisi `FormField` agar `<label htmlFor>`, petunjuk, dan galat terhubung. */
+  id?: string;
+  required?: boolean;
+  "aria-describedby"?: string;
+  "aria-invalid"?: AriaAttributes["aria-invalid"];
 }) {
+  const compact = size !== "lg";
   const id = useId();
   const labelId = `${id}-label`;
   const listId = `${id}-list`;
@@ -61,11 +85,9 @@ export function SelectMenu<T extends string>({
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
 
-  const selectedIndex = Math.max(
-    0,
-    options.findIndex((option) => option.value === value),
-  );
-  const selected = options[selectedIndex];
+  const foundIndex = options.findIndex((option) => option.value === value);
+  const selected = foundIndex >= 0 ? options[foundIndex] : undefined;
+  const selectedIndex = Math.max(0, foundIndex);
 
   /* Tutup saat klik/sentuh di luar. */
   useEffect(() => {
@@ -105,7 +127,7 @@ export function SelectMenu<T extends string>({
     const option = options[index];
     if (!option) return;
     close();
-    if (option.value !== value) onChange(option.value);
+    if (option.value !== value || !selected) onChange(option.value);
   }
 
   function handleTriggerKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
@@ -181,24 +203,39 @@ export function SelectMenu<T extends string>({
 
       <button
         ref={triggerRef}
+        id={triggerId}
         type="button"
         disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
         aria-labelledby={`${labelId} ${id}-value`}
+        aria-describedby={describedBy}
+        /* aria-invalid tidak berlaku untuk tombol; pesan galat tetap
+           terbaca lewat aria-describedby dari FormField. */
+        data-invalid={invalid === true || invalid === "true" ? "" : undefined}
         onClick={() => (open ? close() : openList())}
         onKeyDown={handleTriggerKeyDown}
-        className={`flex w-full cursor-pointer items-center gap-3.5 rounded-[4px] border border-line-strong bg-white px-3.5 py-3 text-left transition-[background-color,border-color,box-shadow] hover:border-green-700 hover:bg-mint-50 disabled:cursor-not-allowed disabled:opacity-60 ${
-          open ? "border-green-700 bg-mint-50 shadow-[0_0_0_3px_rgba(15,77,54,0.08)]" : ""
-        } ${triggerClassName}`.trim()}
+        className={`flex w-full cursor-pointer items-center rounded-[4px] border bg-white text-left outline-none transition-[background-color,border-color,box-shadow] focus-visible:border-green-800 focus-visible:shadow-[0_0_0_3px_rgba(15,77,54,0.1)] disabled:cursor-not-allowed disabled:bg-mint-50 disabled:opacity-60 data-invalid:border-danger ${
+          TRIGGER_SIZES[size]
+        } ${
+          open ? "border-green-700 shadow-[0_0_0_3px_rgba(15,77,54,0.08)]" : ""
+        } ${open && !compact ? "bg-mint-50" : ""} ${triggerClassName}`.trim()}
       >
         {selected?.icon ? <OptionIcon>{selected.icon}</OptionIcon> : null}
         <span id={`${id}-value`} className="grid min-w-0 flex-1 gap-0.5">
-          <span className="truncate text-[15px] leading-[1.3] font-bold text-green-900">
-            {selected?.label ?? "Pilih"}
+          <span
+            className={`truncate ${
+              compact
+                ? selected
+                  ? "text-ink"
+                  : "text-muted-light"
+                : "text-[15px] leading-[1.3] font-bold text-green-900"
+            }`}
+          >
+            {selected?.label ?? placeholder}
           </span>
-          {selected?.description ? (
+          {selected?.description && !compact ? (
             <span className="truncate text-[12.5px] leading-[1.4] text-muted">
               {selected.description}
             </span>
@@ -222,11 +259,43 @@ export function SelectMenu<T extends string>({
           aria-labelledby={labelId}
           aria-activedescendant={optionId(active)}
           onKeyDown={handleListKeyDown}
-          className="absolute inset-x-0 top-[calc(100%+6px)] z-40 grid max-h-[min(420px,65vh)] gap-1 overflow-y-auto rounded-[4px] border border-line bg-white p-1.5 text-left shadow-[0_18px_42px_rgba(6,38,27,0.14)] outline-none transition-[opacity,translate] duration-150 starting:-translate-y-1 starting:opacity-0"
+          className={`absolute inset-x-0 z-40 grid overflow-y-auto rounded-[4px] border border-line bg-white text-left shadow-[0_18px_42px_rgba(6,38,27,0.14)] outline-none transition-[opacity,translate] duration-150 starting:-translate-y-1 starting:opacity-0 ${
+            compact
+              ? "top-[calc(100%+4px)] max-h-[min(320px,55vh)] gap-0.5 p-1"
+              : "top-[calc(100%+6px)] max-h-[min(420px,65vh)] gap-1 p-1.5"
+          }`}
         >
           {options.map((option, index) => {
-            const isSelected = index === selectedIndex;
+            const isSelected = selected !== undefined && index === selectedIndex;
             const isActive = index === active;
+
+            if (compact) {
+              return (
+                <li
+                  key={option.value}
+                  id={optionId(index)}
+                  role="option"
+                  aria-selected={isSelected}
+                  onPointerMove={() => setActive(index)}
+                  onClick={() => choose(index)}
+                  className={`flex cursor-pointer items-center gap-2.5 rounded-[3px] px-2.5 py-2 text-sm transition-colors ${
+                    isActive ? "bg-mint-50" : ""
+                  } ${isSelected ? "font-semibold text-green-900" : "text-ink"}`}
+                >
+                  <span className="grid min-w-0 flex-1 gap-0.5">
+                    <span className="wrap-anywhere">{option.label}</span>
+                    {option.description ? (
+                      <span className="text-xs font-normal text-muted">{option.description}</span>
+                    ) : null}
+                  </span>
+                  {option.badge}
+                  <Check
+                    aria-hidden="true"
+                    className={`size-4 shrink-0 text-green-800 ${isSelected ? "" : "invisible"}`}
+                  />
+                </li>
+              );
+            }
 
             return (
               <li
