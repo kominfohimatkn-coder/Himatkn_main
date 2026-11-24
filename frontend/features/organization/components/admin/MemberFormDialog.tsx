@@ -1,26 +1,19 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { AlertTriangle, Trash2 } from "lucide-react";
 
 import FormDialog from "@/components/admin/shared/FormDialog";
+import { Notice } from "@/components/admin/shared/Notice";
+import { Button } from "@/components/ui/Button";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 import MemberPhotoField from "./MemberPhotoField";
-import {
-  organizationDangerActionClass,
-  OrganizationNotice,
-} from "./OrganizationPrimitives";
 
-import type {
-  AdminDivision,
-  AdminMember,
-  AdminPeriod,
-  AdminPosition,
-} from "../../types";
+import type { AdminDivision, AdminMember, AdminPeriod, AdminPosition } from "../../types";
 
 export interface MemberFormValues {
   name: string;
@@ -30,25 +23,13 @@ export interface MemberFormValues {
   photo_url: string | null;
 }
 
-interface MemberFormDialogProps {
-  period: AdminPeriod;
-  member?: AdminMember;
-  divisions: AdminDivision[];
-  positions: AdminPosition[];
-  defaultDivisionId?: number | null;
-  defaultSortOrder: number;
-  onClose: () => void;
-  onSubmit: (values: MemberFormValues) => Promise<void>;
-  onRequestDelete?: (member: AdminMember) => void;
-}
+type Field = "name" | "position_id";
 
-interface MemberFormState {
-  name: string;
-  position_id: string;
-  division_id: string;
-  sort_order: string;
-}
-
+/**
+ * Panel tambah/ubah anggota, mengikuti `memberForm()` di Design/admin.
+ * Urutan tidak diisi di sini (sama seperti divisi): anggota tampil menurut
+ * urutan jabatan; anggota baru masuk paling bawah di antara jabatan yang sama.
+ */
 export default function MemberFormDialog({
   period,
   member,
@@ -59,37 +40,32 @@ export default function MemberFormDialog({
   onClose,
   onSubmit,
   onRequestDelete,
-}: MemberFormDialogProps) {
-  const [form, setForm] = useState<MemberFormState>(() => ({
-    name: member?.name ?? "",
-    position_id: member ? String(member.position_id) : "",
-    division_id:
-      member?.division_id !== null && member?.division_id !== undefined
-        ? String(member.division_id)
-        : member
-          ? ""
-          : defaultDivisionId !== null
-            ? String(defaultDivisionId)
-            : "",
-    sort_order: String(member?.sort_order ?? defaultSortOrder),
-  }));
-
-  const [photoUrl, setPhotoUrl] = useState<string | null>(
-    member?.photo_url ?? null,
+}: {
+  period: AdminPeriod;
+  member?: AdminMember;
+  divisions: AdminDivision[];
+  positions: AdminPosition[];
+  defaultDivisionId?: number | null;
+  /** Untuk anggota baru: urutan terbesar + 10. */
+  defaultSortOrder: number;
+  onClose: () => void;
+  onSubmit: (values: MemberFormValues) => Promise<void>;
+  onRequestDelete?: (member: AdminMember) => void;
+}) {
+  const [name, setName] = useState(member?.name ?? "");
+  const [positionId, setPositionId] = useState(member ? String(member.position_id) : "");
+  const [divisionId, setDivisionId] = useState(
+    member ? (member.division_id === null ? "" : String(member.division_id)) : defaultDivisionId === null ? "" : String(defaultDivisionId),
   );
+  const [photoUrl, setPhotoUrl] = useState<string | null>(member?.photo_url ?? null);
 
+  const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
+  const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState("");
-
   const busy = isSaving || isUploading;
 
-  function updateField(field: keyof MemberFormState, value: string) {
-    setForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
-  }
+  const sortedPositions = [...positions].sort((a, b) => a.sort_order - b.sort_order || a.id - b.id);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -100,56 +76,25 @@ export default function MemberFormDialog({
       return;
     }
 
-    const name = form.name.trim();
-    const positionId = Number(form.position_id);
-    const sortOrder = Number(form.sort_order);
-
-    if (!name) {
-      setError("Nama anggota wajib diisi.");
-      return;
-    }
-
-    if (!Number.isInteger(positionId) || positionId <= 0) {
-      setError("Jabatan wajib dipilih.");
-      return;
-    }
-
-    if (
-      form.sort_order.trim() === "" ||
-      !Number.isInteger(sortOrder) ||
-      sortOrder < 0
-    ) {
-      setError("Urutan harus berupa angka bulat 0 atau lebih.");
-      return;
-    }
-
-    const divisionId =
-      form.division_id === "" ? null : Number(form.division_id);
-
-    if (
-      divisionId !== null &&
-      (!Number.isInteger(divisionId) || divisionId <= 0)
-    ) {
-      setError("Divisi yang dipilih tidak valid.");
-      return;
-    }
+    const cleanName = name.trim();
+    const found: Partial<Record<Field, string>> = {};
+    if (!cleanName) found.name = "Wajib diisi.";
+    if (!positionId) found.position_id = "Pilih jabatan.";
+    setErrors(found);
+    if (Object.keys(found).length) return;
 
     setIsSaving(true);
-
     try {
       await onSubmit({
-        name,
-        position_id: positionId,
-        division_id: divisionId,
-        sort_order: sortOrder,
+        name: cleanName,
+        position_id: Number(positionId),
+        division_id: divisionId === "" ? null : Number(divisionId),
+        sort_order: member?.sort_order ?? defaultSortOrder,
         photo_url: photoUrl,
       });
-
       onClose();
     } catch (err) {
-      setError(
-        getApiErrorMessage(err, "Anggota gagal disimpan."),
-      );
+      setError(getApiErrorMessage(err, "Anggota gagal disimpan."));
     } finally {
       setIsSaving(false);
     }
@@ -160,149 +105,98 @@ export default function MemberFormDialog({
       open
       eyebrow={`Periode ${period.name}`}
       title={member ? "Ubah anggota" : "Tambah anggota"}
-      description="Foto opsional. Jabatan diambil dari daftar jabatan global."
-      size="md"
       busy={busy}
       onClose={onClose}
     >
-      <form onSubmit={handleSubmit} className="space-y-5 p-5 sm:p-7">
-        <div className="space-y-2">
-          <span className="block text-sm font-medium text-ink">Foto</span>
-
-          <MemberPhotoField
-            name={form.name}
-            photoUrl={photoUrl}
-            disabled={isSaving}
-            onPhotoChange={setPhotoUrl}
-            onUploadingChange={setIsUploading}
-          />
-        </div>
-
-        <FormField label="Nama lengkap" required>
-          <Input
-            id="member-name"
-            name="name"
-            value={form.name}
-            onChange={(event) => updateField("name", event.target.value)}
-            maxLength={255}
-            required
-            placeholder="Contoh: Nama Anggota"
-          />
-        </FormField>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField
-            label="Jabatan"
-            hint="Daftar jabatan berlaku untuk semua periode."
-            required
-          >
-            <Select
-              id="member-position"
-              name="position_id"
-              value={form.position_id}
-              onChange={(event) =>
-                updateField("position_id", event.target.value)
-              }
-              placeholder="Pilih jabatan"
-              disabled={positions.length === 0}
-              required
-            >
-              {positions.map((position) => (
-                <option key={position.id} value={String(position.id)}>
-                  {position.name}
-                </option>
-              ))}
-            </Select>
-          </FormField>
-
-          <FormField
-            label="Divisi"
-            hint="Hanya divisi dari periode yang dipilih."
-          >
-            <Select
-              id="member-division"
-              name="division_id"
-              value={form.division_id}
-              onChange={(event) =>
-                updateField("division_id", event.target.value)
-              }
-            >
-              <option value="">Tanpa divisi</option>
-
-              {divisions.map((division) => (
-                <option key={division.id} value={String(division.id)}>
-                  {division.name}
-                </option>
-              ))}
-            </Select>
-          </FormField>
-        </div>
-
-        {positions.length === 0 && (
-          <OrganizationNotice tone="error">
-            Daftar jabatan belum tersedia, sehingga anggota belum dapat
-            disimpan. Muat ulang halaman lalu coba lagi.
-          </OrganizationNotice>
-        )}
-
-        <FormField
-          label="Urutan tampil"
-          hint="Angka kecil tampil lebih dulu di dalam divisi."
-          required
-        >
-          <Input
-            id="member-sort-order"
-            name="sort_order"
-            type="number"
-            min={0}
-            step={1}
-            inputMode="numeric"
-            value={form.sort_order}
-            onChange={(event) =>
-              updateField("sort_order", event.target.value)
-            }
-            required
-          />
-        </FormField>
-
-        {error && <OrganizationNotice tone="error">{error}</OrganizationNotice>}
-
-        <footer className="flex flex-col-reverse gap-3 border-t border-paper-line pt-5 sm:flex-row sm:items-center sm:justify-between">
+      <form noValidate onSubmit={handleSubmit} className="flex min-h-full flex-col">
+        <div className="grid flex-1 content-start gap-4 px-6 py-[22px]">
           <div>
-            {member && onRequestDelete && (
-              <button
-                type="button"
-                onClick={() => onRequestDelete(member)}
-                disabled={busy}
-                className={organizationDangerActionClass}
+            <span className="mb-2 block text-xs font-semibold tracking-[0.06em] text-ink uppercase">Foto</span>
+            <MemberPhotoField
+              name={name}
+              photoUrl={photoUrl}
+              disabled={isSaving}
+              onPhotoChange={setPhotoUrl}
+              onUploadingChange={setIsUploading}
+            />
+          </div>
+
+          <FormField label="Nama lengkap" required error={errors.name}>
+            <Input
+              value={name}
+              maxLength={255}
+              onChange={(event) => {
+                setName(event.target.value);
+                setErrors((current) => ({ ...current, name: undefined }));
+              }}
+            />
+          </FormField>
+
+          <div className="grid items-start gap-3.5 min-[641px]:grid-cols-2">
+            <FormField label="Jabatan" hint="Berlaku untuk semua periode." required error={errors.position_id}>
+              <Select
+                value={positionId}
+                placeholder="Pilih jabatan"
+                disabled={positions.length === 0}
+                onChange={(event) => {
+                  setPositionId(event.target.value);
+                  setErrors((current) => ({ ...current, position_id: undefined }));
+                }}
               >
-                Hapus anggota
-              </button>
-            )}
+                {sortedPositions.map((position) => (
+                  <option key={position.id} value={String(position.id)}>
+                    {position.name}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
+
+            <FormField label="Divisi" hint={`Divisi periode ${period.name}.`}>
+              <Select value={divisionId} onChange={(event) => setDivisionId(event.target.value)}>
+                <option value="">Tanpa divisi</option>
+                {divisions.map((division) => (
+                  <option key={division.id} value={String(division.id)}>
+                    {division.name}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
           </div>
 
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={busy}
-              className="min-h-11 border border-paper-line px-4 py-2 text-sm font-medium hover:bg-bg-light-2 disabled:opacity-50"
-            >
-              Batal
-            </button>
+          {positions.length === 0 ? (
+            <Notice tone="amber" icon={<AlertTriangle aria-hidden="true" />}>
+              Daftar jabatan belum tersedia, jadi anggota belum dapat disimpan. Muat ulang halaman lalu coba lagi.
+            </Notice>
+          ) : null}
 
-            <button
-              type="submit"
-              disabled={busy || positions.length === 0}
-              className="min-h-11 border border-bg-dark bg-bg-dark px-4 py-2 text-sm font-medium text-white hover:bg-bg-dark/90 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isSaving
-                ? "Menyimpan..."
-                : member
-                  ? "Simpan perubahan"
-                  : "Tambah anggota"}
-            </button>
-          </div>
+          {member && onRequestDelete ? (
+            <div className="mt-2 border-t border-line pt-[18px]">
+              <p className="text-[11px] leading-[1.2] font-semibold tracking-[0.1em] text-danger uppercase">
+                Zona berbahaya
+              </p>
+              <p className="mt-1.5 mb-3 text-[13px] text-muted">
+                Anggota dihapus dari struktur periode {period.name}.
+              </p>
+              <Button variant="danger-outline" onClick={() => onRequestDelete(member)} disabled={busy}>
+                <Trash2 aria-hidden="true" /> Hapus anggota
+              </Button>
+            </div>
+          ) : null}
+
+          {error ? (
+            <p role="alert" className="rounded-[4px] border border-[#ebcfc6] bg-danger-bg px-3.5 py-3 text-[13px] text-danger">
+              {error}
+            </p>
+          ) : null}
+        </div>
+
+        <footer className="sticky bottom-0 flex justify-end gap-2 border-t border-line bg-white px-6 py-3.5">
+          <Button variant="outline" onClick={onClose} disabled={busy}>
+            Batal
+          </Button>
+          <Button type="submit" disabled={busy || positions.length === 0}>
+            {isSaving ? "Menyimpan..." : member ? "Simpan perubahan" : "Tambah anggota"}
+          </Button>
         </footer>
       </form>
     </FormDialog>

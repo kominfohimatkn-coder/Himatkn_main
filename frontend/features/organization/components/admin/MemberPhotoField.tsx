@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, type ChangeEvent } from "react";
+import { AlertTriangle, Trash2, Upload } from "lucide-react";
+
+import { Notice } from "@/components/admin/shared/Notice";
+import { Button, buttonClassName } from "@/components/ui/Button";
 
 import { PERMISSIONS } from "@/features/auth/permissions";
 import { useAuth } from "@/features/auth/AuthContext";
@@ -9,11 +13,6 @@ import { uploadImage } from "@/lib/media/api";
 import { getApiErrorMessage } from "@/lib/api/errors";
 
 import MemberAvatar from "./MemberAvatar";
-import {
-  organizationActionClass,
-  organizationDangerActionClass,
-  OrganizationNotice,
-} from "./OrganizationPrimitives";
 
 const ALLOWED_PHOTO_TYPES = new Set([
   "image/jpeg",
@@ -94,7 +93,7 @@ export default function MemberPhotoField({
   }
 
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+    <div className="flex items-center gap-4 max-[640px]:flex-col max-[640px]:items-start">
       <MemberAvatar
         name={name}
         photoUrl={photoUrl}
@@ -107,11 +106,14 @@ export default function MemberPhotoField({
           <>
             <div className="flex flex-wrap gap-2">
               <label
-                className={`${organizationActionClass} cursor-pointer ${
-                  uploadDisabled ? "cursor-not-allowed opacity-50" : ""
-                }`}
+                className={buttonClassName({
+                  variant: "outline",
+                  size: "sm",
+                  className: uploadDisabled ? "pointer-events-none opacity-45" : "",
+                })}
                 aria-disabled={uploadDisabled || undefined}
               >
+                <Upload aria-hidden="true" />
                 {isUploading
                   ? "Mengunggah..."
                   : photoUrl
@@ -130,30 +132,25 @@ export default function MemberPhotoField({
               </label>
 
               {photoUrl && (
-                <button
-                  type="button"
-                  onClick={handleRemove}
-                  disabled={uploadDisabled}
-                  className={organizationDangerActionClass}
-                >
-                  Hapus foto
-                </button>
+                <Button variant="ghost" size="sm" onClick={handleRemove} disabled={uploadDisabled}>
+                  <Trash2 aria-hidden="true" /> Hapus foto
+                </Button>
               )}
             </div>
 
-            <p className="mt-2 text-xs leading-5 text-ink-soft">
+            <p className="mt-1.5 text-xs leading-5 text-muted">
               JPG, PNG, atau WebP · maks 4 MB · rasio 1:1 disarankan
             </p>
           </>
         ) : (
-          <OrganizationNotice tone="warning">
+          <Notice tone="amber" icon={<AlertTriangle aria-hidden="true" />}>
             Mengunggah gambar membutuhkan izin Unggah media. Minta superadmin
-            atau admin mengunggahkan gambarnya.
-          </OrganizationNotice>
+            mengunggahkan fotonya.
+          </Notice>
         )}
 
         {isUploading && (
-          <p role="status" className="mt-2 text-xs leading-5 text-ink-soft">
+          <p role="status" className="mt-2 text-xs leading-5 text-muted">
             Mengompres dan mengunggah foto...
           </p>
         )}

@@ -461,14 +461,17 @@ export default function OrganizationPage() {
 
     if (memberFormTarget?.member) {
       await updateAdminMember(memberFormTarget.member.id, { period_id: selectedPeriod.id, ...values });
+      toast("Data anggota diperbarui.");
     } else {
       await createAdminMember({ period_id: selectedPeriod.id, ...values });
+      toast("Anggota ditambahkan.");
     }
     reloadMembers();
   }
 
   async function removeMember(member: AdminMember) {
     await deleteAdminMember(member.id);
+    toast("Anggota dihapus.");
     reloadMembers();
   }
 
@@ -604,7 +607,6 @@ export default function OrganizationPage() {
         ) : (
           <MembersSection
             key={selectedPeriod.id}
-            periodName={selectedPeriod.name}
             divisions={divisions}
             members={members}
             positions={positions}
@@ -615,6 +617,8 @@ export default function OrganizationPage() {
             onReload={reloadMembers}
             onCreate={(divisionId) => setMemberFormTarget({ divisionId: divisionId ?? null })}
             onEdit={(member) => setMemberFormTarget({ member })}
+            canManage={canManage}
+            onCopyDivisions={() => setIsCopyOpen(true)}
           />
         )}
       </>
