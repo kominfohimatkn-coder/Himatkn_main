@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { SelectMenu } from "@/components/ui/SelectMenu";
+
 import type { StructureDivision } from "../../structure";
 import { StructureTree } from "./StructureTree";
 
@@ -96,34 +98,25 @@ export function StructureView({
 
       {view === "divisi" ? (
         <>
-          <div className="mx-auto mt-11 max-w-[400px] text-center">
-            <label
-              htmlFor="div-select"
-              className="text-[10px] leading-[1.2] font-semibold tracking-[0.1em] text-muted uppercase"
+          <div className="mx-auto mt-11 max-w-[400px]">
+            <p
+              aria-hidden="true"
+              className="mb-2.5 text-center text-[10px] leading-[1.2] font-semibold tracking-[0.1em] text-muted uppercase"
             >
               Pilih Divisi
-            </label>
-            <div className="relative mt-2.5 text-left">
-              <select
-                id="div-select"
-                value={current.id}
-                onChange={(event) => changeDivision(event.target.value)}
-                className="w-full cursor-pointer appearance-none rounded-[4px] border border-line bg-[#F7F9F8] pt-3 pr-10 pb-[26px] pl-3.5 text-sm/normal font-medium text-ink transition-colors hover:border-[#B9C6BF]"
-              >
-                {divisions.map((division) => (
-                  <option key={division.id} value={division.id}>
-                    {division.name}
-                  </option>
-                ))}
-              </select>
-              <span
-                className="pointer-events-none absolute top-[22px] right-[18px] size-[7px] rotate-45 border-r-[1.5px] border-b-[1.5px] border-muted"
-                aria-hidden="true"
-              />
-              <span className="pointer-events-none absolute bottom-[9px] left-[15px] text-[11px] text-muted">
-                {current.total} personil
-              </span>
-            </div>
+            </p>
+            <SelectMenu
+              label="Pilih divisi"
+              hideLabel
+              value={String(current.id)}
+              onChange={changeDivision}
+              triggerClassName="bg-[#F7F9F8] border-line"
+              options={divisions.map((division) => ({
+                value: String(division.id),
+                label: division.name,
+                description: `${division.total} personil`,
+              }))}
+            />
           </div>
 
           <div aria-live="polite">

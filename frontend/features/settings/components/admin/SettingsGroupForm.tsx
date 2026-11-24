@@ -1,13 +1,16 @@
 "use client";
 
+import { AlertTriangle, Check, ExternalLink } from "lucide-react";
+
+import { Badge } from "@/components/admin/shared/Badge";
 import { Can } from "@/components/admin/shared/Can";
+import { Notice } from "@/components/admin/shared/Notice";
 import { Button } from "@/components/ui/Button";
 import { PERMISSIONS } from "@/features/auth/permissions";
 
 import type { AdminSettingItem } from "../../types";
 import HeroImageField from "./HeroImageField";
 import SettingField from "./SettingField";
-import { SettingsNotice } from "./SettingsPrimitives";
 import {
   aboutItemNumber,
   isAboutItemKey,
@@ -17,6 +20,8 @@ import {
 
 interface SettingsGroupFormProps {
   group: SettingsGroup;
+  /** Halaman situs publik tempat bagian ini tampil. */
+  siteHref?: string;
   values: Record<string, string>;
   disabled: boolean;
   errors: Record<string, string>;
@@ -29,8 +34,13 @@ interface SettingsGroupFormProps {
   onResetRequest: (item: AdminSettingItem) => void;
 }
 
+/**
+ * Satu bagian pengaturan, mengikuti kartu bagian di `viewSettings()` Design/admin.
+ * Bar simpan menempel di bawah layar selama kartu terlihat (berguna untuk bagian panjang).
+ */
 export default function SettingsGroupForm({
   group,
+  siteHref,
   values,
   disabled,
   errors,
@@ -92,78 +102,73 @@ export default function SettingsGroupForm({
     <section
       id={`settings-group-${group.key}`}
       aria-labelledby={`settings-group-${group.key}-title`}
-      className="mt-4 border border-paper-line bg-paper"
+      className="rounded-[4px] border border-line bg-white"
     >
-      <header className="border-b border-paper-line px-4 py-4 sm:px-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2
-              id={`settings-group-${group.key}-title`}
-              className="font-serif text-xl font-semibold text-bg-dark"
-            >
-              {group.label}
-            </h2>
-            <p className="mt-1 text-sm leading-6 text-ink-soft">
-              {group.description}
-            </p>
-          </div>
+      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-5 py-4">
+        <div className="min-w-0">
+          <h2
+            id={`settings-group-${group.key}-title`}
+            className="font-serif text-base leading-[1.25] font-bold text-green-900"
+          >
+            {group.label}
+          </h2>
+          <p className="mt-0.5 text-xs text-muted">{group.description}</p>
+        </div>
 
-          {changedCount > 0 ? (
-            <span className="inline-flex border border-gold/50 bg-gold/15 px-2 py-1 text-xs font-semibold text-ink">
-              {changedCount} perubahan belum disimpan
-            </span>
+        <div className="flex flex-wrap items-center gap-2">
+          {changedCount > 0 ? <Badge tone="amber">{changedCount} belum disimpan</Badge> : null}
+          {siteHref ? (
+            <a
+              href={siteHref}
+              target="_blank"
+              rel="noopener"
+              className="inline-flex h-8 items-center gap-1.5 rounded-[4px] px-2.5 text-[11px] font-semibold tracking-[0.08em] text-green-800 uppercase transition-colors hover:bg-mint-50 [&_svg]:size-[14px]"
+            >
+              <ExternalLink aria-hidden="true" /> Lihat di situs
+            </a>
           ) : null}
         </div>
       </header>
 
-      <div className="space-y-5 px-4 py-5 sm:px-5">
+      <div className="grid gap-5 px-5 py-5 max-[640px]:px-4">
         {error ? (
-          <SettingsNotice tone="error">{error}</SettingsNotice>
+          <Notice tone="amber" icon={<AlertTriangle aria-hidden="true" />}>
+            <span role="alert">{error}</span>
+          </Notice>
         ) : null}
 
         {success ? (
-          <SettingsNotice tone="success">
-            <strong>{success}</strong>
-            <span className="mt-1 block text-xs leading-5">
-              Situs publik diperbarui paling lambat ±1 menit setelah
-              perubahan disimpan.
-            </span>
-          </SettingsNotice>
+          <Notice icon={<Check aria-hidden="true" />}>
+            <strong>{success}</strong> Situs publik diperbarui paling lambat ±1 menit.
+          </Notice>
         ) : null}
 
         {group.key === "about" ? (
           <>
             {aboutHeadItems.length > 0 ? (
-              <div className="grid gap-5 md:grid-cols-2">
+              <div className="grid gap-5 min-[641px]:grid-cols-2">
                 {aboutHeadItems.map((item) =>
-                  renderField(
-                    item,
-                    isWideSetting(item) ? "md:col-span-2" : undefined,
-                  ),
+                  renderField(item, isWideSetting(item) ? "min-[641px]:col-span-2" : undefined),
                 )}
               </div>
             ) : null}
 
             {aboutPointNumbers.length > 0 ? (
-              <div className="grid gap-4 lg:grid-cols-3">
+              <div className="grid gap-4 min-[1101px]:grid-cols-3">
                 {aboutPointNumbers.map((pointNumber) => {
                   const pointItems = aboutPointItems.filter(
-                    (item) =>
-                      aboutItemNumber(item.key) === pointNumber,
+                    (item) => aboutItemNumber(item.key) === pointNumber,
                   );
 
                   return (
                     <fieldset
                       key={pointNumber}
-                      className="min-w-0 border border-paper-line bg-bg-light p-4"
+                      className="min-w-0 rounded-[4px] border border-line bg-[#f7faf8] px-4 pt-1 pb-4"
                     >
-                      <legend className="px-1 font-serif text-sm font-semibold text-bg-dark">
+                      <legend className="px-1 font-serif text-sm font-bold text-green-900">
                         Poin {pointNumber}
                       </legend>
-
-                      <div className="mt-2 grid gap-4">
-                        {pointItems.map((item) => renderField(item))}
-                      </div>
+                      <div className="mt-2 grid gap-4">{pointItems.map((item) => renderField(item))}</div>
                     </fieldset>
                   );
                 })}
@@ -173,72 +178,62 @@ export default function SettingsGroupForm({
         ) : (
           <>
             {imageItem ? (
-              <div className="grid gap-5 border-b border-paper-line pb-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start">
+              <div className="grid gap-5 border-b border-line pb-5 min-[1101px]:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] min-[1101px]:items-start">
                 <HeroImageField
                   item={imageItem}
                   value={valueOf(imageItem)}
-                  altText={
-                    imageAltItem ? valueOf(imageAltItem) : ""
-                  }
+                  altText={imageAltItem ? valueOf(imageAltItem) : ""}
                   disabled={disabled}
                   error={errors[imageItem.key]}
                   onChange={(value) => onChange(imageItem.key, value)}
                 />
-
-                {imageAltItem
-                  ? renderField(imageAltItem)
-                  : null}
+                {imageAltItem ? renderField(imageAltItem) : null}
               </div>
             ) : null}
 
             {remainingItems.length > 0 ? (
-              <div className="grid gap-5 md:grid-cols-2">
+              <div className="grid gap-5 min-[641px]:grid-cols-2">
                 {remainingItems.map((item) =>
-                  renderField(
-                    item,
-                    isWideSetting(item) ? "md:col-span-2" : undefined,
-                  ),
+                  renderField(item, isWideSetting(item) ? "min-[641px]:col-span-2" : undefined),
                 )}
               </div>
             ) : null}
           </>
         )}
-
-        <Can permission={PERMISSIONS.SETTINGS_MANAGE}>
-          <div className="flex flex-col gap-3 border-t border-paper-line pt-4 sm:flex-row sm:items-center">
-            <p
-              role="status"
-              className="text-xs leading-5 text-ink-soft"
-            >
-              {changedCount > 0
-                ? `${changedCount} perubahan belum disimpan pada bagian ini.`
-                : "Semua perubahan pada bagian ini sudah tersimpan."}
-            </p>
-
-            <div className="flex flex-wrap gap-2 sm:ml-auto">
-              <Button
-                variant="outline"
-                onClick={onDiscard}
-                disabled={changedCount === 0 || isSaving}
-              >
-                Batalkan
-              </Button>
-
-              <Button
-                variant="dark"
-                onClick={onSave}
-                disabled={changedCount === 0 || isSaving}
-              >
-                {isSaving
-                  ? "Menyimpan..."
-                  : changedCount > 0
-                    ? `Simpan perubahan (${changedCount})`
-                    : "Simpan perubahan"}
-              </Button>
-            </div>
-          </div>
-        </Can>
       </div>
+
+      <Can permission={PERMISSIONS.SETTINGS_MANAGE}>
+        {/* Menempel di bawah layar hanya saat ada perubahan, supaya tombol Simpan selalu terjangkau. */}
+        <footer
+          className={`flex flex-wrap items-center gap-3 rounded-b-[4px] border-t border-line bg-white/95 px-5 py-3 max-[640px]:px-4 ${
+            changedCount > 0 ? "sticky bottom-0 z-10 shadow-[0_-8px_24px_rgba(6,38,27,0.06)] backdrop-blur" : ""
+          }`}
+        >
+          <p
+            role="status"
+            className={`flex min-w-0 flex-1 items-center gap-2 text-xs ${
+              changedCount > 0 ? "font-semibold text-amber" : "text-muted"
+            }`}
+          >
+            <span
+              aria-hidden="true"
+              className={`size-2 shrink-0 rounded-full ${changedCount > 0 ? "bg-amber" : "bg-green-700"}`}
+            />
+            {changedCount > 0
+              ? `${changedCount} perubahan belum disimpan`
+              : "Semua perubahan tersimpan"}
+          </p>
+
+          <div className="flex gap-2 max-[640px]:w-full max-[640px]:[&>button]:flex-1">
+            <Button variant="outline" onClick={onDiscard} disabled={changedCount === 0 || isSaving}>
+              Batalkan
+            </Button>
+            <Button onClick={onSave} disabled={changedCount === 0 || isSaving}>
+              {isSaving ? "Menyimpan..." : "Simpan perubahan"}
+            </Button>
+          </div>
+        </footer>
+      </Can>
     </section>
   );
 }
