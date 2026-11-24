@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@/components/admin/shared/Badge";
 import { Can } from "@/components/admin/shared/Can";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
@@ -7,10 +8,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { PERMISSIONS } from "@/features/auth/permissions";
 
 import type { AdminSettingItem } from "../../types";
-import {
-  formatSettingDate,
-  settingsLinkActionClass,
-} from "./SettingsPrimitives";
+import { formatSettingDate } from "./SettingsPrimitives";
 import { settingHint } from "./settings-utils";
 
 interface SettingFieldProps {
@@ -82,8 +80,8 @@ export default function SettingField({
           <>
             <span>{item.label}</span>
             {isDefault && item.default ? (
-              <span className="ml-2 inline-flex border border-paper-line bg-bg-light-2 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-ink-soft uppercase">
-                Bawaan
+              <span className="ml-2 align-[1px]">
+                <Badge tone="outline">Bawaan</Badge>
               </span>
             ) : null}
           </>
@@ -94,7 +92,7 @@ export default function SettingField({
         {control}
       </FormField>
 
-      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-soft">
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
         <span className="min-w-0 flex-1">{metaText}</span>
 
         {isLong && (
@@ -113,7 +111,7 @@ export default function SettingField({
           {showReset ? (
             <button
               type="button"
-              className={settingsLinkActionClass}
+              className="cursor-pointer text-xs font-medium text-green-800 underline-offset-4 hover:text-danger hover:underline disabled:cursor-not-allowed disabled:opacity-50"
               onClick={onResetRequest}
             >
               {item.default ? "Kembalikan ke bawaan" : "Kosongkan"}

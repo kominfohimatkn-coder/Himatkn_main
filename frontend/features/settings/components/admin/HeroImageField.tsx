@@ -3,18 +3,16 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useState, type ChangeEvent } from "react";
+import { AlertTriangle, Trash2, Upload } from "lucide-react";
 
+import { Notice } from "@/components/admin/shared/Notice";
+import { Button, buttonClassName } from "@/components/ui/Button";
 import { useAuth } from "@/features/auth/AuthContext";
 import { PERMISSIONS } from "@/features/auth/permissions";
 import { getApiErrorMessage } from "@/lib/api/errors";
 import { uploadImage } from "@/lib/media/api";
 
 import type { AdminSettingItem } from "../../types";
-import {
-  settingsActionClass,
-  settingsDangerActionClass,
-  SettingsNotice,
-} from "./SettingsPrimitives";
 import {
   resolveSettingImageUrl,
   settingHint,
@@ -96,16 +94,16 @@ export default function HeroImageField({
 
   return (
     <div className="min-w-0">
-      <p className="text-sm font-medium text-ink">{item.label}</p>
+      <p className="text-xs font-semibold tracking-[0.06em] text-ink uppercase">{item.label}</p>
 
       {settingHint(item) ? (
-        <p className="mt-1 text-xs leading-5 text-ink-soft">
+        <p className="mt-1 text-xs leading-5 text-muted">
           {settingHint(item)}
         </p>
       ) : null}
 
-      <div className="mt-3 grid gap-4 sm:grid-cols-[minmax(0,16rem)_minmax(0,1fr)] sm:items-start">
-        <div className="flex aspect-[4/3] items-center justify-center overflow-hidden border border-paper-line bg-bg-light-2">
+      <div className="mt-3 grid gap-4 min-[641px]:grid-cols-[minmax(0,16rem)_minmax(0,1fr)] min-[641px]:items-start">
+        <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[4px] border border-line bg-[#dce5e0]">
           {showImage ? (
             <img
               src={previewUrl ?? undefined}
@@ -114,7 +112,7 @@ export default function HeroImageField({
               onError={() => setFailedUrl(previewUrl)}
             />
           ) : (
-            <p className="px-4 text-center text-xs leading-5 text-ink-soft">
+            <p className="px-4 text-center text-xs leading-5 text-muted">
               {value
                 ? "Pratinjau tidak tersedia."
                 : "Belum ada foto hero."}
@@ -124,20 +122,21 @@ export default function HeroImageField({
 
         <div className="min-w-0">
           {disabled ? (
-            <p className="text-xs leading-5 text-ink-soft">
+            <p className="text-xs leading-5 text-muted">
               Mode baca saja. Foto hanya dapat dilihat.
             </p>
           ) : canManageMedia ? (
             <>
               <div className="flex flex-wrap gap-2">
                 <label
-                  className={`${settingsActionClass} cursor-pointer ${
-                    uploadDisabled
-                      ? "cursor-not-allowed opacity-50"
-                      : ""
-                  }`}
+                  className={buttonClassName({
+                    variant: "outline",
+                    size: "sm",
+                    className: uploadDisabled ? "pointer-events-none opacity-45" : "",
+                  })}
                   aria-disabled={uploadDisabled || undefined}
                 >
+                  <Upload aria-hidden="true" />
                   {isUploading
                     ? "Mengunggah..."
                     : value
@@ -156,37 +155,37 @@ export default function HeroImageField({
                 </label>
 
                 {value ? (
-                  <button
-                    type="button"
-                    className={settingsDangerActionClass}
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     disabled={uploadDisabled}
                     onClick={() => {
                       setUploadError("");
                       onChange("");
                     }}
                   >
-                    Hapus foto
-                  </button>
+                    <Trash2 aria-hidden="true" /> Hapus foto
+                  </Button>
                 ) : null}
               </div>
 
-              <p className="mt-2 text-xs leading-5 text-ink-soft">
+              <p className="mt-2 text-xs leading-5 text-muted">
                 JPG, PNG, atau WebP. Foto disimpan sebagai storage key gambar
                 dan baru berlaku di situs setelah disimpan.
               </p>
             </>
           ) : (
-            <SettingsNotice tone="warning">
+            <Notice tone="amber" icon={<AlertTriangle aria-hidden="true" />}>
               Mengunggah gambar membutuhkan izin Unggah media. Minta
               superadmin atau admin yang memiliki izin tersebut untuk
               mengunggah foto. Field lain tetap dapat diubah.
-            </SettingsNotice>
+            </Notice>
           )}
 
           {isUploading ? (
             <p
               role="status"
-              className="mt-2 text-xs leading-5 text-ink-soft"
+              className="mt-2 text-xs leading-5 text-muted"
             >
               Mengompres dan mengunggah foto...
             </p>

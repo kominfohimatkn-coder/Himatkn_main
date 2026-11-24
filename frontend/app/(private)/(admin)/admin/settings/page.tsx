@@ -1,9 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import {
+  Building2,
+  CalendarDays,
+  Eye,
+  FileText,
+  ImageIcon,
+  Link2,
+  Mail,
+  Network,
+  RefreshCw,
+  Settings,
+  Users,
+} from "lucide-react";
 
+import { AdminPage } from "@/components/admin/shared/AdminPage";
+import { Badge } from "@/components/admin/shared/Badge";
+import { Notice } from "@/components/admin/shared/Notice";
+import { PageHead } from "@/components/admin/shared/PageHead";
 import { RequirePermission } from "@/components/admin/shared/RequirePermission";
+import { StateBlock } from "@/components/admin/shared/StateBlock";
+import { useToast } from "@/components/admin/shared/Toast";
 import { Button } from "@/components/ui/Button";
+import { SelectMenu } from "@/components/ui/SelectMenu";
 import { useAuth } from "@/features/auth/AuthContext";
 import { PERMISSIONS } from "@/features/auth/permissions";
 import {
@@ -16,14 +36,35 @@ import { getApiErrorMessage, isApiError } from "@/lib/api/errors";
 
 import ConfirmDialog from "@/components/admin/shared/ConfirmDialog";
 import SettingsGroupForm from "@/features/settings/components/admin/SettingsGroupForm";
-import SettingsGroupNav from "@/features/settings/components/admin/SettingsGroupNav";
-import { SettingsNotice } from "@/features/settings/components/admin/SettingsPrimitives";
 import UnknownKeysPanel from "@/features/settings/components/admin/UnknownKeysPanel";
 import {
   buildSettingsGroups,
   validateSettingValue,
   type SettingsGroup,
 } from "@/features/settings/components/admin/settings-utils";
+
+/** Ikon dan halaman situs untuk tiap bagian (mengikuti GROUP_ICONS di Design/admin). */
+const GROUP_ICONS: Record<string, ReactNode> = {
+  brand: <Building2 />,
+  links: <Link2 />,
+  contact: <Mail />,
+  hero: <ImageIcon />,
+  about: <Users />,
+  program: <CalendarDays />,
+  news: <FileText />,
+  structure: <Network />,
+};
+
+const GROUP_SITE_HREF: Record<string, string> = {
+  brand: "/",
+  links: "/",
+  contact: "/",
+  hero: "/",
+  about: "/#tentang",
+  program: "/#program-kerja",
+  news: "/publikasi",
+  structure: "/struktur",
+};
 
 function changedItemsForGroup(
   group: SettingsGroup,
@@ -36,6 +77,7 @@ function changedItemsForGroup(
 
 export default function SettingsPage() {
   const { admin, can } = useAuth();
+  const toast = useToast();
 
   const canView = can(PERMISSIONS.SETTINGS_VIEW);
   const canManage = can(PERMISSIONS.SETTINGS_MANAGE);
@@ -344,6 +386,7 @@ export default function SettingsPage() {
       setSuccessMessage(
         `${response.updated.length} perubahan pada bagian ${currentGroup.label} disimpan.`,
       );
+      toast("Pengaturan disimpan.");
     } catch (err: unknown) {
       if (isApiError(err) && err.status === 422 && err.errors) {
         setFieldErrors(err.errors);
@@ -454,99 +497,96 @@ export default function SettingsPage() {
 
   return (
     <RequirePermission permission={PERMISSIONS.SETTINGS_VIEW}>
-      <main className="min-h-screen bg-bg-light text-ink">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-          <header className="border-b border-paper-line pb-5">
-            <p className="text-xs font-semibold tracking-widest text-gold uppercase">
-              Sistem / Pengaturan
-            </p>
+      <AdminPage>
+        <PageHead
+          label="Sistem"
+          title="Pengaturan Situs"
+          description="Pilih bagian website untuk mengubah teks dan tautan yang tampil di situs publik. Kolom yang dikosongkan akan kembali ke nilai bawaan atau disembunyikan."
+        />
 
-            <h1 className="mt-3 font-serif text-3xl font-semibold text-bg-dark sm:text-4xl">
-              Pengaturan Situs
-            </h1>
+        {!canManage ? (
+          <Notice icon={<Eye aria-hidden="true" />} className="mb-4">
+            <strong>Mode lihat saja.</strong> Akun Anda dapat melihat pengaturan situs
+            tetapi tidak dapat mengubahnya (butuh izin “Mengubah pengaturan”).
+          </Notice>
+        ) : null}
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-soft">
-              Pilih bagian website untuk mengubah teks dan tautan yang
-              tampil di situs publik. Kolom yang dikosongkan akan kembali
-              ke nilai bawaan atau disembunyikan sesuai aturan backend.
-            </p>
-          </header>
-
-          {!canManage && (
-            <div className="mt-5">
-              <SettingsNotice tone="info">
-                <strong>Mode lihat saja.</strong> Akun ini dapat melihat
-                pengaturan situs tetapi tidak dapat mengubahnya (butuh izin{" "}
-                <code>settings.manage</code>).
-              </SettingsNotice>
-            </div>
-          )}
-
-          {isLoading ? (
-            <div
-              role="status"
-              className="mt-6 border border-paper-line bg-paper p-6 text-sm text-ink-soft"
+        {isLoading ? (
+          <div role="status" aria-label="Memuat pengaturan" className="grid gap-4">
+            <div className="h-[92px] animate-pulse rounded-[4px] bg-green-900/5" />
+            <div className="h-[360px] animate-pulse rounded-[4px] bg-green-900/5" />
+          </div>
+        ) : loadError ? (
+          <div className="rounded-[4px] border border-line bg-white">
+            <StateBlock
+              tone="error"
+              icon={<RefreshCw />}
+              label="Gagal memuat"
+              title="Pengaturan tidak dapat dimuat"
+              action={
+                <Button variant="outline" onClick={reloadSettings}>
+                  <RefreshCw aria-hidden="true" /> Coba lagi
+                </Button>
+              }
             >
-              Memuat pengaturan situs...
-            </div>
-          ) : loadError ? (
-            <div className="mt-6 space-y-3">
-              <SettingsNotice tone="error">
-                {loadError}
-              </SettingsNotice>
-              <Button variant="outline" onClick={reloadSettings}>
-                Coba lagi
-              </Button>
-            </div>
-          ) : groups.length === 0 ? (
-            <div className="mt-6 border border-paper-line bg-paper p-6">
-              <h2 className="font-serif text-lg font-semibold text-bg-dark">
-                Pengaturan belum tersedia
-              </h2>
-              <p className="mt-1 text-sm leading-6 text-ink-soft">
-                Backend belum mengirim daftar pengaturan situs.
-              </p>
-            </div>
-          ) : currentGroup ? (
-            <>
-              <SettingsGroupNav
-                groups={groups}
-                activeGroup={effectiveGroupKey}
-                dirtyCounts={dirtyCounts}
-                onSelect={selectGroup}
+              {loadError}
+            </StateBlock>
+          </div>
+        ) : groups.length === 0 ? (
+          <div className="rounded-[4px] border border-line bg-white">
+            <StateBlock icon={<Settings />} label="Pengaturan" title="Pengaturan belum tersedia">
+              Backend belum mengirim daftar pengaturan situs.
+            </StateBlock>
+          </div>
+        ) : currentGroup ? (
+          <div className="grid gap-4">
+            <div className="rounded-[4px] border border-line bg-white p-4 max-[640px]:p-3">
+              <SelectMenu
+                label="Bagian website"
+                value={effectiveGroupKey}
+                onChange={selectGroup}
+                options={groups.map((group) => ({
+                  value: group.key,
+                  label: group.label,
+                  description: group.description,
+                  icon: GROUP_ICONS[group.key] ?? <Settings />,
+                  badge: dirtyCounts[group.key] ? (
+                    <Badge tone="amber">{dirtyCounts[group.key]}</Badge>
+                  ) : undefined,
+                }))}
               />
+            </div>
 
-              <SettingsGroupForm
-                key={currentGroup.key}
-                group={currentGroup}
-                values={values}
-                disabled={!canManage}
-                errors={fieldErrors}
-                error={groupError}
-                success={successMessage}
-                isSaving={isSaving}
-                onChange={handleFieldChange}
-                onSave={() => {
-                  void saveGroup();
-                }}
-                onDiscard={() => resetGroupDraft(currentGroup.key)}
-                onResetRequest={requestReset}
-              />
-
-            </>
-          ) : null}
-
-          {!isLoading && !loadError ? (
-            <UnknownKeysPanel
-              keys={unknownKeys}
-              message={unknownMessage}
-              onDeleteRequest={(key) => {
-                setUnknownError("");
-                setUnknownTarget(key);
+            <SettingsGroupForm
+              key={currentGroup.key}
+              group={currentGroup}
+              siteHref={GROUP_SITE_HREF[currentGroup.key]}
+              values={values}
+              disabled={!canManage}
+              errors={fieldErrors}
+              error={groupError}
+              success={successMessage}
+              isSaving={isSaving}
+              onChange={handleFieldChange}
+              onSave={() => {
+                void saveGroup();
               }}
+              onDiscard={() => resetGroupDraft(currentGroup.key)}
+              onResetRequest={requestReset}
             />
-          ) : null}
-        </div>
+          </div>
+        ) : null}
+
+        {!isLoading && !loadError ? (
+          <UnknownKeysPanel
+            keys={unknownKeys}
+            message={unknownMessage}
+            onDeleteRequest={(key) => {
+              setUnknownError("");
+              setUnknownTarget(key);
+            }}
+          />
+        ) : null}
 
         <ConfirmDialog
           open={pendingGroup !== null}
@@ -617,7 +657,7 @@ export default function SettingsPage() {
             }}
           />
         )}
-      </main>
+      </AdminPage>
     </RequirePermission>
   );
 }
